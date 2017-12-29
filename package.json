@@ -1,0 +1,42 @@
+{
+  "name": "nix-clap",
+  "version": "0.0.1",
+  "description":
+    "A comprehensive and straightforward approach to Un*x Command Line Argument Parsing for NodeJS",
+  "main": "lib/nix-clap.js",
+  "scripts": {
+    "test": "clap test",
+    "coverage": "clap check"
+  },
+  "keywords": [
+    "un*x",
+    "clap",
+    "command",
+    "line",
+    "argument",
+    "arguments",
+    "parsing",
+    "cli",
+    "yargs",
+    "argparse",
+    "commander",
+    "optimist"
+  ],
+  "author": "Joel Chen <joel123@gmail.com>",
+  "license": "Apache-2.0",
+  "dependencies": {},
+  "devDependencies": {
+    "electrode-archetype-njs-module-dev": "^3.0.0"
+  },
+  "nyc": {
+    "all": true,
+    "reporter": ["lcov", "text", "text-summary"],
+    "exclude": ["coverage", "*clap.js", "gulpfile.js", "dist", "test", "examples"],
+    "check-coverage": true,
+    "statements": 100,
+    "branches": 100,
+    "functions": 100,
+    "lines": 100,
+    "cache": true
+  }
+}
