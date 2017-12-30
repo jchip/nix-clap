@@ -7,6 +7,10 @@
     "test": "clap test",
     "coverage": "clap check"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jchip/nix-clap.git"
+  },
   "keywords": [
     "un*x",
     "clap",
