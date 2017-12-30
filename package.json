@@ -1,8 +1,7 @@
 {
   "name": "nix-clap",
-  "version": "0.0.1",
-  "description":
-    "A comprehensive and straightforward approach to Un*x Command Line Argument Parsing for NodeJS",
+  "version": "1.0.0",
+  "description": "A comprehensive and straightforward approach to Un*x Command Line Argument Parsing for NodeJS",
   "main": "lib/nix-clap.js",
   "scripts": {
     "test": "clap test",
@@ -30,8 +29,19 @@
   },
   "nyc": {
     "all": true,
-    "reporter": ["lcov", "text", "text-summary"],
-    "exclude": ["coverage", "*clap.js", "gulpfile.js", "dist", "test", "examples"],
+    "reporter": [
+      "lcov",
+      "text",
+      "text-summary"
+    ],
+    "exclude": [
+      "coverage",
+      "*clap.js",
+      "gulpfile.js",
+      "dist",
+      "test",
+      "examples"
+    ],
     "check-coverage": true,
     "statements": 100,
     "branches": 100,
