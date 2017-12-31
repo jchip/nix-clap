@@ -1476,4 +1476,50 @@ describe("nix-clap", function() {
     expect(parsed.source.anything).to.equal("user");
     expect(parsed.opts.anything).to.equal(999);
   });
+
+  it("should skip exec if skipExec flag is set", () => {
+    let called;
+    const commands = {
+      cmd1: {
+        exec: () => {
+          called = true;
+        },
+        default: true
+      }
+    };
+    let nc = new NixClap({}).init({}, commands);
+    let parsed = nc.parse(getArgv("cmd1"));
+    expect(parsed).to.be.ok;
+    expect(parsed.commands[0].name).to.equal("cmd1");
+    expect(called).to.equal(true);
+    called = undefined;
+    nc = new NixClap({ skipExec: true }).init({}, commands);
+    parsed = nc.parse(getArgv("cmd1"));
+    expect(parsed).to.be.ok;
+    expect(parsed.commands[0].name).to.equal("cmd1");
+    expect(called).to.equal(undefined);
+  });
+
+  it("should skip default exec if skipExecDefault flag is set", () => {
+    let called;
+    const commands = {
+      cmd1: {
+        exec: () => {
+          called = true;
+        },
+        default: true
+      }
+    };
+    let nc = new NixClap({}).init({}, commands);
+    let parsed = nc.parse([]);
+    expect(parsed).to.be.ok;
+    expect(parsed.commands).to.be.empty;
+    expect(called).to.equal(true);
+    called = undefined;
+    nc = new NixClap({ skipExecDefault: true }).init({}, commands);
+    parsed = nc.parse([]);
+    expect(parsed).to.be.ok;
+    expect(parsed.commands).to.be.empty;
+    expect(called).to.equal(undefined);
+  });
 });

@@ -277,6 +277,9 @@ These are methods `NixClap` class supports.
 * `help` - custom help option setting. Can also set with `help` method.
 * `usage` - usage message. Can also set with `usage` method.
 * `cmdUsage` - generic usage message for commands. Can also set with `cmdUsage` method.
+* `skipExec` - If true, will not call command `exec` handlers after parse.
+* `skipExecDefault` - if true, will not call default command `exec` handler after parse.
+  * In case you need to do something before invoking the `exec` handlers, you can set these flags and call the [`runExec(parsed, skipDefault)`](#runexecparsed-skipdefault) method yourself.
 * `exit` - callback for exit program. Should take numeric exit code as param. Default to calling `process.exit`
 * `output` - callback for printing to console. Should take string as param. Default to calling `process.stdout.write`
 * `noActionShowHelp` - boolean. If `true`, will install default handler for `no-action` event to call `showHelp` method. Default: `false`
@@ -289,9 +292,13 @@ These are methods `NixClap` class supports.
 
 Set program version with a string. ie: `1.0.0`
 
+Return: The `NixClap` instance itself.
+
 ### `help(setting)`
 
 Set a custom option setting for invoking help. Default is:
+
+Return: The `NixClap` instance itself.
 
 ```js
 {
@@ -308,13 +315,19 @@ Set usage message for the program or command, which can be override by individua
 
 `msg` format is any string. `$0` will be replaced with program name and `$1` with command name.
 
+Return: The `NixClap` instance itself.
+
 ### `init(options, commands)`
 
 Initialize your options and commands
 
+Return: The `NixClap` instance itself.
+
 ### `parse(argv, start, parsed)`
 
 Parse command line. Call without any params to parse `process.argv`.
+
+Return: The parse result object.
 
 * `argv` - array of CLI args. Defaults to `process.argv`.
 * `start` - index for argv from where to start parsing
@@ -323,6 +336,8 @@ Parse command line. Call without any params to parse `process.argv`.
 ### `showHelp(err, cmdName)`
 
 Show help message and then call `exit`.
+
+Return: The `NixClap` instance itself.
 
 * `err` - if valid, then `err.message` will be printed after help message and exit with code `1`.
 * `cmdName` - if valid, then will print help for the specific command.
@@ -344,6 +359,17 @@ const pkg = require(path.resolve("package.json"));
 const parsed = nc.parse();
 nc.applyConfig(pkg.cliConfig, parsed);
 ```
+
+### `runExec(parsed, skipDefault)`
+
+Go through the commands in parsed and call their `exec` handler.
+
+> The [`parse`](#parseargv-start-parsed) method will call this at the end unless `skipExec` flag is set.
+
+Return: The number of commands with `exec` was invoked.
+
+* `parsed` - The parse result object.
+* `skipDefault` - Do not invokde default command's `exec` handler, if no command with `exec` handler was found.
 
 # Others
 
