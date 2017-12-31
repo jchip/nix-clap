@@ -7,11 +7,10 @@ Simple, lightweight, and comprehensive Un\*x Command Line Argument Parsing for N
 
 # Features
 
-* Parsing capabilities similar to conventional Un\*x parsing.
+* Comprehensive and flexible parsing capabilities similar to conventional Un\*x parsing.
 * Parsing can be resumed after it's terminated by `--`.
 * A simple and straightforward JSON interface for specifying options and commands.
 * Lightweight with minimal dependencies
-* Comprehensive and flexible parsing capabilities.
 
 # Parsing Capabilities
 
@@ -149,43 +148,52 @@ Where:
   * Default command cannot have required args and must have the `exec` handler
 * `options` - List of options arguments private to the command. Follows the same spec as [top level options](#options-spec)
 
-## Result
+## Parse Result
 
-The method `parse` returns an object:
+The method [`parse`](#parseargv-start-parsed) will call command `exec` handlers and return a parse result object:
 
 ```js
 {
   source: {},
   opts: {},
   commands: [],
-  index: 5
+  index: 5,
+  error
 }
 ```
 
 Where:
 
 * `index` - the index in `argv` parse stopped
+* `error` - If parse failed and your `parse-fail` event handler throws, this will contain the parse error. See [skip default event behaviors](#skip-default-event-behaviors) for more details.
+* `source`, `opts` - objects containing info for the options. See [details here](#parse-result-source-and-opts-objects)
+* `commands` - array of parsed command objects. See [`commands`](#parse-result-commands-object) for more details.
 
-- `source` and `opts` - object containing info for the options with names in camelCase form.
+### Parse Result `source` and `opts` objects
 
-For example, the option `--foo-bar=test` would add:
+* `opts` - contains actual value for each option
+* `source` - contains info about where the option value came from
+
+  * `cli` - option specified by user in the command line
+  * `default` - default value in your [options spec](#options-spec)
+  * `user` - values you applied by calling the [`applyConfig`](#applyconfigconfig-parsed-src) method
+
+For example, if the user specified `--foo-bar=test` in the command line, and you have another option `fooDefault` with default value `bar`, then you would get this:
 
 ```js
 {
   source: {
-    fooBar: "cli";
+    fooBar: "cli",
+    fooDefault: "default"
   }
   opts: {
-    fooBar: "test";
+    fooBar: "test",
+    fooDefault: "bar"
   }
 }
 ```
 
-This tells that the value for `fooBar` was specified by the user in the command line and its value is `test`.
-
-Possible sources are: `cli`, `default`
-
-### `commands`
+### Parse Result `commands` object
 
 The `commands` object is an array of parsed commands:
 
@@ -241,28 +249,36 @@ Where `opts` and `source` contain both the command's private options and top lev
 
 * `help` - when `--help` is invoked, emitted with the parse result object.
 * `version` - when `--version` is invoked, emitted with the parse result object.
-* `parse-fail` - when parse failed, emitted with error object
+* `parse-fail` - when parse failed, emitted with parse result object, which has `error` field.
 * `unknown-option` - when an unknown option is found, emitted with option name
 * `unknown-command` - when an unknown command is found, emitted with command context, which has `name` field.
 * `no-action` - when no command trigger an `exec` call.
 
-> If you want to skip the default behavior of outputing help and exit on `parse-fail`, you can rethrow the error in your `parse-fail` event handler and catch the error from `NixClap.parse`.
+### Default Event Behaviors
+
+NixClap has default behavior for these events:
+
+* `help` - Output help and exit
+* `version` - If `version` has been set, then output version and exit.
+* `parse-fail` - Output help and error message, and exit.
+
+#### Skip Default Event Behaviors
+
+If you want to skip the default behaviors, you can throw an error in your own handler and check the `error` field in the parse result object.
 
 ie:
 
 ```js
-try {
-  const parsed = nc
-    .once("parse-fail", e => {
-      throw e;
-    })
-    .parse();
-} catch (e) {
+const parsed = nc
+  .once("parse-fail", p => {
+    throw p.error;
+  })
+  .parse();
+
+if (parsed.error) {
   // handle the parse error here
 }
 ```
-
-> You can do the same thing for `help` and `version` event also, except NixClap will catch the error and return the parse result object normally.
 
 ## APIs
 

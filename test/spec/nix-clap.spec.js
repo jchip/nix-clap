@@ -23,8 +23,8 @@ describe("nix-clap", function() {
         exit: () => undefined,
         output: () => undefined
       });
-    nc.on("parse-fail", e => {
-      throw e;
+    nc.on("parse-fail", p => {
+      throw p.error;
     });
     nc.allowUnknownCommand();
     nc.allowUnknownOption();
@@ -149,7 +149,8 @@ describe("nix-clap", function() {
 
   it("should parse single required param for command", () => {
     const nc = initParser();
-    expect(() => nc.parse(getArgv("cmd3"))).to.throw("Not enough arguments for command cmd3");
+    const parsed = nc.parse(getArgv("cmd3"));
+    expect(parsed.error.message).to.equal("Not enough arguments for command cmd3");
     const x = nc.parse(getArgv("cmd3 test"));
     expect(x.commands.length, "should have only one command").to.equal(1);
     expect(x.commands[0]).to.deep.equal({
@@ -358,9 +359,8 @@ describe("nix-clap", function() {
       index: 1
     });
 
-    expect(() => nc.parse(getArgv("--array-opt-require -- d"))).to.throw(
-      "option array-opt-require requires argument"
-    );
+    const parsed = nc.parse(getArgv("--array-opt-require -- d"));
+    expect(parsed.error.message).to.equal("option array-opt-require requires argument");
   });
 
   it("should terminate option array with --", () => {
@@ -457,11 +457,10 @@ describe("nix-clap", function() {
 
   it("should terminate command arg gathering with --", () => {
     const nc = initParser();
-    expect(() => nc.parse(getArgv("cmd7 a -- d e f"))).to.throw(
-      "Not enough arguments for command cmd7"
-    );
-    let x = nc.parse(getArgv("cmd7 a b -- d"));
-    expect(x).to.deep.equal({
+    let parsed = nc.parse(getArgv("cmd7 a -- d e f"));
+    expect(parsed.error.message).to.equal("Not enough arguments for command cmd7");
+    parsed = nc.parse(getArgv("cmd7 a b -- d"));
+    expect(parsed).to.deep.equal({
       source: {
         applyDefault: "default",
         forceCache: "default",
@@ -488,9 +487,9 @@ describe("nix-clap", function() {
       },
       index: 3
     });
-    x = nc.parse(getArgv("cmd7 a b c -- d"));
+    parsed = nc.parse(getArgv("cmd7 a b c -- d"));
 
-    expect(x).to.deep.equal({
+    expect(parsed).to.deep.equal({
       source: {
         applyDefault: "default",
         forceCache: "default",
@@ -699,8 +698,8 @@ describe("nix-clap", function() {
 
   it("should handle requireArg option missing arg", () => {
     const nc = initParser();
-    expect(() => nc.parse(getArgv("--rao"))).to.throw("option rao requires argument");
-    expect(() => nc.parse(getArgv("--require-arg-opt"))).to.throw(
+    expect(nc.parse(getArgv("--rao")).error.message).to.equal("option rao requires argument");
+    expect(nc.parse(getArgv("--require-arg-opt")).error.message).to.equal(
       "option require-arg-opt requires argument"
     );
   });
@@ -718,14 +717,14 @@ describe("nix-clap", function() {
 
   it("should handle allowCmd", () => {
     const nc = initParser();
-    expect(() => nc.parse(getArgv("cmd2 x --hac"))).to.throw(
+    expect(nc.parse(getArgv("cmd2 x --hac")).error.message).to.equal(
       "option hac must follow one of these commands cmd1, cmd4"
     );
-    expect(() => nc.parse(getArgv("--has-allow-cmd"))).to.throw(
+    expect(nc.parse(getArgv("--has-allow-cmd")).error.message).to.equal(
       "option has-allow-cmd must follow one of these commands cmd1, cmd4"
     );
-    const x = nc.parse(getArgv("cmd4 --hac"));
-    expect(x).to.deep.equal({
+    const parsed = nc.parse(getArgv("cmd4 --hac"));
+    expect(parsed).to.deep.equal({
       source: {
         hasAllowCmd: "cli",
         applyDefault: "default",
@@ -871,7 +870,7 @@ describe("nix-clap", function() {
 
   it("should handle optional args for command", () => {
     const nc = initParser();
-    expect(() => nc.parse(getArgv("6"))).to.throw("Not enough arguments for command cmd6");
+    expect(nc.parse(getArgv("6")).error.message).to.equal("Not enough arguments for command cmd6");
     let x = nc.parse(getArgv("cmd6 1"));
     expect(x).to.deep.equal({
       source: {
