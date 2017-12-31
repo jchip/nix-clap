@@ -1,6 +1,6 @@
 {
   "name": "nix-clap",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A comprehensive and straightforward approach to Un*x Command Line Argument Parsing for NodeJS",
   "main": "lib/nix-clap.js",
   "scripts": {
