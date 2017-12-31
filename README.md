@@ -238,8 +238,8 @@ Where `opts` and `source` contain both the command's private options and top lev
 
 `NixClap` emits these events:
 
-* `help` - when `--help` is invoked
-* `version` - when `--version` is invoked
+* `help` - when `--help` is invoked, emitted with the parse result object.
+* `version` - when `--version` is invoked, emitted with the parse result object.
 * `parse-fail` - when parse failed, emitted with error object
 * `unknown-option` - when an unknown option is found, emitted with option name
 * `unknown-command` - when an unknown command is found, emitted with command context, which has `name` field.
@@ -250,15 +250,18 @@ Where `opts` and `source` contain both the command's private options and top lev
 ie:
 
 ```js
-nc.on("parse-fail", e => {
-  throw e;
-});
 try {
-  const parsed = nc.parse();
+  const parsed = nc
+    .once("parse-fail", e => {
+      throw e;
+    })
+    .parse();
 } catch (e) {
   // handle the parse error here
 }
 ```
+
+> You can do the same thing for `help` and `version` event also, except NixClap will catch the error and return the parse result object normally.
 
 ## APIs
 

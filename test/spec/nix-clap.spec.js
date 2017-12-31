@@ -1437,4 +1437,30 @@ describe("nix-clap", function() {
     expect(called).to.be.ok;
     expect(called.name).to.equal("foo");
   });
+
+  it("should skip help if event handler throws", () => {
+    const nc = new NixClap().init({}, {});
+    let called;
+    const parsed = nc
+      .on("help", p => {
+        called = p;
+        throw new Error();
+      })
+      .parse(["--help"]);
+    expect(called).to.be.ok;
+    expect(parsed).to.be.ok;
+  });
+
+  it("should skip version if event handler throws", () => {
+    const nc = new NixClap({ version: "test" }).init({}, {});
+    let called;
+    const parsed = nc
+      .on("version", p => {
+        called = p;
+        throw new Error();
+      })
+      .parse(["--version"]);
+    expect(called).to.be.ok;
+    expect(parsed).to.be.ok;
+  });
 });
