@@ -3,14 +3,15 @@
 
 # NixClap
 
-A comprehensive and straightforward approach to Un\*x Command Line Argument Parsing for NodeJS.
+Simple, lightweight, and comprehensive Un\*x Command Line Argument Parsing for NodeJS.
 
 # Features
 
 * Parsing capabilities similar to conventional Un\*x parsing.
 * Parsing can be resumed after it's terminated by `--`.
 * A simple and straightforward JSON interface for specifying options and commands.
-* Minimal dependencies
+* Lightweight with minimal dependencies
+* Comprehensive and flexible parsing capabilities.
 
 # Parsing Capabilities
 
