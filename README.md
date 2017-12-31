@@ -150,7 +150,7 @@ Where:
 
 ## Parse Result
 
-The method [`parse`](#parseargv-start-parsed) will call command `exec` handlers and return a parse result object:
+The method [`parse`](#parseargv-start-parsed) will call [command `exec` handlers](#command-exec-handler) and return a parse result object:
 
 ```js
 {
@@ -178,20 +178,30 @@ Where:
   * `default` - default value in your [options spec](#options-spec)
   * `user` - values you applied by calling the [`applyConfig`](#applyconfigconfig-parsed-src) method
 
-For example, if the user specified `--foo-bar=test` in the command line, and you have another option `fooDefault` with default value `bar`, then you would get this:
+For example, with the following conditions:
+
+1. User specified `--foo-bar=test` in the command line
+1. You have an option `fooDefault` with default value `bar`
+1. You called `applyConfig` with `applyConfig({fooConfig: 1, fooBar: "oops"}, parsed)`
+
+You would get the following in the parse result object:
 
 ```js
 {
   source: {
     fooBar: "cli",
-    fooDefault: "default"
+    fooDefault: "default",
+    fooConfig: "user"
   }
   opts: {
     fooBar: "test",
-    fooDefault: "bar"
+    fooDefault: "bar",
+    fooConfig: 1
   }
 }
 ```
+
+> Note that the value `oops` for `fooBar` passed to `applyConfig` is not used since user's specified value is used.
 
 ### Parse Result `commands` object
 
@@ -243,6 +253,8 @@ If the command has an `exec` handler, it will be called with the object:
 
 Where `opts` and `source` contain both the command's private options and top level options.
 
+> You can turn this off with the `skipExec` config flag passed to [`NixClap` constructor](#constructorconfig)
+
 ## Events
 
 `NixClap` emits these events:
@@ -289,26 +301,28 @@ These are methods `NixClap` class supports.
 `config` is object with:
 
 * `name` - set the program name. Will auto detect from `process.argv` if not specified.
-* `version` - set the program version. Can also set with `version` method.
-* `help` - custom help option setting. Can also set with `help` method.
-* `usage` - usage message. Can also set with `usage` method.
-* `cmdUsage` - generic usage message for commands. Can also set with `cmdUsage` method.
+* `version` - set the program version. Can also set with [`version`](#versionv) method.
+* `help` - custom help option setting. Can also set with [`help`](#helpsetting) method.
+* `usage` - usage message. Can also set with [`usage`](#usagemsg-cmdusagemsg) method.
+* `cmdUsage` - generic usage message for commands. Can also set with [`cmdUsage`](#usagemsg-cmdusagemsg) method.
 * `skipExec` - If true, will not call command `exec` handlers after parse.
 * `skipExecDefault` - if true, will not call default command `exec` handler after parse.
   * In case you need to do something before invoking the `exec` handlers, you can set these flags and call the [`runExec(parsed, skipDefault)`](#runexecparsed-skipdefault) method yourself.
 * `exit` - callback for exit program. Should take numeric exit code as param. Default to calling `process.exit`
 * `output` - callback for printing to console. Should take string as param. Default to calling `process.stdout.write`
-* `noActionShowHelp` - boolean. If `true`, will install default handler for `no-action` event to call `showHelp` method. Default: `false`
+* `noActionShowHelp` - boolean. If `true`, will install default handler for `no-action` event to call [`showHelp` method](#showhelperr-cmdname). Default: `false`
 * `allowUnknownOption` - boolean. If `true`, will not fail when unknown option is seen. Default: `false`
-  * Can also be done by calling `allowUnknownOption` method after constructor.
+  * Can also be done by calling [`allowUnknownOption`](#allowunknownoption) method after constructor.
 * `allowUnknownCommand` - boolean. If `true`, will not fail when unknown command is seen. Default: `false`
-  * Can also be done by calling `allowUnknownCommand` method after constructor.
+  * Can also be done by calling [`allowUnknownCommand`](#allowunknowncommand) method after constructor.
 
 ### `version(v)`
 
 Set program version with a string. ie: `1.0.0`
 
 Return: The `NixClap` instance itself.
+
+> Must be called before the [`init`](#initoptions-commands) method.
 
 ### `help(setting)`
 
@@ -325,11 +339,27 @@ Return: The `NixClap` instance itself.
 
 Option name is always `help`. Call `help(false)` to turn off the default `--help` option.
 
+> Must be called before the [`init`](#initoptions-commands) method.
+
 ### `usage(msg)`, `cmdUsage(msg)`
 
 Set usage message for the program or command, which can be override by individual command's own usage.
 
 `msg` format is any string. `$0` will be replaced with program name and `$1` with command name.
+
+Return: The `NixClap` instance itself.
+
+> Must be called before the [`init`](#initoptions-commands) method.
+
+### `allowUnknownOption()`
+
+Set to not fail when encountering unknown option.
+
+Return: The `NixClap` instance itself.
+
+### `allowUnknownCommand()`
+
+Set to not fail when encountering unknown command.
 
 Return: The `NixClap` instance itself.
 
