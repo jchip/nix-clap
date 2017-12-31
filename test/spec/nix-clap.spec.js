@@ -1463,4 +1463,17 @@ describe("nix-clap", function() {
     expect(called).to.be.ok;
     expect(parsed).to.be.ok;
   });
+
+  it("should apply user config after parse", () => {
+    const line = "cmd1 a --cmd1-bar woo --count-opt -ccc --fooNum=900";
+    const nc = initParser();
+    const parsed = nc.parse(getArgv(line), 0);
+    nc.applyConfig({ anything: 999, fooNum: 1000, logLevel: "test" }, parsed);
+    expect(parsed.source.logLevel).to.equal("user");
+    expect(parsed.opts.logLevel).to.equal("test");
+    expect(parsed.source.fooNum).to.equal("cli");
+    expect(parsed.opts.fooNum).to.equal(900);
+    expect(parsed.source.anything).to.equal("user");
+    expect(parsed.opts.anything).to.equal(999);
+  });
 });

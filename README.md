@@ -326,6 +326,24 @@ Show help message and then call `exit`.
 * `err` - if valid, then `err.message` will be printed after help message and exit with code `1`.
 * `cmdName` - if valid, then will print help for the specific command.
 
+### `applyConfig(config, parsed, src)`
+
+Allow you to apply extra config to the parsed object, overriding any `opts` with `source` not equal to `cli`.
+
+For example, you can allow user to specify options in their `package.json` file, and apply those after the command line is parsed.
+
+* `config` - Config object containing user options config
+* `parsed` - The parse result object from NixClap.
+* `src` - String, source to set if override. Default to `user`
+
+Example on applying user config from `package.json`:
+
+```js
+const pkg = require(path.resolve("package.json"));
+const parsed = nc.parse();
+nc.applyConfig(pkg.cliConfig, parsed);
+```
+
 # Others
 
 * [argparse]
