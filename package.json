@@ -27,7 +27,9 @@
   ],
   "author": "Joel Chen <joel123@gmail.com>",
   "license": "Apache-2.0",
-  "dependencies": {},
+  "dependencies": {
+    "strip-ansi": "^4.0.0"
+  },
   "devDependencies": {
     "electrode-archetype-njs-module-dev": "^3.0.0"
   },

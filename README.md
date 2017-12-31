@@ -10,7 +10,7 @@ A comprehensive and straightforward approach to Un\*x Command Line Argument Pars
 * Parsing capabilities similar to conventional Un\*x parsing.
 * Parsing can be resumed after it's terminated by `--`.
 * A simple and straightforward JSON interface for specifying options and commands.
-* No dependencies
+* Minimal dependencies
 
 # Parsing Capabilities
 
