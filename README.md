@@ -264,29 +264,39 @@ Where `opts` and `source` contain both the command's private options and top lev
 * `parse-fail` - when parse failed, emitted with parse result object, which has `error` field.
 * `unknown-option` - when an unknown option is found, emitted with option name
 * `unknown-command` - when an unknown command is found, emitted with command context, which has `name` field.
-* `no-action` - when no command trigger an `exec` call.
+* `no-action` - when you have commands with `exec` and user specified no command that triggered an `exec` call.
 
-### Default Event Behaviors
+### Default Event Handlers
 
-NixClap has default behavior for these events:
+NixClap has default handlers for these events:
 
 * `help` - Output help and exit
 * `version` - If `version` has been set, then output version and exit.
 * `parse-fail` - Output help and error message, and exit.
+* `unknown-option` - Throws Error `Unknown option ${name}`
+* `unknown-command` - Throws Error `Unkown command ${ctx.name}`
+* `no-action` - Output help with error `No command given` and exit
 
 #### Skip Default Event Behaviors
 
-If you want to skip the default behaviors, you can throw an error in your own handler and check the `error` field in the parse result object.
+If you want to skip the default behaviors, You can remove the event handlers with one of these approaches:
 
-ie:
+* With the [`removeDefaultHandlers`](#removedefaulthandlers) method.
+* By passing in `handlers` object in the `config` for the constructor.
+
+For example, using `removeDefaultHandlers`:
 
 ```js
-const parsed = nc
-  .once("parse-fail", p => {
-    throw p.error;
-  })
-  .parse();
+const parsed = nc.removeDefaultHandlers("parse-fail").parse();
+if (parsed.error) {
+  // handle the parse error here
+}
+```
 
+Using constructor config.
+
+```js
+const parsed = new NixClap({ handlers: { "parse-fail": false } }).parse();
 if (parsed.error) {
   // handle the parse error here
 }
@@ -310,11 +320,20 @@ These are methods `NixClap` class supports.
   * In case you need to do something before invoking the `exec` handlers, you can set these flags and call the [`runExec(parsed, skipDefault)`](#runexecparsed-skipdefault) method yourself.
 * `exit` - callback for exit program. Should take numeric exit code as param. Default to calling `process.exit`
 * `output` - callback for printing to console. Should take string as param. Default to calling `process.stdout.write`
-* `noActionShowHelp` - boolean. If `true`, will install default handler for `no-action` event to call [`showHelp` method](#showhelperr-cmdname). Default: `false`
-* `allowUnknownOption` - boolean. If `true`, will not fail when unknown option is seen. Default: `false`
-  * Can also be done by calling [`allowUnknownOption`](#allowunknownoption) method after constructor.
-* `allowUnknownCommand` - boolean. If `true`, will not fail when unknown command is seen. Default: `false`
-  * Can also be done by calling [`allowUnknownCommand`](#allowunknowncommand) method after constructor.
+* `handlers` - custom event handlers.
+
+The `handlers` object can specify a function for each of the [events](#events) or set it to `false` to turn off the default handler.
+
+For example, this config will replace handler for `parse-fail` and turn off the default `unknown-option` handler.
+
+```js
+const nc = new NixClap({
+  handlers: {
+    "parse-fail": (parsed) => { ... },
+    "unknown-option": false
+  }
+});
+```
 
 ### `version(v)`
 
@@ -351,18 +370,6 @@ Return: The `NixClap` instance itself.
 
 > Must be called before the [`init`](#initoptions-commands) method.
 
-### `allowUnknownOption()`
-
-Set to not fail when encountering unknown option.
-
-Return: The `NixClap` instance itself.
-
-### `allowUnknownCommand()`
-
-Set to not fail when encountering unknown command.
-
-Return: The `NixClap` instance itself.
-
 ### `init(options, commands)`
 
 Initialize your options and commands
@@ -383,10 +390,25 @@ Return: The parse result object.
 
 Show help message and then call `exit`.
 
-Return: The `NixClap` instance itself.
-
 * `err` - if valid, then `err.message` will be printed after help message and exit with code `1`.
 * `cmdName` - if valid, then will print help for the specific command.
+
+### `removeDefaultHandlers()`
+
+Remove NixClap's default handlers for the list of [event names](#events).
+
+If you've replaced the handler through specifying `handlers` in `config` for the constructor, then this will not remove your handler.
+
+Return: The `NixClap` instance itself.
+
+* You can pass in `"*"` to remove all default handlers.
+* You can pass in the event names you want to remove.
+
+ie:
+
+```js
+nc.removeDefaultHandlers("parse-fail", "unknown-option", "unknown-command");
+```
 
 ### `applyConfig(config, parsed, src)`
 

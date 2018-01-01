@@ -21,13 +21,15 @@ describe("nix-clap", function() {
       nc ||
       new NixClap({
         exit: () => undefined,
-        output: () => undefined
+        output: () => undefined,
+        handlers: {
+          "no-action": false,
+          "unknown-command": false,
+          "unknown-option": false
+        }
       });
-    nc.on("parse-fail", p => {
-      throw p.error;
-    });
-    nc.allowUnknownCommand();
-    nc.allowUnknownOption();
+
+    nc.removeDefaultHandlers("no-action", "parse-fail", "unknown-command", "unknown-option");
     return nc.init(
       {
         "log-level": {
@@ -148,7 +150,7 @@ describe("nix-clap", function() {
   };
 
   it("should parse single required param for command", () => {
-    const nc = initParser();
+    const nc = initParser().removeAllListeners("parse-fail");
     const parsed = nc.parse(getArgv("cmd3"));
     expect(parsed.error.message).to.equal("Not enough arguments for command cmd3");
     const x = nc.parse(getArgv("cmd3 test"));
@@ -614,39 +616,46 @@ describe("nix-clap", function() {
 
   it("should emit unknown-command event", () => {
     let outputed = "";
+    let exited;
     const nc = new NixClap({
       name: "test",
-      exit: () => undefined,
+      exit: () => (exited = true),
       output: o => (outputed += o)
     }).init({}, {});
 
     nc.parse(getArgv("blah"));
+    expect(exited).to.equal(true);
     expect(outputed).contains("Error: Unknown command blah");
 
+    exited = undefined;
     outputed = "";
-    nc.allowUnknownCommand();
+    nc.removeAllListeners("unknown-command");
     let unknown;
-    nc.on("unknown-command", ctx => {
+    nc.once("unknown-command", ctx => {
       unknown = ctx;
       throw new Error(`Unknown command ${ctx.name}`);
     });
     nc.parse(getArgv("blah"));
     expect(unknown.name).to.equal("blah");
+    expect(exited).to.equal(true);
     expect(outputed).contains("Error: Unknown command blah");
   });
 
   it("should emit unknown-option event", () => {
     let outputed = "";
+    let exited;
     const nc = new NixClap({
       name: "test",
-      exit: () => undefined,
+      exit: () => (exited = true),
       output: o => (outputed += o)
     }).init({}, {});
     nc.parse(getArgv("--blah"));
+    expect(exited).to.equal(true);
     expect(outputed).contains("Error: Unknown option blah");
 
+    exited = undefined;
     outputed = "";
-    nc.allowUnknownOption();
+    nc.removeAllListeners("unknown-option");
     let unknown;
     nc.on("unknown-option", name => {
       unknown = name;
@@ -655,19 +664,6 @@ describe("nix-clap", function() {
     nc.parse(getArgv("--blah"));
     expect(unknown).to.equal("blah");
     expect(outputed).contains("Error: Unknown option blah");
-  });
-
-  it("should allow unknown option/command if configed", () => {
-    let outputed = "";
-    const nc = new NixClap({
-      name: "test",
-      allowUnknownCommand: true,
-      allowUnknownOption: true,
-      exit: () => undefined,
-      output: o => (outputed += o)
-    }).init({}, {});
-    nc.parse(getArgv("cmd --blah"));
-    expect(outputed).to.equal("");
   });
 
   it("should fail for unknown option arg type", () => {
@@ -1259,11 +1255,13 @@ describe("nix-clap", function() {
     sum: {
       alias: "s",
       desc: "Output sum of numbers",
+      exec: () => undefined,
       args: "<number _..>"
     },
     sort: {
       alias: "sr",
       desc: "Output sorted numbers",
+      exec: () => undefined,
       args: "<number _..>",
       options: {
         reverse: {
@@ -1372,6 +1370,7 @@ describe("nix-clap", function() {
 
   it("should emit no-action event", () => {
     const nc = new NixClap()
+      .removeDefaultHandlers("*")
       .cmdUsage("$0 $1")
       .version("1.0.0")
       .init({}, numCommands);
@@ -1379,6 +1378,27 @@ describe("nix-clap", function() {
     nc.once("no-action", () => (called = true));
     nc.parse([]);
     expect(called).to.be.true;
+  });
+
+  it("should not emit no-action event when there's no command with exec", () => {
+    let called;
+    const nc = new NixClap({
+      handlers: {
+        "no-action": () => (called = true)
+      }
+    })
+      .removeDefaultHandlers("*")
+      .cmdUsage("$0 $1")
+      .version("1.0.0")
+      .init(
+        {},
+        {
+          foo: {},
+          bar: {}
+        }
+      );
+    nc.parse([]);
+    expect(called).to.be.undefined;
   });
 
   it("should show help for no-action event", () => {
@@ -1439,28 +1459,16 @@ describe("nix-clap", function() {
 
   it("should skip help if event handler throws", () => {
     const nc = new NixClap().init({}, {});
-    let called;
-    const parsed = nc
-      .on("help", p => {
-        called = p;
-        throw new Error();
-      })
-      .parse(["--help"]);
-    expect(called).to.be.ok;
+    const parsed = nc.removeDefaultHandlers("help").parse(["--help"]);
     expect(parsed).to.be.ok;
+    expect(parsed.source.help).to.equal("cli");
   });
 
   it("should skip version if event handler throws", () => {
     const nc = new NixClap({ version: "test" }).init({}, {});
-    let called;
-    const parsed = nc
-      .on("version", p => {
-        called = p;
-        throw new Error();
-      })
-      .parse(["--version"]);
-    expect(called).to.be.ok;
+    const parsed = nc.removeDefaultHandlers("version").parse(["--version"]);
     expect(parsed).to.be.ok;
+    expect(parsed.opts.version).to.be.true;
   });
 
   it("should apply user config after parse", () => {
@@ -1516,7 +1524,7 @@ describe("nix-clap", function() {
     expect(called).to.equal(true);
     called = undefined;
     nc = new NixClap({ skipExecDefault: true }).init({}, commands);
-    parsed = nc.parse([]);
+    parsed = nc.removeDefaultHandlers("no-action").parse([]);
     expect(parsed).to.be.ok;
     expect(parsed.commands).to.be.empty;
     expect(called).to.equal(undefined);
