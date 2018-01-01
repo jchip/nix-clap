@@ -265,17 +265,19 @@ Where `opts` and `source` contain both the command's private options and top lev
 * `unknown-option` - when an unknown option is found, emitted with option name
 * `unknown-command` - when an unknown command is found, emitted with command context, which has `name` field.
 * `no-action` - when you have commands with `exec` and user specified no command that triggered an `exec` call.
+* `exit` - When program is expected to terminated, emit with exit code.
 
 ### Default Event Handlers
 
 NixClap has default handlers for these events:
 
-* `help` - Output help and exit
-* `version` - If `version` has been set, then output version and exit.
-* `parse-fail` - Output help and error message, and exit.
+* `help` - Output help and emit `exit`
+* `version` - If `version` has been set, then output version and emit `exit`.
+* `parse-fail` - Output help and error message, and emit `exit`.
 * `unknown-option` - Throws Error `Unknown option ${name}`
 * `unknown-command` - Throws Error `Unkown command ${ctx.name}`
-* `no-action` - Output help with error `No command given` and exit
+* `no-action` - Output help with error `No command given` and emit `exit`
+* `exit` - calls `process.exit(code)`
 
 #### Skip Default Event Behaviors
 
@@ -318,7 +320,6 @@ These are methods `NixClap` class supports.
 * `skipExec` - If true, will not call command `exec` handlers after parse.
 * `skipExecDefault` - if true, will not call default command `exec` handler after parse.
   * In case you need to do something before invoking the `exec` handlers, you can set these flags and call the [`runExec(parsed, skipDefault)`](#runexecparsed-skipdefault) method yourself.
-* `exit` - callback for exit program. Should take numeric exit code as param. Default to calling `process.exit`
 * `output` - callback for printing to console. Should take string as param. Default to calling `process.stdout.write`
 * `handlers` - custom event handlers.
 
@@ -388,7 +389,7 @@ Return: The parse result object.
 
 ### `showHelp(err, cmdName)`
 
-Show help message and then call `exit`.
+Show help message and then emit `exit`.
 
 * `err` - if valid, then `err.message` will be printed after help message and exit with code `1`.
 * `cmdName` - if valid, then will print help for the specific command.
