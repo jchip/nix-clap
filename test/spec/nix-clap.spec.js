@@ -16,17 +16,20 @@ describe("nix-clap", function() {
     return new NixClap().init();
   });
 
-  const initParser = (cmdExec, nc) => {
+  const initParser = (cmdExec, nc, handlers) => {
     nc =
       nc ||
       new NixClap({
         exit: () => undefined,
         output: () => undefined,
-        handlers: {
-          "no-action": false,
-          "unknown-command": false,
-          "unknown-option": false
-        }
+        handlers: Object.assign(
+          {
+            "no-action": false,
+            "unknown-command": false,
+            "unknown-option": false
+          },
+          handlers
+        )
       });
 
     nc.removeDefaultHandlers("no-action", "parse-fail", "unknown-command", "unknown-option");
@@ -69,6 +72,21 @@ describe("nix-clap", function() {
         },
         fooNum: {
           type: "number"
+        },
+        floatNum: {
+          type: "float"
+        },
+        customFn: {
+          type: "xfoo",
+          xfoo: () => "xfoo"
+        },
+        customRegex: {
+          type: "rxmatch",
+          rxmatch: /^test$/i
+        },
+        customOther: {
+          type: "rxother",
+          rxother: "oops"
         },
         "bool-2": {
           type: "boolean"
@@ -193,20 +211,32 @@ describe("nix-clap", function() {
   });
 
   it("should parse top level options before command", () => {
-    const x = initParser().parse(getArgv("--fooNum=900 --no-foobool cmd1 a"));
+    const x = initParser().parse(
+      getArgv(
+        "--fooNum=900 --floatNum=1.23 --customFn 1 --customRegex test --customOther 1 --no-foobool cmd1 a"
+      )
+    );
     expect(x.source).to.deep.equal({
       applyDefault: "default",
       forceCache: "default",
       logLevel: "default",
       fooNum: "cli",
-      foobool: "cli"
+      floatNum: "cli",
+      foobool: "cli",
+      customFn: "cli",
+      customRegex: "cli",
+      customOther: "cli"
     });
     expect(x.opts).to.deep.equal({
       fooNum: 900,
+      floatNum: 1.23,
       foobool: false,
       logLevel: "info",
       forceCache: true,
-      applyDefault: "test"
+      applyDefault: "test",
+      customFn: "xfoo",
+      customRegex: "test",
+      customOther: "oops"
     });
     expect(x.commands.length, "should have one command").to.equal(1);
     expect(x.commands[0]).to.deep.equal({
@@ -220,6 +250,12 @@ describe("nix-clap", function() {
       },
       source: { cmd1Foo: "default" }
     });
+  });
+
+  it("should return undefined if custom regex doesn't match", () => {
+    const parsed = initParser().parse(getArgv("--customRegex blah a"));
+    expect(parsed.source.customRegex).to.equal("cli");
+    expect(parsed.opts.customRegex).to.equal(undefined);
   });
 
   it("should count options", () => {
@@ -1199,6 +1235,10 @@ describe("nix-clap", function() {
       "  --array-opt-require, -a                                                [array]",
       "  --subtype-array                                                 [number array]",
       "  --fooNum                                                              [number]",
+      "  --floatNum                                                             [float]",
+      "  --customFn                                                              [xfoo]",
+      "  --customRegex                                                        [rxmatch]",
+      "  --customOther                                                        [rxother]",
       "  --bool-2                                                             [boolean]",
       "  --missing-type",
       "  --bool-3, -x",

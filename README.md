@@ -107,8 +107,8 @@ const options = {
 Where:
 
 * `alias` - Specify aliases for the option, as a single string or an array of strings.
-* `type` - Type of argument for the option, one of: `string`, `number`, `boolean`, `array`, `count`
-  * `array` can set type of elements as one of `string`, `number`, `boolean` like this: `number array`
+* `type` - Type of argument for the option, one of: `string`, `number`, `float`, `boolean`, `array`, `count`, or [coercion](#value-coercion)
+  * `array` can set type of elements as one of `string`, `number`, `float`, `boolean` like this: `number array` or `float array`
 * `desc` - Description for the option - a string or a function that returns string.
 * `default` - Default value to use for argument
 * `requireArg` - `true`|`false` whether argument for the option is required.
@@ -139,7 +139,7 @@ Where:
   * last one can specify variadic args with `..`, like `<names..>` or `[names..]`
   * If you just want to get the list of args without naming it, you can specify with `<..>` or `[..]`
   * named args can have an optional type like `<number value>` or `[number values..]`
-    * supported types are `number`, `string`, `boolean`
+    * supported types are `number`, `float`, `string`, `boolean`
 * `usage` - usage message when help for the command is invoked - a string or a function that returns a string.
   * `$0` will be replaced with program name and `$1` with command name.
 * `desc` - Description for the command - can be a string or a function that returns a string.
@@ -148,6 +148,37 @@ Where:
   * Only one command can be default.
   * Default command cannot have required args and must have the `exec` handler
 * `options` - List of options arguments private to the command. Follows the same spec as [top level options](#options-spec)
+
+## Value Coercion
+
+If none of the predefined types work for you, you can specify your own as a function or a RegExp, or any value.
+
+You use any valid identifier for the value type, and then you define a field with the same name in your spec that can be:
+
+* `function` - will be called with the value to convert
+* `RegExp` - will be used to match the value. `undefined` is returned if it didn't match.
+* Anything else - will be used as the converted value.
+
+For example:
+
+```js
+const options = {
+  customFn: {
+    type: "fnval",
+    fnval: value => {
+      return value.substr(0, 1);
+    }
+  },
+  customRegex: {
+    type: "rx",
+    rx: /^test$/i
+  },
+  customAny: {
+    type: "foo",
+    foo: "bar"
+  }
+};
+```
 
 ## Parse Result
 
