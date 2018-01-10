@@ -36,6 +36,7 @@ Example: `prog -xazvf=hello --foo-option hello bar -- --enable-blah`
   * Since it's ambiguous whether to take a non-option arg following an unknown option as an argument or a command.
 * Counting number of option occurrences.
 * Boolean option can be negated with `--no-` prefix.
+* Allows custom value type coercions with a function or RegExp.
 
 ## Commands
 
@@ -188,6 +189,7 @@ The method [`parse`](#parseargv-start-parsed) will call [command `exec` handlers
 {
   source: {},
   opts: {},
+  verbatim: {},
   commands: [],
   index: 5,
   error
@@ -197,8 +199,8 @@ The method [`parse`](#parseargv-start-parsed) will call [command `exec` handlers
 Where:
 
 * `index` - the index in `argv` parse stopped
-* `error` - If parse failed and your `parse-fail` event handler throws, this will contain the parse error. See [skip default event behaviors](#skip-default-event-behaviors) for more details.
-* `source`, `opts` - objects containing info for the options. See [details here](#parse-result-source-and-opts-objects)
+* `error` - If parse failed and your `parse-fail` event handler throws, then this will contain the parse error. See [skip default event behaviors](#skip-default-event-behaviors) for more details.
+* `source`, `opts`, `verbatim` - objects containing info for the options. See [details here](#parse-result-source-and-opts-objects)
 * `commands` - array of parsed command objects. See [`commands`](#parse-result-commands-object) for more details.
 
 ### Parse Result `source` and `opts` objects
@@ -209,6 +211,12 @@ Where:
   * `cli` - option specified by user in the command line
   * `default` - default value in your [options spec](#options-spec)
   * `user` - values you applied by calling the [`applyConfig`](#applyconfigconfig-parsed-src) method
+
+* `verbatim` - contains original unprocessed value as given by the user in the command line
+
+  * This is an array of values if there was actual values from the user
+  * If there's no explicit value (ie. boolean or counting options), then this doesn't contain a field for the option.
+  * If it's a boolean but the user specified with `--no-` prefix, then this contains a field with the value `["no-"]`
 
 For example, with the following conditions:
 
@@ -224,11 +232,14 @@ You would get the following in the parse result object:
     fooBar: "cli",
     fooDefault: "default",
     fooConfig: "user"
-  }
+  },
   opts: {
     fooBar: "test",
     fooDefault: "bar",
     fooConfig: 1
+  },
+  verbatim: {
+    fooBar: ["test"]
   }
 }
 ```
@@ -252,7 +263,8 @@ The `commands` object is an array of parsed commands:
       },
       argList: ["bar", "a", "b"],
       opts: {},
-      source: {}
+      source: {},
+      verbatim: {}
     }
   ];
 }
@@ -267,7 +279,7 @@ The `commands` object is an array of parsed commands:
 
 ### Command `exec` handler
 
-If the command has an `exec` handler, it will be called with the object:
+If the command has an `exec` handler, then it will be called with the object:
 
 ```js
 {
@@ -279,7 +291,8 @@ If the command has an `exec` handler, it will be called with the object:
   },
   argList: [ "bar", "a", "b" ],
   opts: {},
-  source: {}
+  source: {},
+  verbatim: {}
 }
 ```
 
@@ -313,7 +326,7 @@ NixClap has default handlers for these events:
 
 #### Skip Default Event Behaviors
 
-If you want to skip the default behaviors, You can remove the event handlers with one of these approaches:
+You can remove the default event handlers with one of these approaches:
 
 * With the [`removeDefaultHandlers`](#removedefaulthandlers) method.
 * By passing in `handlers` object in the `config` for the constructor.

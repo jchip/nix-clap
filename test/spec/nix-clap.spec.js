@@ -182,7 +182,8 @@ describe("nix-clap", function() {
       },
       argList: ["test"],
       opts: {},
-      source: {}
+      source: {},
+      verbatim: {}
     });
     const x2 = nc.parse(getArgv("cmd3 test foo"));
     expect(x2.commands.length, "should have two commands").to.equal(2);
@@ -196,7 +197,8 @@ describe("nix-clap", function() {
         },
         argList: ["test"],
         opts: {},
-        source: {}
+        source: {},
+        verbatim: {}
       },
       {
         name: "foo",
@@ -205,7 +207,8 @@ describe("nix-clap", function() {
         args: {},
         argList: [],
         opts: {},
-        source: {}
+        source: {},
+        verbatim: {}
       }
     ]);
   });
@@ -248,7 +251,8 @@ describe("nix-clap", function() {
       opts: {
         cmd1Foo: "boo"
       },
-      source: { cmd1Foo: "default" }
+      source: { cmd1Foo: "default" },
+      verbatim: {}
     });
   });
 
@@ -325,6 +329,9 @@ describe("nix-clap", function() {
         forceCache: true,
         applyDefault: "test"
       },
+      verbatim: {
+        subtypeArray: ["1", "2", "3", "4", "5"]
+      },
       index: 6
     });
     x = nc.parse(getArgv("--subtype-array"));
@@ -342,6 +349,7 @@ describe("nix-clap", function() {
         forceCache: true,
         applyDefault: "test"
       },
+      verbatim: {},
       index: 1
     });
   });
@@ -365,7 +373,8 @@ describe("nix-clap", function() {
           },
           argList: ["1", "2", "3", "4"],
           opts: {},
-          source: {}
+          source: {},
+          verbatim: {}
         }
       ],
       opts: {
@@ -373,6 +382,7 @@ describe("nix-clap", function() {
         forceCache: true,
         applyDefault: "test"
       },
+      verbatim: {},
       index: 5
     });
   });
@@ -394,6 +404,7 @@ describe("nix-clap", function() {
         applyDefault: "test",
         strOpt: undefined
       },
+      verbatim: {},
       index: 1
     });
 
@@ -419,7 +430,8 @@ describe("nix-clap", function() {
           args: {},
           argList: [],
           opts: {},
-          source: {}
+          source: {},
+          verbatim: {}
         }
       ],
       opts: {
@@ -427,6 +439,9 @@ describe("nix-clap", function() {
         logLevel: "info",
         forceCache: true,
         applyDefault: "test"
+      },
+      verbatim: {
+        arrayOptRequire: ["a", "b", "c"]
       },
       index: 6
     });
@@ -448,6 +463,9 @@ describe("nix-clap", function() {
         logLevel: "info",
         forceCache: true,
         applyDefault: "test"
+      },
+      verbatim: {
+        arrayOptRequire: ["a", "b", "c"]
       },
       index: 5
     });
@@ -472,7 +490,8 @@ describe("nix-clap", function() {
           opts: {
             cmd1Foo: "boo"
           },
-          source: { cmd1Foo: "default" }
+          source: { cmd1Foo: "default" },
+          verbatim: {}
         },
         {
           name: "d",
@@ -481,7 +500,8 @@ describe("nix-clap", function() {
           args: {},
           argList: [],
           opts: {},
-          source: {}
+          source: {},
+          verbatim: {}
         }
       ],
       opts: {
@@ -489,6 +509,7 @@ describe("nix-clap", function() {
         forceCache: true,
         applyDefault: "test"
       },
+      verbatim: {},
       index: 6
     });
   });
@@ -515,7 +536,8 @@ describe("nix-clap", function() {
           },
           argList: ["a", "b"],
           opts: {},
-          source: {}
+          source: {},
+          verbatim: {}
         }
       ],
       opts: {
@@ -523,6 +545,7 @@ describe("nix-clap", function() {
         forceCache: true,
         applyDefault: "test"
       },
+      verbatim: {},
       index: 3
     });
     parsed = nc.parse(getArgv("cmd7 a b c -- d"));
@@ -545,7 +568,8 @@ describe("nix-clap", function() {
           },
           argList: ["a", "b", "c"],
           opts: {},
-          source: {}
+          source: {},
+          verbatim: {}
         }
       ],
       opts: {
@@ -553,6 +577,7 @@ describe("nix-clap", function() {
         forceCache: true,
         applyDefault: "test"
       },
+      verbatim: {},
       index: 4
     });
   });
@@ -576,7 +601,8 @@ describe("nix-clap", function() {
           opts: {
             cmd1Foo: "boo"
           },
-          source: { cmd1Foo: "default" }
+          source: { cmd1Foo: "default" },
+          verbatim: {}
         }
       ],
       opts: {
@@ -584,6 +610,7 @@ describe("nix-clap", function() {
         forceCache: true,
         applyDefault: "test"
       },
+      verbatim: {},
       index: 5
     });
   });
@@ -614,6 +641,9 @@ describe("nix-clap", function() {
           source: {
             cmd1Bar: "cli",
             cmd1Foo: "default"
+          },
+          verbatim: {
+            cmd1Bar: ["woo"]
           }
         }
       ],
@@ -622,6 +652,9 @@ describe("nix-clap", function() {
         countOpt: 4,
         forceCache: true,
         applyDefault: "test"
+      },
+      verbatim: {
+        logLevel: ["v"]
       },
       index: 8
     });
@@ -646,6 +679,7 @@ describe("nix-clap", function() {
         forceCache: true,
         applyDefault: "test"
       },
+      verbatim: {},
       index: 2
     });
   });
@@ -771,7 +805,8 @@ describe("nix-clap", function() {
           args: {},
           argList: [],
           opts: {},
-          source: {}
+          source: {},
+          verbatim: {}
         }
       ],
       opts: {
@@ -780,6 +815,7 @@ describe("nix-clap", function() {
         forceCache: true,
         applyDefault: "test"
       },
+      verbatim: {},
       index: 2
     });
   });
@@ -795,7 +831,8 @@ describe("nix-clap", function() {
         args: {},
         argList: [],
         opts: {},
-        source: {}
+        source: {},
+        verbatim: {}
       }
     ]);
   });
@@ -811,7 +848,8 @@ describe("nix-clap", function() {
         args: {},
         argList: [],
         opts: {},
-        source: {}
+        source: {},
+        verbatim: {}
       }
     ]);
   });
@@ -840,6 +878,9 @@ describe("nix-clap", function() {
           source: {
             cmd1Bar: "cli",
             cmd1Foo: "default"
+          },
+          verbatim: {
+            cmd1Bar: ["woo"]
           }
         }
       ],
@@ -848,6 +889,7 @@ describe("nix-clap", function() {
         forceCache: true,
         applyDefault: "test"
       },
+      verbatim: {},
       index: 6
     });
     const h = nc.makeHelp();
@@ -864,22 +906,25 @@ describe("nix-clap", function() {
 
   it("should handle unknown option", () => {
     const nc = initParser();
-    let x = nc.parse(getArgv("--unknown-opt"));
+    let x = nc.parse(getArgv("--unknown-opt --no-foo-zoo"));
     expect(x).to.deep.equal({
       source: {
         unknownOpt: "cli",
         applyDefault: "default",
         forceCache: "default",
-        logLevel: "default"
+        logLevel: "default",
+        fooZoo: "cli"
       },
       commands: [],
       opts: {
         unknownOpt: true,
         logLevel: "info",
         forceCache: true,
-        applyDefault: "test"
+        applyDefault: "test",
+        fooZoo: false
       },
-      index: 1
+      verbatim: { fooZoo: ["no-"] },
+      index: 2
     });
     x = nc.parse(getArgv("--unknown-opt=blah"));
     expect(x).to.deep.equal({
@@ -896,6 +941,7 @@ describe("nix-clap", function() {
         forceCache: true,
         applyDefault: "test"
       },
+      verbatim: { unknownOpt: ["blah"] },
       index: 1
     });
   });
@@ -920,7 +966,8 @@ describe("nix-clap", function() {
           },
           argList: ["1"],
           opts: {},
-          source: {}
+          source: {},
+          verbatim: {}
         }
       ],
       opts: {
@@ -928,6 +975,7 @@ describe("nix-clap", function() {
         forceCache: true,
         applyDefault: "test"
       },
+      verbatim: {},
       index: 2
     });
     x = nc.parse(getArgv("cmd6 1 2"));
@@ -948,7 +996,8 @@ describe("nix-clap", function() {
           },
           argList: ["1", "2"],
           opts: {},
-          source: {}
+          source: {},
+          verbatim: {}
         }
       ],
       opts: {
@@ -956,6 +1005,7 @@ describe("nix-clap", function() {
         forceCache: true,
         applyDefault: "test"
       },
+      verbatim: {},
       index: 3
     });
     x = nc.parse(getArgv("cmd6 1 2 3"));
@@ -977,7 +1027,8 @@ describe("nix-clap", function() {
           },
           argList: ["1", "2", "3"],
           opts: {},
-          source: {}
+          source: {},
+          verbatim: {}
         }
       ],
       opts: {
@@ -985,6 +1036,7 @@ describe("nix-clap", function() {
         forceCache: true,
         applyDefault: "test"
       },
+      verbatim: {},
       index: 4
     });
     x = nc.parse(getArgv("cmd6 1 2 3 4"));
@@ -1006,7 +1058,8 @@ describe("nix-clap", function() {
           },
           argList: ["1", "2", "3", "4"],
           opts: {},
-          source: {}
+          source: {},
+          verbatim: {}
         }
       ],
       opts: {
@@ -1014,6 +1067,7 @@ describe("nix-clap", function() {
         forceCache: true,
         applyDefault: "test"
       },
+      verbatim: {},
       index: 5
     });
   });
