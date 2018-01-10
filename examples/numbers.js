@@ -3,12 +3,16 @@
 const NixClap = require("..");
 
 /*
- * Example to implement a cli program that has two commands:
+ * Example to implement a cli program that has these commands:
  *   sum - add up numbers
  *   sort - sort numbers
+ *   times - multiply numbers
+ *   divide - divide two numbers
  *
  * Usage: numbers sum 1 2 3 4
  *        numbers sort 5 3 3 4 3 1 [--reverse]
+ *        numbers times 3 4 5 6 7
+ *        numbers divide 9 3
  */
 
 //
@@ -45,7 +49,7 @@ new NixClap({})
       // command sort
       sort: {
         alias: "sr",
-        usage: () => "$0 $1 num [num ..]",
+        usage: () => "$0 $1 <num> [num ..]",
         desc: "Output sorted numbers",
         // takes a variadic list of numbers into an array named _
         args: "<number _..>",
@@ -56,6 +60,41 @@ new NixClap({})
           reverse: {
             alias: "r",
             desc: "Sort in descending order"
+          }
+        }
+      },
+      // command times
+      times: {
+        args: "<number _..>",
+        alias: ["t", "product", "p"],
+        usage: "$0 $1 <num> [num ..]",
+        desc: "Show product of numbers",
+        exec: parsed => {
+          console.log("product:", parsed.args._.reduce((p, v) => p * v, 1));
+        }
+      },
+      // command divide
+      divide: {
+        alias: ["d", "div"],
+        usage: "$0 $1 <dividend> <divisor>",
+        desc: "Show result of dividend/divisor",
+        exec: parsed => {
+          let dividend, divisor;
+          if (parsed.opts.switch) {
+            dividend = parsed.args.divisor;
+            divisor = parsed.args.dividend;
+          } else {
+            dividend = parsed.args.dividend;
+            divisor = parsed.args.divisor;
+          }
+          const args = parsed.args;
+          console.log(`quotient of ${dividend}/${divisor}:`, dividend / divisor);
+        },
+        args: "<dividend> <divisor>",
+        options: {
+          switch: {
+            alias: "s",
+            desc: "Switch dividend and divisor"
           }
         }
       }
