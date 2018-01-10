@@ -854,6 +854,24 @@ describe("nix-clap", function() {
     ]);
   });
 
+  it("should handle type coercion for commands", () => {
+    const nc = new NixClap().init(
+      {},
+      {
+        foo: {
+          args: "<m1 oop> <m2 boo>",
+          m1: value => `for-oop ${value}`,
+          m2: /^wooo$/i
+        }
+      }
+    );
+    const parsed = nc.parse(getArgv("foo hello wooo"));
+    const cmd = parsed.commands[0];
+    expect(cmd.args.oop).to.equal("for-oop hello");
+    expect(cmd.args.boo).to.equal("wooo");
+    expect(cmd.argList).to.deep.equal(["hello", "wooo"]);
+  });
+
   it("should parse process.argv", () => {
     const nc = initParser();
     process.argv = getArgv("node blah.js cmd1 a --cmd1-bar woo");

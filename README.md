@@ -3,7 +3,7 @@
 
 # NixClap
 
-Simple, lightweight, and comprehensive Un\*x Command Line Argument Parsing for NodeJS.
+Simple, lightweight, flexible, and comprehensive Un\*x Command Line Argument Parsing for NodeJS.
 
 # Features
 
@@ -36,7 +36,7 @@ Example: `prog -xazvf=hello --foo-option hello bar -- --enable-blah`
   * Since it's ambiguous whether to take a non-option arg following an unknown option as an argument or a command.
 * Counting number of option occurrences.
 * Boolean option can be negated with `--no-` prefix.
-* Allows custom value type coercions with a function or RegExp.
+* Allow custom value type coercions with a function or RegExp.
 
 ## Commands
 
@@ -53,6 +53,7 @@ Example: `prog sum 1 2 3 4`
 * Top level options can be binded to specific commands only.
 * Unbind top level options can be specified before or after commands.
 * Allow arbitrary unknown commands that do not have arguments.
+* Allow multiple custom value type coercions for each command.
 
 ## Terminating and Resuming
 
@@ -140,7 +141,7 @@ Where:
   * last one can specify variadic args with `..`, like `<names..>` or `[names..]`
   * If you just want to get the list of args without naming it, you can specify with `<..>` or `[..]`
   * named args can have an optional type like `<number value>` or `[number values..]`
-    * supported types are `number`, `float`, `string`, `boolean`
+    * supported types are `number`, `float`, `string`, `boolean`, or [coercion](#value-coercion)
 * `usage` - usage message when help for the command is invoked - a string or a function that returns a string.
   * `$0` will be replaced with program name and `$1` with command name.
 * `desc` - Description for the command - can be a string or a function that returns a string.
@@ -179,11 +180,19 @@ const options = {
     foo: "bar"
   }
 };
+
+const commands = {
+  foo: {
+    args: "<type1 value1> <type2 value2>",
+    type1: value => `test-${value}`,
+    type2: /^test$/i
+  }
+};
 ```
 
 ## Parse Result
 
-The method [`parse`](#parseargv-start-parsed) will call [command `exec` handlers](#command-exec-handler) and return a parse result object:
+Use the method [`parse`](#parseargv-start-parsed) to parse command line arguments. It will return a parse result object.
 
 ```js
 {
@@ -202,6 +211,8 @@ Where:
 * `error` - If parse failed and your `parse-fail` event handler throws, then this will contain the parse error. See [skip default event behaviors](#skip-default-event-behaviors) for more details.
 * `source`, `opts`, `verbatim` - objects containing info for the options. See [details here](#parse-result-source-and-opts-objects)
 * `commands` - array of parsed command objects. See [`commands`](#parse-result-commands-object) for more details.
+
+If any command with [`exec` handlers](#command-exec-handler) were specified, then `parse` will invoke them before returning the parse result object.
 
 ### Parse Result `source` and `opts` objects
 
@@ -275,7 +286,7 @@ The `commands` object is an array of parsed commands:
 * `unknown` - `true` if the command is not known
 * `args` - the processed named arguments
 * `argList` - list of all the arguments in unprocessed string form
-* `opts`, `source` - info for the options private to the command
+* `opts`, `source`, `verbatim` - info for the options private to the command
 
 ### Command `exec` handler
 
@@ -334,6 +345,7 @@ You can remove the default event handlers with one of these approaches:
 For example, using `removeDefaultHandlers`:
 
 ```js
+const nc = new NixClap().init(options, commands);
 const parsed = nc.removeDefaultHandlers("parse-fail").parse();
 if (parsed.error) {
   // handle the parse error here
