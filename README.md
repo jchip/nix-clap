@@ -11,6 +11,7 @@ Simple, lightweight, and comprehensive Un\*x Command Line Argument Parsing for N
 * Parsing can be resumed after it's terminated by `--`.
 * A simple and straightforward JSON interface for specifying options and commands.
 * Lightweight with minimal dependencies
+* [Webpack] friendly - allows bundling your cli into a single JS file with webpack
 
 # Parsing Capabilities
 
@@ -265,7 +266,7 @@ Where `opts` and `source` contain both the command's private options and top lev
 * `unknown-option` - when an unknown option is found, emitted with option name
 * `unknown-command` - when an unknown command is found, emitted with command context, which has `name` field.
 * `no-action` - when you have commands with `exec` and user specified no command that triggered an `exec` call.
-* `exit` - When program is expected to terminated, emit with exit code.
+* `exit` - When program is expected to terminate, emit with exit code.
 
 ### Default Event Handlers
 
@@ -438,7 +439,7 @@ Go through the commands in parsed and call their `exec` handler.
 Return: The number of commands with `exec` was invoked.
 
 * `parsed` - The parse result object.
-* `skipDefault` - Do not invokde default command's `exec` handler, if no command with `exec` handler was found.
+* `skipDefault` - `boolean`, if `true` then do not invoke default command's `exec` handler when no command with `exec` handler was given.
 
 # Others
 
@@ -463,3 +464,4 @@ Return: The number of commands with `exec` was invoked.
 [daviddm-url]: https://david-dm.org/jchip/nix-clap
 [daviddm-dev-image]: https://david-dm.org/jchip/nix-clap/dev-status.svg
 [daviddm-dev-url]: https://david-dm.org/jchip/nix-clap?type=dev
+[webpack]: https://webpack.js.org/
