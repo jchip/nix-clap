@@ -11,6 +11,7 @@
 
 */
 
+const assert = require("assert");
 const NixClap = require("../../lib/nix-clap");
 const { expect } = require("chai");
 
@@ -27,6 +28,11 @@ describe("nix-clap", function() {
         output: () => undefined,
         handlers: Object.assign(
           {
+            "parse-fail": parsed => {
+              if (parsed.error.code !== "ERR_ASSERTION") {
+                console.log("parse fail", parsed.error);
+              }
+            },
             "no-action": false,
             "unknown-command": false,
             "unknown-option": false
@@ -270,10 +276,61 @@ describe("nix-clap", function() {
     });
   });
 
-  it("should return undefined if custom regex doesn't match", () => {
+  it("should return default if custom regex doesn't match", () => {
     const parsed = initParser().parse(getArgv("--customRegex blah a"));
-    expect(parsed.source.customRegex).to.equal("cli");
+    expect(parsed.source.customRegex).to.equal("cli-unmatch");
     expect(parsed.opts.customRegex).to.equal(undefined);
+  });
+
+  it("should throw if regex-unmatch event throws", () => {
+    const parsed = initParser(undefined, undefined, {
+      "regex-unmatch": () => {
+        assert(false, "test");
+      }
+    }).parse(getArgv("--customRegex blah x"));
+    expect(parsed.error.message).to.equal("test");
+  });
+
+  it("should use default when option RegExp unmatch", () => {
+    const nc = new NixClap().init({
+      regex: {
+        type: "enum",
+        enum: /^test$/,
+        default: "foo"
+      }
+    });
+    const parsed = nc.parse(getArgv("--regex boo"));
+    expect(parsed.source.regex).to.equal("cli-default");
+    expect(parsed.opts.regex).to.equal("foo");
+  });
+
+  it("should return undefined if command RegExp didn't match and no default", () => {
+    const nc = new NixClap().init(
+      {},
+      {
+        foo: {
+          args: "<enum foo>",
+          enum: /^test$/
+        }
+      }
+    );
+    const parsed = nc.parse(getArgv("foo bleah"));
+    expect(parsed.commands[0].args.foo).to.equal(undefined);
+    expect(parsed.commands[0].argList[0]).to.equal("bleah");
+  });
+
+  it("should log error if type coercion function throws", () => {
+    const parsed = new NixClap({ output: () => undefined })
+      .init({
+        foo: {
+          type: "bar",
+          bar: () => {
+            throw new Error("test");
+          }
+        }
+      })
+      .parse(getArgv("--foo x"));
+    expect(parsed.opts.foo).to.equal("bar coercion function threw error");
   });
 
   it("should count options", () => {
@@ -322,6 +379,7 @@ describe("nix-clap", function() {
     const line =
       "cmd1 a --cmd1-bar woo -q v --count-opt -ccc --fooNum=900 --missing-type yes --no-foobool -bnxb --bool-2=0 --fc true -a 100 200 -b";
     const x = initParser().parse(getArgv(line), 0);
+    expect(x.error).to.not.exist;
     expect(x.source).to.deep.equal({
       applyDefault: "default",
       logLevel: "cli",
@@ -1118,7 +1176,10 @@ describe("nix-clap", function() {
         foo: {
           args: "<m1 oop> <m2 boo>",
           m1: value => `for-oop ${value}`,
-          m2: /^wooo$/i
+          m2: /^wooo$/i,
+          defaultValues: {
+            m2: "oow"
+          }
         }
       }
     );
@@ -1127,6 +1188,10 @@ describe("nix-clap", function() {
     expect(cmd.args.oop).to.equal("for-oop hello");
     expect(cmd.args.boo).to.equal("wooo");
     expect(cmd.argList).to.deep.equal(["hello", "wooo"]);
+    const p2 = nc.parse(getArgv("foo hello abc"));
+    const cmd2 = p2.commands[0];
+    expect(p2.error).to.not.exist;
+    expect(cmd2.args.boo).to.equal("oow");
   });
 
   it("should parse process.argv", () => {
@@ -1945,8 +2010,8 @@ describe("nix-clap", function() {
       new NixClap().init(
         {},
         {
-          foo: { args: "[a]", exec: () => undefined, default: true },
-          bar: { exec: () => undefined, default: true }
+          foo: { args: "[a]", exec: () => undefined, defaultCommand: true },
+          bar: { exec: () => undefined, defaultCommand: true }
         }
       )
     ).to.throw("Trying to set command bar as default but foo is already set.");
@@ -1957,8 +2022,8 @@ describe("nix-clap", function() {
       new NixClap().init(
         {},
         {
-          foo: { args: "<a> [b]", exec: () => undefined, default: true },
-          bar: { default: true, exec: () => undefined }
+          foo: { args: "<a> [b]", exec: () => undefined, defaultCommand: true },
+          bar: { defaultCommand: true, exec: () => undefined }
         }
       )
     ).to.throw("Init command foo failed - Command foo set as default but requires arguments");
@@ -1966,12 +2031,15 @@ describe("nix-clap", function() {
 
   it("should fail when setting a command that requires args as default", () => {
     expect(() =>
-      new NixClap().init({}, { foo: { args: "<a> [b]", exec: () => undefined, default: true } })
+      new NixClap().init(
+        {},
+        { foo: { args: "<a> [b]", exec: () => undefined, defaultCommand: true } }
+      )
     ).to.throw("Init command foo failed - Command foo set as default but requires arguments");
   });
 
   it("should fail when default command doesn't have exec handler", () => {
-    expect(() => new NixClap().init({}, { foo: { args: "[b]", default: true } })).to.throw(
+    expect(() => new NixClap().init({}, { foo: { args: "[b]", defaultCommand: true } })).to.throw(
       "Init command foo failed - Command foo set as default but has no exec handler"
     );
   });
@@ -1986,7 +2054,7 @@ describe("nix-clap", function() {
           args: "[b]",
           exec,
           options: { bar: { type: "string", default: "hello" } },
-          default: true
+          defaultCommand: true
         },
         bar: {}
       }
@@ -2042,7 +2110,7 @@ describe("nix-clap", function() {
         exec: () => {
           called = true;
         },
-        default: true
+        defaultCommand: true
       }
     };
     let nc = new NixClap({}).init({}, commands);
@@ -2065,7 +2133,7 @@ describe("nix-clap", function() {
         exec: () => {
           called = true;
         },
-        default: true
+        defaultCommand: true
       }
     };
     let nc = new NixClap({}).init({}, commands);
