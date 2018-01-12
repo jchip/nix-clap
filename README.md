@@ -126,7 +126,8 @@ const commands = {
     usage: "$0 $1",
     desc: "description",
     exec: argv => {},
-    default: true,
+    defaultCommand: true,
+    defaultValues: {},
     options: {}
   },
   cmd2: {}
@@ -146,9 +147,10 @@ Where:
   * `$0` will be replaced with program name and `$1` with command name.
 * `desc` - Description for the command - can be a string or a function that returns a string.
 * `exec` - The callback handler for the command - see [here](#command-exec-handler) for more details.
-* `default` - If true, set the command as default, which is invoked when no command was given in command line.
+* `defaultCommand` - If true, set the command as default, which is invoked when no command was given in command line.
   * Only one command can be default.
   * Default command cannot have required args and must have the `exec` handler
+* `defaultValues` - If set, specify the default values for value coercions, with a default value for each custom type name.
 * `options` - List of options arguments private to the command. Follows the same spec as [top level options](#options-spec)
 
 ## Value Coercion
@@ -220,6 +222,8 @@ If any command with [`exec` handlers](#command-exec-handler) were specified, the
 * `source` - contains info about where the option value came from
 
   * `cli` - option specified by user in the command line
+  * `cli-default` - User specified a value that didn't match RegExp and fallback to default.
+  * `cli-unmatch` - User specified a value that didn't match RegExp and there's no default to fallback to.
   * `default` - default value in your [options spec](#options-spec)
   * `user` - values you applied by calling the [`applyConfig`](#applyconfigconfig-parsed-src) method
 
@@ -322,6 +326,11 @@ Where `opts` and `source` contain both the command's private options and top lev
 * `unknown-option` - when an unknown option is found, emitted with option name
 * `unknown-command` - when an unknown command is found, emitted with command context, which has `name` field.
 * `no-action` - when you have commands with `exec` and user specified no command that triggered an `exec` call.
+* `regex-unmatch` - when you have [value coercion](#value-coercion) using a RegExp but the user specified a value that didn't match the RegEx.
+  * You typically should:
+    * Install your own handler to throw to abort parsing.
+    * Remove default handler to not print any warning.
+    * Install your own handler to print your own warning.
 * `exit` - When program is expected to terminate, emit with exit code.
 
 ### Default Event Handlers
@@ -334,6 +343,7 @@ NixClap has default handlers for these events:
 * `unknown-option` - Throws Error `Unknown option ${name}`
 * `unknown-command` - Throws Error `Unkown command ${ctx.name}`
 * `no-action` - Output help with error `No command given` and emit `exit`
+* `regex-unmatch` - Output a message to let user know that value didn't match and default will be used.
 * `exit` - calls `process.exit(code)`
 
 #### Skip Default Event Behaviors
@@ -493,7 +503,7 @@ nc.removeDefaultHandlers("parse-fail", "unknown-option", "unknown-command");
 
 ### `applyConfig(config, parsed, src)`
 
-Allow you to apply extra config to the parsed object, overriding any `opts` with `source` not equal to `cli`.
+Allow you to apply extra config to the parsed object, overriding any `opts` with `source` not start with `cli`.
 
 For example, you can allow user to specify options in their `package.json` file, and apply those after the command line is parsed.
 
