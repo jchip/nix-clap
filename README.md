@@ -317,6 +317,7 @@ Where `opts` and `source` contain both the command's private options and top lev
 
 * `help` - when `--help` is invoked, emitted with the parse result object.
 * `version` - when `--version` is invoked, emitted with the parse result object.
+* `parsed` - when all parsing is done but before command `exec` are invoked, emitted with `{ nixClap, parsed }` where `nixClap` is the NixClap instance.
 * `parse-fail` - when parse failed, emitted with parse result object, which has `error` field.
 * `unknown-option` - when an unknown option is found, emitted with option name
 * `unknown-command` - when an unknown command is found, emitted with command context, which has `name` field.
