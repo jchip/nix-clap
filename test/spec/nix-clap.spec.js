@@ -312,6 +312,41 @@ describe("nix-clap", function() {
     });
   });
 
+  it("should parse command at beginning in parseAsync", () => {
+    const line =
+      "cmd1 a --cmd1-bar woo -q v --count-opt -ccc --fooNum=900 --missing-type yes --no-foobool -bnxb --bool-2=0 --fc 1 -a 100 200 -b";
+    return initParser()
+      .parseAsync(getArgv(line), 0)
+      .then(x => {
+        expect(x.source).to.deep.equal({
+          applyDefault: "default",
+          logLevel: "cli",
+          countOpt: "cli",
+          fooNum: "cli",
+          missingType: "cli",
+          foobool: "cli",
+          barBool: "cli",
+          bool3: "cli",
+          bool2: "cli",
+          forceCache: "cli",
+          arrayOptRequire: "cli"
+        });
+        expect(x.opts).to.deep.equal({
+          logLevel: "v",
+          countOpt: 4,
+          fooNum: 900,
+          missingType: true,
+          foobool: false,
+          barBool: true,
+          bool3: true,
+          bool2: false,
+          forceCache: true,
+          applyDefault: "test",
+          arrayOptRequire: ["100", "200"]
+        });
+      });
+  });
+
   it("should parse option with typed array", () => {
     const nc = initParser();
     let x = nc.parse(getArgv("--subtype-array 1 2 3 4 5"));
@@ -1267,6 +1302,35 @@ describe("nix-clap", function() {
     nc.parse(getArgv("8 ax b 1 2 --cmd8-foo blah"));
   });
 
+  it("should invoke cmd exec async", () => {
+    const exec = argv => {
+      expect(argv).to.deep.equal({
+        name: "8",
+        long: "cmd8",
+        source: {
+          cmd8Foo: "cli",
+          applyDefault: "default",
+          forceCache: "default",
+          logLevel: "default"
+        },
+        opts: {
+          logLevel: "info",
+          forceCache: true,
+          applyDefault: "test",
+          cmd8Foo: "blah"
+        },
+        args: {
+          a: "ax",
+          b: "b",
+          c: ["1", "2"]
+        },
+        argList: ["ax", "b", "1", "2"]
+      });
+    };
+    const nc = initParser(exec);
+    return nc.parseAsync(getArgv("8 ax b 1 2 --cmd8-foo blah"));
+  });
+
   it("should support auto --version option", () => {
     const save = process.exit;
     let exited;
@@ -1513,6 +1577,28 @@ describe("nix-clap", function() {
     expect(called).to.be.undefined;
   });
 
+  it("should not emit no-action event in parseAsync when there's no command with exec", () => {
+    let called;
+    const nc = new NixClap({
+      handlers: {
+        "no-action": () => (called = true)
+      }
+    })
+      .removeDefaultHandlers("*")
+      .cmdUsage("$0 $1")
+      .version("1.0.0")
+      .init(
+        {},
+        {
+          foo: {},
+          bar: {}
+        }
+      );
+    return nc.parseAsync([]).then(() => {
+      expect(called).to.be.undefined;
+    });
+  });
+
   it("should show help for no-action event", () => {
     const nc = new NixClap({ noActionShowHelp: true })
       .cmdUsage("$0 $1")
@@ -1569,6 +1655,16 @@ describe("nix-clap", function() {
     expect(called.name).to.equal("foo");
   });
 
+  it("should invoke default command handler in parseAsync", () => {
+    let called;
+    const exec = ctx => (called = ctx);
+    const nc = new NixClap().init({}, { foo: { args: "[b]", exec, default: true }, bar: {} });
+    return nc.parseAsync([]).then(() => {
+      expect(called).to.be.ok;
+      expect(called.name).to.equal("foo");
+    });
+  });
+
   it("should skip help if event handler throws", () => {
     const nc = new NixClap().init({}, {});
     const parsed = nc.removeDefaultHandlers("help").parse(["--help"]);
@@ -1619,6 +1715,35 @@ describe("nix-clap", function() {
     expect(called).to.equal(undefined);
   });
 
+  it("should skip exec in parseAsync if skipExec flag is set", () => {
+    let called;
+    const commands = {
+      cmd1: {
+        exec: () => {
+          called = true;
+        },
+        default: true
+      }
+    };
+    let nc = new NixClap({}).init({}, commands);
+    return nc
+      .parseAsync(getArgv("cmd1"))
+      .then(parsed => {
+        expect(parsed).to.be.ok;
+        expect(parsed.commands[0].name).to.equal("cmd1");
+        expect(called).to.equal(true);
+        called = undefined;
+      })
+      .then(() => {
+        nc = new NixClap({ skipExec: true }).init({}, commands);
+        return nc.parseAsync(getArgv("cmd1")).then(parsed => {
+          expect(parsed).to.be.ok;
+          expect(parsed.commands[0].name).to.equal("cmd1");
+          expect(called).to.equal(undefined);
+        });
+      });
+  });
+
   it("should skip default exec if skipExecDefault flag is set", () => {
     let called;
     const commands = {
@@ -1640,5 +1765,37 @@ describe("nix-clap", function() {
     expect(parsed).to.be.ok;
     expect(parsed.commands).to.be.empty;
     expect(called).to.equal(undefined);
+  });
+
+  it("should skip default exec in parseAsync if skipExecDefault flag is set", () => {
+    let called;
+    const commands = {
+      cmd1: {
+        exec: () => {
+          called = true;
+        },
+        default: true
+      }
+    };
+    let nc = new NixClap({}).init({}, commands);
+    return nc
+      .parseAsync([])
+      .then(parsed => {
+        expect(parsed).to.be.ok;
+        expect(parsed.commands).to.be.empty;
+        expect(called).to.equal(true);
+        called = undefined;
+      })
+      .then(() => {
+        nc = new NixClap({ skipExecDefault: true }).init({}, commands);
+        return nc
+          .removeDefaultHandlers("no-action")
+          .parseAsync([])
+          .then(parsed => {
+            expect(parsed).to.be.ok;
+            expect(parsed.commands).to.be.empty;
+            expect(called).to.equal(undefined);
+          });
+      });
   });
 });

@@ -366,6 +366,19 @@ if (parsed.error) {
 
 These are methods `NixClap` class supports.
 
+* [`constructor(config)`](#constructorconfig)
+* [`version(v)`](#versionv)
+* [`help(setting)`](#helpsetting)
+* [`usage(msg), cmdUsage(msg)`](#usagemsg-cmdusagemsg)
+* [`init(options, commands)`](#initoptions-commands)
+* [`parse(argv, start, parsed)`](#parseargv-start-parsed)
+* [`parseAsync(argv, start, parsed)`](#parseasyncargv-start-parsed)
+* [`showHelp(err, cmdName)`](#showhelperr-cmdname)
+* [`removeDefaultHandlers()`](#removedefaulthandlers)
+* [`applyConfig(config, parsed, src)`](#applyconfigconfig-parsed-src)
+* [`runExec(parsed, skipDefault)`](#runexecparsed-skipdefault)
+* [`runExecAsync(parsed, skipDefault)`](#runexecasyncparsed-skipdefault)
+
 ### `constructor(config)`
 
 `config` is object with:
@@ -445,6 +458,15 @@ Return: The parse result object.
 * `start` - index for argv from where to start parsing
 * `parsed` - previous result from `parse`. If passed, then parsing will add new data to it.
 
+### `parseAsync(argv, start, parsed)`
+
+async version of [parse](#parseargv-start-parsed).
+
+* It will use [runExecAsync](#runexecasyncparsed-skipdefault) to invoke command `exec` handlers serially.
+* The command handler can return a Promise, which will be awaited.
+
+Return: A promise the resolve with the parse result object.
+
 ### `showHelp(err, cmdName)`
 
 Show help message and then emit `exit`.
@@ -497,6 +519,12 @@ Return: The number of commands with `exec` was invoked.
 
 * `parsed` - The parse result object.
 * `skipDefault` - `boolean`, if `true` then do not invoke default command's `exec` handler when no command with `exec` handler was given.
+
+### `runExecAsync(parsed, skipDefault)`
+
+async version of [runExec](#runexecparsed-skipdefault)
+
+Return: A promise that resolve with the number of commands with `exec` invoked.
 
 # Others
 
