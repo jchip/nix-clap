@@ -96,10 +96,15 @@ See [examples](./examples) folder for more working samples.
 const options = {
   "some-option": {
     alias: ["s", "so"],
-    type: "string",
     desc: "description",
-    default: "foo",
-    requireArg: true,
+    args: "[number cans] [enum] [boolean diet] [string..]",
+    default: [6, "coke", true, "foo"],
+    custom: {
+      enum: /^(coke|pepsi)$/
+    },
+    customDefault: {
+      enum: "coke"
+    },
     allowCmd: ["cmd1", "cmd2"]
   },
   "another-option": {}
@@ -109,25 +114,49 @@ const options = {
 Where:
 
 * `alias` - Specify aliases for the option, as a single string or an array of strings.
-* `type` - Type of argument for the option, one of: `string`, `number`, `float`, `boolean`, `array`, `count`, or [coercion](#value-coercion)
-  * `array` can set type of elements as one of `string`, `number`, `float`, `boolean` like this: `number array` or `float array`
 * `desc` - Description for the option - a string or a function that returns string.
-* `default` - Default value to use for argument
-* `requireArg` - `true`|`false` whether argument for the option is required.
+* `args` - Arguments for the option. `<type name>` means it's required and `[type name]` optional.
+  * `type` can be one of: `string`, `number`, `float`, `boolean`, `count`, or [coercion](#value-coercion)
+  * `name` is optional. Also a positional index is always used as key for the value.
+  * all required args must be before optional args
+  * last one can specify variadic args with `..`, like `<string..>`
+  * If no type is specified, like `<..>` then `string` is used.
+  * Types `boolean` and `count` may be special. If it's the only one specified, then the presence of the option, even without arg, indicates `true` for `boolean`, or adds `1` to `count`.
+* `default` - default values to use _when all args are optional_.
+  * If there are multiple args, then this should be array or an object.
+  * If there is only a single arg, then this should be a single value.
+  * This is used only if user didn't specify enough arguments or if the user didn't specify the option at all.
+* `custom` - specify [value coercion](#value-coercion) for custom types.
+* `customDefault` - default values to use for each [value coercion](#value-coercion) if user specified something but the coercion returns `undefined`.
+  * Coercion returning `undefined` will cause failure if no default is specified.
 * `allowCmd` - list of command names this option is allow to follow only.
 
 ## `commands spec`
+
+Command spec share some properties that are the same as [option spec](#options-spec).
+
+Command doesn't support the following:
+
+* no `allowCmd` property.
+* args can't have `count` type.
+
+Command supports a few more properties: `usage`, `exec`, and `options`.
 
 ```js
 const commands = {
   cmd1: {
     alias: ["c"],
-    args: "<arg1> [arg2..]",
-    usage: "$0 $1",
     desc: "description",
+    args: "[number cans] [enum] [boolean diet] [string..]",
+    default: [6, "coke", true, "foo"],
+    custom: {
+      enum: /^(coke|pepsi)$/
+    },
+    customDefault: {
+      enum: "coke"
+    },
+    usage: "$0 $1",
     exec: argv => {},
-    defaultCommand: true,
-    defaultValues: {},
     options: {}
   },
   cmd2: {}
@@ -136,21 +165,9 @@ const commands = {
 
 Where:
 
-* `alias` - Specify aliases for the command, as a single string or an array of strings.
-* `args` - Specify arguments for the command. `<>` means it's required and `[]` optional.
-  * all required args must be before optional args
-  * last one can specify variadic args with `..`, like `<names..>` or `[names..]`
-  * If you just want to get the list of args without naming it, you can specify with `<..>` or `[..]`
-  * named args can have an optional type like `<number value>` or `[number values..]`
-    * supported types are `number`, `float`, `string`, `boolean`, or [coercion](#value-coercion)
 * `usage` - usage message when help for the command is invoked - a string or a function that returns a string.
   * `$0` will be replaced with program name and `$1` with command name.
-* `desc` - Description for the command - can be a string or a function that returns a string.
-* `exec` - The callback handler for the command - see [here](#command-exec-handler) for more details.
-* `defaultCommand` - If true, set the command as default, which is invoked when no command was given in command line.
-  * Only one command can be default.
-  * Default command cannot have required args and must have the `exec` handler
-* `defaultValues` - If set, specify the default values for value coercions, with a default value for each custom type name.
+* `exec` - The callback handler for the command - [see details](#command-exec-handler).
 * `options` - List of options arguments private to the command. Follows the same spec as [top level options](#options-spec)
 
 ## Value Coercion
@@ -209,10 +226,10 @@ Use the method [`parse`](#parseargv-start-parsed) to parse command line argument
 
 Where:
 
+* `source`, `opts`, `verbatim` - objects containing info for the options. See [details here](#parse-result-source-and-opts-objects)
+* `commands` - array of parsed command objects. [See details](#parse-result-commands-object).
 * `index` - the index in `argv` parse stopped
 * `error` - If parse failed and your `parse-fail` event handler throws, then this will contain the parse error. See [skip default event behaviors](#skip-default-event-behaviors) for more details.
-* `source`, `opts`, `verbatim` - objects containing info for the options. See [details here](#parse-result-source-and-opts-objects)
-* `commands` - array of parsed command objects. See [`commands`](#parse-result-commands-object) for more details.
 
 If any command with [`exec` handlers](#command-exec-handler) were specified, then `parse` will invoke them before returning the parse result object.
 
@@ -457,6 +474,13 @@ Return: The `NixClap` instance itself.
 Initialize your options and commands
 
 Return: The `NixClap` instance itself.
+
+### `defaultCommand(name)`
+
+Set the default command which is invoked when no command was given in command line.
+
+* Only one command can be default.
+* Default command cannot have required args and must have the `exec` handler
 
 ### `parse(argv, start, parsed)`
 
