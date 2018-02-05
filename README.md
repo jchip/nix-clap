@@ -30,11 +30,7 @@ const options = {
   }
 };
 
-const parsed = new NixClap()
-  .version("1.0.0")
-  .usage("$0 [options]")
-  .init(options)
-  .parse();
+const parsed = new NixClap().version("1.0.0").usage("$0 [options]").init(options).parse();
 
 console.log("names", parsed.opts.names);
 ```
@@ -148,11 +144,15 @@ See [APIs](#apis) for more details.
 const options = {
   "some-option": {
     alias: ["s", "so"],
-    type: "string",
     desc: "description",
-    default: "foo",
-    require: true,
-    requireArg: true,
+    args: "[number cans] [enum] [boolean diet] [string..]",
+    default: [6, "coke", true, "foo"],
+    custom: {
+      enum: /^(coke|pepsi)$/
+    },
+    customDefault: {
+      enum: "coke"
+    },
     allowCmd: ["cmd1", "cmd2"]
   },
   "another-option": {}
@@ -161,29 +161,47 @@ const options = {
 
 Where:
 
-| field        | description                                                                                                                       |
-| ------------ | --------------------------------------------------------------------------------------------------------------------------------- |
-| `alias`      | Specify aliases for the option, as a single string or an array of strings.                                                        |
-| `type`       | Type of argument for the option, one of: `string`, `number`, `float`, `boolean`, `array`, `count`, or [coercion](#value-coercion) |
-|              | `array` can set type of elements as one of `string`, `number`, `float`, `boolean` like this: `number array` or `float array`      |
-| `desc`       | Description for the option - a string or a function that returns string.                                                          |
-| `default`    | Default value to use for argument                                                                                                 |
-| `require`    | `true`/`false` whether this option must be specified.                                                                             |
-| `requireArg` | `true`/`false` whether argument for the option is required.                                                                       |
-| `allowCmd`   | list of command names this option is allow to follow only.                                                                        |
+| field           | description                                                                                                                          |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `alias`         | Specify aliases for the option, as a single string or an array of strings.                                                           |
+| `type`          | Type of argument for the option, one of: `string`, `number`, `float`, `boolean`, `array`, `count`, or [coercion](#value-coercion)    |
+|                 | `array` can set type of elements as one of `string`, `number`, `float`, `boolean` like this: `number array` or `float array`         |
+| `desc`          | Description for the option - a string or a function that returns string.                                                             |
+| `default`       | default values to use _when all args are optional_.                                                                                  |
+| `require`       | `true`/`false` whether this option must be specified.                                                                                |
+| `requireArg`    | `true`/`false` whether argument for the option is required.                                                                          |
+| `allowCmd`      | list of command names this option is allow to follow only.                                                                           |
+| `args`          | - Arguments for the option. `<type name>` means it's required and `[type name]` optional.                                            |
+| `custom`        | - specify [value coercion](#value-coercion) for custom types.                                                                        |
+| `customDefault` | - default values to use for each [value coercion](#value-coercion) if user specified something but the coercion returns `undefined`. |
+|                 | \* Coercion returning `undefined` will cause failure if no default is specified.                                                     |
 
 ## `commands spec`
+
+Command spec share some properties that are the same as [option spec](#options-spec).
+
+Command doesn't support the following:
+
+- no `allowCmd` property.
+- args can't have `count` type.
+
+Command supports a few more properties: `usage`, `exec`, and `options`.
 
 ```js
 const commands = {
   cmd1: {
     alias: ["c"],
-    args: "<arg1> [arg2..]",
-    usage: "$0 $1",
     desc: "description",
+    args: "[number cans] [enum] [boolean diet] [string..]",
+    default: [6, "coke", true, "foo"],
+    custom: {
+      enum: /^(coke|pepsi)$/
+    },
+    customDefault: {
+      enum: "coke"
+    },
+    usage: "$0 $1",
     exec: argv => {},
-    defaultCommand: true,
-    defaultValues: {},
     options: {}
   },
   cmd2: {}
@@ -192,19 +210,19 @@ const commands = {
 
 Where:
 
-| field     | description                                                                                                                        |
-| --------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `alias`   | Specify aliases for the command, as a single string or an array of strings.                                                        |
-| `args`    | Specify arguments for the command. `<>` means it's required and `[]` optional. See [rules](#rules-for-command-args) for more info. |
-| `usage`   | usage message when help for the command is invoked - a string or a function that returns a string.                                 |
-|           | `$0` will be replaced with program name and `$1` with command name.                                                                |
-| `desc`    | Description for the command - can be a string or a function that returns a string.                                                 |
-| `exec`    | The callback handler for the command - see [here](#command-exec-handler) for more details.                                         |
+| field            | description                                                                                                                        |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `alias`          | Specify aliases for the command, as a single string or an array of strings.                                                        |
+| `args`           | Specify arguments for the command. `<>` means it's required and `[]` optional. See [rules](#rules-for-command-args) for more info. |
+| `usage`          | usage message when help for the command is invoked - a string or a function that returns a string.                                 |
+|                  | `$0` will be replaced with program name and `$1` with command name.                                                                |
+| `desc`           | Description for the command - can be a string or a function that returns a string.                                                 |
+| `exec`           | The callback handler for the command - see [here](#command-exec-handler) for more details.                                         |
 | `defaultCommand` | If `true`, set the command as default, which is invoked when no command was given in command line.                                 |
-|           | - Only one command can be default.                                                                                                 |
-|           | - Default command cannot have required args and must have the `exec` handler                                                       |
-| `defaultValues` | - If set, specify the default values for value coercions, with a default value for each custom type name. |
-| `options` | List of options arguments private to the command. Follows the same spec as [top level options](#options-spec)                      |
+|                  | - Only one command can be default.                                                                                                 |
+|                  | - Default command cannot have required args and must have the `exec` handler                                                       |
+| `defaultValues`  | - If set, specify the default values for value coercions, with a default value for each custom type name.                          |
+| `options`        | List of options arguments private to the command. Follows the same spec as [top level options](#options-spec)                      |
 
 ### Rules for Command `args`
 
@@ -215,7 +233,6 @@ Rules for when specifying `args` for the command:
 - If you just want to get the list of args without naming it, you can specify with `<..>` or `[..]`
 - named args can have an optional type like `<number value>` or `[number values..]`
   - supported types are `number`, `float`, `string`, `boolean`, or [coercion](#value-coercion)
-
 
 ## Value Coercion
 
@@ -290,6 +307,7 @@ If any command with [`exec` handlers](#command-exec-handler) were specified, the
 - `source` - contains info about where the option value came from
 
   - `cli` - option specified by user in the command line
+
   * `cli-default` - User specified a value that didn't match RegExp and fallback to default.
   * `cli-unmatch` - User specified a value that didn't match RegExp and there's no default to fallback to.
   * `default` - default value in your [options spec](#options-spec)
@@ -406,13 +424,14 @@ Where `opts` and `source` contain both the command's private options and top lev
 - `unknown-option` - when an unknown option is found, emitted with option name
 - `unknown-command` - when an unknown command is found, emitted with command context, which has `name` field.
 - `no-action` - when you have commands with `exec` and user specified no command that triggered an `exec` call.
-* `regex-unmatch` - when you have [value coercion](#value-coercion) using a RegExp but the user specified a value that didn't match the RegEx.
-  * You typically should:
-    * Install your own handler to throw to abort parsing.
-    * Remove default handler to not print any warning.
-    * Install your own handler to print your own warning.
-- `exit` - When program is expected to terminate, emit with exit code.
 
+* `regex-unmatch` - when you have [value coercion](#value-coercion) using a RegExp but the user specified a value that didn't match the RegEx.
+  - You typically should:
+    - Install your own handler to throw to abort parsing.
+    - Remove default handler to not print any warning.
+    - Install your own handler to print your own warning.
+
+- `exit` - When program is expected to terminate, emit with exit code.
 
 ### Default Event Handlers
 
@@ -424,10 +443,10 @@ NixClap has default handlers for these events:
 - `unknown-option` - Throws Error `Unknown option ${name}`
 - `unknown-command` - Throws Error `Unkown command ${ctx.name}`
 - `no-action` - Output help with error `No command given` and emit `exit`
+
 * `regex-unmatch` - Output a message to let user know that value didn't match and default will be used.
+
 - `exit` - calls `process.exit(code)`
-
-
 
 #### Skip Default Event Behaviors
 
@@ -486,6 +505,7 @@ These are methods `NixClap` class supports.
     - [`help(setting)`](#helpsetting)
     - [`usage(msg)`, `cmdUsage(msg)`](#usagemsg-cmdusagemsg)
     - [`init(options, commands)`](#initoptions-commands)
+    - [`defaultCommand(name)`](#defaultcommandname)
     - [`parse(argv, start, parsed)`](#parseargv-start-parsed)
     - [`parseAsync(argv, start, parsed)`](#parseasyncargv-start-parsed)
     - [`showHelp(err, cmdName)`](#showhelperr-cmdname)
@@ -563,6 +583,13 @@ Return: The `NixClap` instance itself.
 Initialize your options and commands
 
 Return: The `NixClap` instance itself.
+
+### `defaultCommand(name)`
+
+Set the default command which is invoked when no command was given in command line.
+
+- Only one command can be default.
+- Default command cannot have required args and must have the `exec` handler
 
 ### `parse(argv, start, parsed)`
 
