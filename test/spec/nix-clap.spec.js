@@ -280,9 +280,33 @@ describe("nix-clap", function() {
     });
   });
 
+  it("should parse boolean options before command", () => {
+    const verify = (argv, boolVal) => {
+      expect(argv.opts.forceCache).to.equal(boolVal);
+      expect(argv.source.forceCache).to.equal("cli");
+      expect(argv.commands[0].name).to.equal("cmd2");
+      expect(argv.commands[1].name).to.equal("cmd4");
+    };
+    verify(initParser().parse(getArgv("-f cmd2 cmd4")), true);
+    verify(initParser().parse(getArgv("-f true cmd2 cmd4")), true);
+    verify(initParser().parse(getArgv("-f=true cmd2 cmd4")), true);
+    verify(initParser().parse(getArgv("-f false cmd2 cmd4")), false);
+    verify(initParser().parse(getArgv("-f=false cmd2 cmd4")), false);
+    verify(initParser().parse(getArgv("--fc cmd2 cmd4")), true);
+    verify(initParser().parse(getArgv("--fc true cmd2 cmd4")), true);
+    verify(initParser().parse(getArgv("--fc=true cmd2 cmd4")), true);
+    verify(initParser().parse(getArgv("--fc false cmd2 cmd4")), false);
+    verify(initParser().parse(getArgv("--fc=false cmd2 cmd4")), false);
+    verify(initParser().parse(getArgv("--force-cache cmd2 cmd4")), true);
+    verify(initParser().parse(getArgv("--force-cache true cmd2 cmd4")), true);
+    verify(initParser().parse(getArgv("--force-cache=true cmd2 cmd4")), true);
+    verify(initParser().parse(getArgv("--force-cache false cmd2 cmd4")), false);
+    verify(initParser().parse(getArgv("--force-cache=false cmd2 cmd4")), false);
+  });
+
   it("should parse command at beginning", () => {
     const line =
-      "cmd1 a --cmd1-bar woo -q v --count-opt -ccc --fooNum=900 --missing-type yes --no-foobool -bnxb --bool-2=0 --fc 1 -a 100 200 -b";
+      "cmd1 a --cmd1-bar woo -q v --count-opt -ccc --fooNum=900 --missing-type yes --no-foobool -bnxb --bool-2=0 --fc true -a 100 200 -b";
     const x = initParser().parse(getArgv(line), 0);
     expect(x.source).to.deep.equal({
       applyDefault: "default",
@@ -314,7 +338,7 @@ describe("nix-clap", function() {
 
   it("should parse command at beginning in parseAsync", () => {
     const line =
-      "cmd1 a --cmd1-bar woo -q v --count-opt -ccc --fooNum=900 --missing-type yes --no-foobool -bnxb --bool-2=0 --fc 1 -a 100 200 -b";
+      "cmd1 a --cmd1-bar woo -q v --count-opt -ccc --fooNum=900 --missing-type yes --no-foobool -bnxb --bool-2=0 --fc -a 100 200 -b";
     return initParser()
       .parseAsync(getArgv(line), 0)
       .then(x => {
