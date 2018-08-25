@@ -1372,23 +1372,24 @@ describe("nix-clap", function() {
       "Usage: test",
       "",
       "Commands:",
-      "  cmd1",
+      "  cmd1 <..>",
       "  cmd2",
-      "  cmd3",
+      "  cmd3 <id>",
       "  cmd4                                                              [aliases: 4]",
-      "  cmd5 test command 5                                            [aliases: 5 c5]",
-      "  cmd6 test command 6 test blah foo test blah foo test blah foo test blah foo",
+      "  cmd5                      test command 5                       [aliases: 5 c5]",
+      "  cmd6 <a> [b] [c..]",
+      "       test command 6 test blah foo test blah foo test blah foo test blah foo",
       "                                                                    [aliases: 6]",
-      "  cmd7",
-      "  cmd8                                                              [aliases: 8]",
-      "  sum",
+      "  cmd7 <a> <b> [c] [d] [e]",
+      "  cmd8 <a> <b> [c..]                                                [aliases: 8]",
+      "  sum <number _..>",
       "",
       "Options:",
-      "  --log-level, -q          One of: debug,verbose,info,warn,error,fyi,none",
+      "  --log-level, -q           One of: debug,verbose,info,warn,error,fyi,none",
       `                                                      [string] [default: "info"]`,
       "  --str-opt                                                             [string]",
       "  --require-arg-opt, --rao                                              [string]",
-      "  --force-cache, -f, --fc  Don't check registry if cache exists.",
+      "  --force-cache, -f, --fc   Don't check registry if cache exists.",
       "                                                       [boolean] [default: true]",
       "  --bar-bool, -b                                                       [boolean]",
       "  --foobool                                                            [boolean]",
@@ -1406,8 +1407,8 @@ describe("nix-clap", function() {
       `  --apply-default                                    [boolean] [default: "test"]`,
       "  --empty-allow-cmd                                                    [boolean]",
       "  --has-allow-cmd, --hac                                               [boolean]",
-      "  --version, -V            Show version number",
-      "  --help, -h               Show help.  Add a command name to show its help",
+      "  --version, -V             Show version number",
+      "  --help, -h                Show help.  Add a command name to show its help",
       "                                                                        [string]"
     ]);
   });
@@ -1483,8 +1484,8 @@ describe("nix-clap", function() {
       "Usage:  s",
       "",
       "Options:",
-      "  --version, -V Show version number",
-      "  --help, -h    Show help.  Add a command name to show its help         [string]",
+      "  --version, -V  Show version number",
+      "  --help, -h     Show help.  Add a command name to show its help        [string]",
       "",
       "Command s is alias for sum",
       "Command sum has no options"
@@ -1495,8 +1496,8 @@ describe("nix-clap", function() {
       "Usage:  sum",
       "",
       "Options:",
-      "  --version, -V Show version number",
-      "  --help, -h    Show help.  Add a command name to show its help         [string]",
+      "  --version, -V  Show version number",
+      "  --help, -h     Show help.  Add a command name to show its help        [string]",
       "",
       "Command sum has no options"
     ]);
@@ -1506,12 +1507,12 @@ describe("nix-clap", function() {
       "Usage:  sr",
       "",
       "Options:",
-      "  --version, -V Show version number",
-      "  --help, -h    Show help.  Add a command name to show its help         [string]",
+      "  --version, -V  Show version number",
+      "  --help, -h     Show help.  Add a command name to show its help        [string]",
       "",
       "Command sr is alias for sort",
       "Command sort options:",
-      "  --reverse, -r Sort in descending order"
+      "  --reverse, -r  Sort in descending order"
     ]);
     help = nc.makeHelp("sort");
     expect(help).to.deep.equal([
@@ -1519,11 +1520,11 @@ describe("nix-clap", function() {
       "Usage:  sort",
       "",
       "Options:",
-      "  --version, -V Show version number",
-      "  --help, -h    Show help.  Add a command name to show its help         [string]",
+      "  --version, -V  Show version number",
+      "  --help, -h     Show help.  Add a command name to show its help        [string]",
       "",
       "Command sort options:",
-      "  --reverse, -r Sort in descending order"
+      "  --reverse, -r  Sort in descending order"
     ]);
     help = nc.makeHelp("blah");
     expect(help).to.deep.equal(["Unknown command: blah"]);
@@ -1550,8 +1551,8 @@ describe("nix-clap", function() {
       "Usage: test foo bar",
       "",
       "Options:",
-      "  --version, -V Show version number",
-      "  --help, -h    Show help.  Add a command name to show its help         [string]",
+      "  --version, -V  Show version number",
+      "  --help, -h     Show help.  Add a command name to show its help        [string]",
       "",
       "Command foo has no options"
     ]);
@@ -1561,8 +1562,8 @@ describe("nix-clap", function() {
       "Usage: blah blah",
       "",
       "Options:",
-      "  --version, -V Show version number",
-      "  --help, -h    Show help.  Add a command name to show its help         [string]",
+      "  --version, -V  Show version number",
+      "  --help, -h     Show help.  Add a command name to show its help        [string]",
       "",
       "Command blah has no options"
     ]);
