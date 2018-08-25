@@ -677,8 +677,9 @@ describe("nix-clap", function() {
   it("should terminate parsing with --", () => {
     const nc = initParser();
     const line =
-      "cmd1 a --cmd1-bar woo -q v --count-opt -ccc -- --fooNum=900 --missing-type yes --no-foobool -bnxb";
+      "cmd1 a --cmd1-bar woo -q v --count-opt -ccc -. -- --fooNum=900 --missing-type yes --no-foobool -bnxb";
     const x = nc.parse(getArgv(line));
+
     expect(x).to.deep.equal({
       source: {
         logLevel: "cli",
@@ -715,7 +716,7 @@ describe("nix-clap", function() {
       verbatim: {
         logLevel: ["v"]
       },
-      index: 8
+      index: 9
     });
   });
 
