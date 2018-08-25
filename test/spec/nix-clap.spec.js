@@ -1409,8 +1409,7 @@ describe("nix-clap", function() {
       "  --empty-allow-cmd                                                    [boolean]",
       "  --has-allow-cmd, --hac                                               [boolean]",
       "  --version, -V             Show version number",
-      "  --help, -h                Show help.  Add a command name to show its help",
-      "                                                                        [string]"
+      "  --help, -?, -h            Show help. Add a command to show its help   [string]"
     ]);
   });
 
@@ -1419,6 +1418,15 @@ describe("nix-clap", function() {
       .version("")
       .usage("")
       .help(false)
+      .init({}, {});
+    const help = nc.makeHelp();
+    expect(help).to.deep.equal([""]);
+  });
+
+  it("should turn help through config", () => {
+    const nc = new NixClap({ help: false })
+      .version("")
+      .usage("")
       .init({}, {});
     const help = nc.makeHelp();
     expect(help).to.deep.equal([""]);
@@ -1485,8 +1493,8 @@ describe("nix-clap", function() {
       "Usage:  s",
       "",
       "Options:",
-      "  --version, -V  Show version number",
-      "  --help, -h     Show help.  Add a command name to show its help        [string]",
+      "  --version, -V   Show version number",
+      "  --help, -?, -h  Show help. Add a command to show its help             [string]",
       "",
       "Command s is alias for sum",
       "Command sum has no options"
@@ -1497,8 +1505,8 @@ describe("nix-clap", function() {
       "Usage:  sum",
       "",
       "Options:",
-      "  --version, -V  Show version number",
-      "  --help, -h     Show help.  Add a command name to show its help        [string]",
+      "  --version, -V   Show version number",
+      "  --help, -?, -h  Show help. Add a command to show its help             [string]",
       "",
       "Command sum has no options"
     ]);
@@ -1508,8 +1516,8 @@ describe("nix-clap", function() {
       "Usage:  sr",
       "",
       "Options:",
-      "  --version, -V  Show version number",
-      "  --help, -h     Show help.  Add a command name to show its help        [string]",
+      "  --version, -V   Show version number",
+      "  --help, -?, -h  Show help. Add a command to show its help             [string]",
       "",
       "Command sr is alias for sort",
       "Command sort options:",
@@ -1521,8 +1529,8 @@ describe("nix-clap", function() {
       "Usage:  sort",
       "",
       "Options:",
-      "  --version, -V  Show version number",
-      "  --help, -h     Show help.  Add a command name to show its help        [string]",
+      "  --version, -V   Show version number",
+      "  --help, -?, -h  Show help. Add a command to show its help             [string]",
       "",
       "Command sort options:",
       "  --reverse, -r  Sort in descending order"
@@ -1552,8 +1560,8 @@ describe("nix-clap", function() {
       "Usage: test foo bar",
       "",
       "Options:",
-      "  --version, -V  Show version number",
-      "  --help, -h     Show help.  Add a command name to show its help        [string]",
+      "  --version, -V   Show version number",
+      "  --help, -?, -h  Show help. Add a command to show its help             [string]",
       "",
       "Command foo has no options"
     ]);
@@ -1563,8 +1571,8 @@ describe("nix-clap", function() {
       "Usage: blah blah",
       "",
       "Options:",
-      "  --version, -V  Show version number",
-      "  --help, -h     Show help.  Add a command name to show its help        [string]",
+      "  --version, -V   Show version number",
+      "  --help, -?, -h  Show help. Add a command to show its help             [string]",
       "",
       "Command blah has no options"
     ]);
