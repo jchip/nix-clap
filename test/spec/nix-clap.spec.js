@@ -1546,7 +1546,8 @@ describe("nix-clap", function() {
       "",
       "Usage:  s",
       "",
-      "  Output sum of numbers\n",
+      "  Output sum of numbers",
+      "",
       "Options:",
       "  --version, -V   Show version number",
       "  --help, -?, -h  Show help. Add a command to show its help             [string]",
@@ -1559,7 +1560,8 @@ describe("nix-clap", function() {
       "",
       "Usage:  sum",
       "",
-      "  Output sum of numbers\n",
+      "  Output sum of numbers",
+      "",
       "Options:",
       "  --version, -V   Show version number",
       "  --help, -?, -h  Show help. Add a command to show its help             [string]",
@@ -1571,13 +1573,14 @@ describe("nix-clap", function() {
       "",
       "Usage:  sr",
       "",
-      "  Output sorted numbers\n",
+      "  Output sorted numbers",
+      "",
       "Options:",
       "  --version, -V   Show version number",
       "  --help, -?, -h  Show help. Add a command to show its help             [string]",
       "",
       "Command sr is alias for sort",
-      "Command sort options:",
+      `Command "sort" options:`,
       "  --reverse, -r  Sort in descending order"
     ]);
     help = nc.makeHelp("sort");
@@ -1585,12 +1588,13 @@ describe("nix-clap", function() {
       "",
       "Usage:  sort",
       "",
-      "  Output sorted numbers\n",
+      "  Output sorted numbers",
+      "",
       "Options:",
       "  --version, -V   Show version number",
       "  --help, -?, -h  Show help. Add a command to show its help             [string]",
       "",
-      "Command sort options:",
+      `Command "sort" options:`,
       "  --reverse, -r  Sort in descending order"
     ]);
     help = nc.makeHelp("blah");
