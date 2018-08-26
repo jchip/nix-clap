@@ -391,7 +391,8 @@ describe("nix-clap", function() {
       verbatim: {
         subtypeArray: ["1", "2", "3", "4", "5"]
       },
-      index: 6
+      index: 6,
+      optCmd: {}
     });
     x = nc.parse(getArgv("--subtype-array"));
     expect(x).to.deep.equal({
@@ -409,7 +410,8 @@ describe("nix-clap", function() {
         applyDefault: "test"
       },
       verbatim: {},
-      index: 1
+      index: 1,
+      optCmd: {}
     });
   });
 
@@ -442,7 +444,8 @@ describe("nix-clap", function() {
         applyDefault: "test"
       },
       verbatim: {},
-      index: 5
+      index: 5,
+      optCmd: {}
     });
   });
 
@@ -464,7 +467,8 @@ describe("nix-clap", function() {
         strOpt: undefined
       },
       verbatim: {},
-      index: 1
+      index: 1,
+      optCmd: {}
     });
 
     const parsed = nc.parse(getArgv("--array-opt-require -- d"));
@@ -502,7 +506,8 @@ describe("nix-clap", function() {
       verbatim: {
         arrayOptRequire: ["a", "b", "c"]
       },
-      index: 6
+      index: 6,
+      optCmd: {}
     });
   });
 
@@ -526,7 +531,8 @@ describe("nix-clap", function() {
       verbatim: {
         arrayOptRequire: ["a", "b", "c"]
       },
-      index: 5
+      index: 5,
+      optCmd: {}
     });
   });
 
@@ -569,7 +575,8 @@ describe("nix-clap", function() {
         applyDefault: "test"
       },
       verbatim: {},
-      index: 6
+      index: 6,
+      optCmd: {}
     });
   });
 
@@ -605,7 +612,8 @@ describe("nix-clap", function() {
         applyDefault: "test"
       },
       verbatim: {},
-      index: 3
+      index: 3,
+      optCmd: {}
     });
     parsed = nc.parse(getArgv("cmd7 a b c -- d"));
 
@@ -637,7 +645,8 @@ describe("nix-clap", function() {
         applyDefault: "test"
       },
       verbatim: {},
-      index: 4
+      index: 4,
+      optCmd: {}
     });
   });
 
@@ -670,7 +679,8 @@ describe("nix-clap", function() {
         applyDefault: "test"
       },
       verbatim: {},
-      index: 5
+      index: 5,
+      optCmd: {}
     });
   });
 
@@ -716,7 +726,8 @@ describe("nix-clap", function() {
       verbatim: {
         logLevel: ["v"]
       },
-      index: 9
+      index: 9,
+      optCmd: { countOpt: "cmd1", logLevel: "cmd1" }
     });
   });
 
@@ -740,7 +751,8 @@ describe("nix-clap", function() {
         applyDefault: "test"
       },
       verbatim: {},
-      index: 2
+      index: 2,
+      optCmd: {}
     });
   });
 
@@ -876,7 +888,8 @@ describe("nix-clap", function() {
         applyDefault: "test"
       },
       verbatim: {},
-      index: 2
+      index: 2,
+      optCmd: { hasAllowCmd: "cmd4" }
     });
   });
 
@@ -968,7 +981,8 @@ describe("nix-clap", function() {
         applyDefault: "test"
       },
       verbatim: {},
-      index: 6
+      index: 6,
+      optCmd: {}
     });
     const h = nc.makeHelp();
     expect(h[1]).to.equal("Usage: blah");
@@ -1002,7 +1016,8 @@ describe("nix-clap", function() {
         fooZoo: false
       },
       verbatim: { fooZoo: ["no-"] },
-      index: 2
+      index: 2,
+      optCmd: {}
     });
     x = nc.parse(getArgv("--unknown-opt=blah"));
     expect(x).to.deep.equal({
@@ -1020,7 +1035,8 @@ describe("nix-clap", function() {
         applyDefault: "test"
       },
       verbatim: { unknownOpt: ["blah"] },
-      index: 1
+      index: 1,
+      optCmd: {}
     });
   });
 
@@ -1054,7 +1070,8 @@ describe("nix-clap", function() {
         applyDefault: "test"
       },
       verbatim: {},
-      index: 2
+      index: 2,
+      optCmd: {}
     });
     x = nc.parse(getArgv("cmd6 1 2"));
     expect(x).to.deep.equal({
@@ -1084,7 +1101,8 @@ describe("nix-clap", function() {
         applyDefault: "test"
       },
       verbatim: {},
-      index: 3
+      index: 3,
+      optCmd: {}
     });
     x = nc.parse(getArgv("cmd6 1 2 3"));
     expect(x).to.deep.equal({
@@ -1115,7 +1133,8 @@ describe("nix-clap", function() {
         applyDefault: "test"
       },
       verbatim: {},
-      index: 4
+      index: 4,
+      optCmd: {}
     });
     x = nc.parse(getArgv("cmd6 1 2 3 4"));
     expect(x).to.deep.equal({
@@ -1146,7 +1165,8 @@ describe("nix-clap", function() {
         applyDefault: "test"
       },
       verbatim: {},
-      index: 5
+      index: 5,
+      optCmd: {}
     });
   });
 
@@ -1457,6 +1477,40 @@ describe("nix-clap", function() {
     });
     nc.init({ foo: { type: "string", requireArg: true } });
     nc.parse(getArgv("--help"));
+    expect(exited, "exit should have been called").to.equal(0);
+    expect(outputed, "should have output help").to.be.ok;
+  });
+
+  it("should show help for a command", () => {
+    let exited;
+    const outputed = [];
+    const nc = new NixClap({
+      name: "test",
+      exit: n => (exited = n),
+      output: o => outputed.push(o)
+    });
+    nc.init(
+      { foo: { type: "string", requireArg: true } },
+      { cmd1: { desc: "test cmd1", options: { blah: { desc: "test blah" } } } }
+    );
+    nc.parse(getArgv("--help cmd1"));
+    expect(exited, "exit should have been called").to.equal(0);
+    expect(outputed, "should have output help").to.be.ok;
+  });
+
+  it("should show help for a command if --help follow command", () => {
+    let exited;
+    const outputed = [];
+    const nc = new NixClap({
+      name: "test",
+      exit: n => (exited = n),
+      output: o => outputed.push(o)
+    });
+    nc.init(
+      { foo: { type: "string", requireArg: true } },
+      { cmd1: { desc: "test cmd1", options: { blah: { desc: "test blah" } } } }
+    );
+    nc.parse(getArgv("cmd1 --help"));
     expect(exited, "exit should have been called").to.equal(0);
     expect(outputed, "should have output help").to.be.ok;
   });
