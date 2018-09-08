@@ -1745,10 +1745,23 @@ describe("nix-clap", function() {
   it("should invoke default command handler", () => {
     let called;
     const exec = ctx => (called = ctx);
-    const nc = new NixClap().init({}, { foo: { args: "[b]", exec, default: true }, bar: {} });
+    const nc = new NixClap().init(
+      {},
+      {
+        foo: {
+          args: "[b]",
+          exec,
+          options: { bar: { type: "string", default: "hello" } },
+          default: true
+        },
+        bar: {}
+      }
+    );
     nc.parse([]);
     expect(called).to.be.ok;
     expect(called.name).to.equal("foo");
+    expect(called.opts.bar).to.equal("hello");
+    expect(called.source.bar).to.equal("default");
   });
 
   it("should invoke default command handler in parseAsync", () => {
