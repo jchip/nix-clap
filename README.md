@@ -7,11 +7,11 @@ Simple, lightweight, flexible, and comprehensive Un\*x Command Line Argument Par
 
 # Features
 
-* Comprehensive and flexible parsing capabilities similar to conventional Un\*x parsing.
-* Parsing can be resumed after it's terminated by `--`.
-* A simple and straightforward JSON interface for specifying options and commands.
-* Lightweight with minimal dependencies
-* [Webpack] friendly - allows bundling your cli into a single JS file with webpack
+- Comprehensive and flexible parsing capabilities similar to conventional Un\*x parsing.
+- Parsing can be resumed after it's terminated by `--`.
+- A simple and straightforward JSON interface for specifying options and commands.
+- Lightweight with minimal dependencies
+- [Webpack] friendly - allows bundling your cli into a single JS file with webpack
 
 # Parsing Capabilities
 
@@ -19,46 +19,46 @@ Simple, lightweight, flexible, and comprehensive Un\*x Command Line Argument Par
 
 Example: `prog -xazvf=hello --foo-option hello bar -- --enable-blah`
 
-* Support `-` single char options or `--` long form options.
-* Options can have aliases.
-* Both option forms can have argument specified with `=` or space.
-  * ie: long form `--foo-option=bar` or `--foo-option bar`
-  * ie: short form `-f=bar` or `-f bar`
-* Both option forms can have variadic array args.
-  * ie: `--foo-option hello bar` or `-f hello bar`
-  * array args can have an optional type
-* `-` options can be compounded, like `-xazvf`.
-  * Last char can have args, like `-xazvf=hello` or `-xazvf hello`.
-  * Other chars are treated as `boolean` options automatically.
-* Variadic array args can be terminated with `--`.
-  * ie: `cmd1 arg1 arg2 --some-array abc def ghi -- cmd2 arg1 arg2`.
-* Allow arbitrary unknown options but with arguments specified through `=` only.
-  * Since it's ambiguous whether to take a non-option arg following an unknown option as an argument or a command.
-* Counting number of option occurrences.
-* Boolean option can be negated with `--no-` prefix.
-* Allow custom value type coercions with a function or RegExp.
+- Support `-` single char options or `--` long form options.
+- Options can have aliases.
+- Both option forms can have argument specified with `=` or space.
+  - ie: long form `--foo-option=bar` or `--foo-option bar`
+  - ie: short form `-f=bar` or `-f bar`
+- Both option forms can have variadic array args.
+  - ie: `--foo-option hello bar` or `-f hello bar`
+  - array args can have an optional type
+- `-` options can be compounded, like `-xazvf`.
+  - Last char can have args, like `-xazvf=hello` or `-xazvf hello`.
+  - Other chars are treated as `boolean` options automatically.
+- Variadic array args can be terminated with `--`.
+  - ie: `cmd1 arg1 arg2 --some-array abc def ghi -- cmd2 arg1 arg2`.
+- Allow arbitrary unknown options but with arguments specified through `=` only.
+  - Since it's ambiguous whether to take a non-option arg following an unknown option as an argument or a command.
+- Counting number of option occurrences.
+- Boolean option can be negated with `--no-` prefix.
+- Allow custom value type coercions with a function or RegExp.
 
 ## Commands
 
 Example: `prog sum 1 2 3 4`
 
-* Commands can have optional or required arguments.
-  * Each argument type defaults to `string`, but can have an optional type
-* Commands can have aliases.
-* Possible to specify multiple commands.
-* Commands can have variadic array arguments.
-* Variadic array args can be terminated with `--`.
-  * ie: `prog order pizza soda -- pickup` (specifies two commands: `order` and `pickup`)
-* Command can have its own options that are binded to it only.
-* Top level options can be binded to specific commands only.
-* Unbind top level options can be specified before or after commands.
-* Allow arbitrary unknown commands that do not have arguments.
-* Allow multiple custom value type coercions for each command.
+- Commands can have optional or required arguments.
+  - Each argument type defaults to `string`, but can have an optional type
+- Commands can have aliases.
+- Possible to specify multiple commands.
+- Commands can have variadic array arguments.
+- Variadic array args can be terminated with `--`.
+  - ie: `prog order pizza soda -- pickup` (specifies two commands: `order` and `pickup`)
+- Command can have its own options that are binded to it only.
+- Top level options can be binded to specific commands only.
+- Unbind top level options can be specified before or after commands.
+- Allow arbitrary unknown commands that do not have arguments.
+- Allow multiple custom value type coercions for each command.
 
 ## Terminating and Resuming
 
-* `--` terminates parsing if not gathering variadic arguments for a command or an option.
-* Parsing can be resumed after it's terminated.
+- `--` terminates parsing if not gathering variadic arguments for a command or an option.
+- Parsing can be resumed after it's terminated.
 
 # Install
 
@@ -108,13 +108,13 @@ const options = {
 
 Where:
 
-* `alias` - Specify aliases for the option, as a single string or an array of strings.
-* `type` - Type of argument for the option, one of: `string`, `number`, `float`, `boolean`, `array`, `count`, or [coercion](#value-coercion)
-  * `array` can set type of elements as one of `string`, `number`, `float`, `boolean` like this: `number array` or `float array`
-* `desc` - Description for the option - a string or a function that returns string.
-* `default` - Default value to use for argument
-* `requireArg` - `true`|`false` whether argument for the option is required.
-* `allowCmd` - list of command names this option is allow to follow only.
+- `alias` - Specify aliases for the option, as a single string or an array of strings.
+- `type` - Type of argument for the option, one of: `string`, `number`, `float`, `boolean`, `array`, `count`, or [coercion](#value-coercion)
+  - `array` can set type of elements as one of `string`, `number`, `float`, `boolean` like this: `number array` or `float array`
+- `desc` - Description for the option - a string or a function that returns string.
+- `default` - Default value to use for argument
+- `requireArg` - `true`|`false` whether argument for the option is required.
+- `allowCmd` - list of command names this option is allow to follow only.
 
 ## `commands spec`
 
@@ -135,21 +135,21 @@ const commands = {
 
 Where:
 
-* `alias` - Specify aliases for the command, as a single string or an array of strings.
-* `args` - Specify arguments for the command. `<>` means it's required and `[]` optional.
-  * all required args must be before optional args
-  * last one can specify variadic args with `..`, like `<names..>` or `[names..]`
-  * If you just want to get the list of args without naming it, you can specify with `<..>` or `[..]`
-  * named args can have an optional type like `<number value>` or `[number values..]`
-    * supported types are `number`, `float`, `string`, `boolean`, or [coercion](#value-coercion)
-* `usage` - usage message when help for the command is invoked - a string or a function that returns a string.
-  * `$0` will be replaced with program name and `$1` with command name.
-* `desc` - Description for the command - can be a string or a function that returns a string.
-* `exec` - The callback handler for the command - see [here](#command-exec-handler) for more details.
-* `default` - If true, set the command as default, which is invoked when no command was given in command line.
-  * Only one command can be default.
-  * Default command cannot have required args and must have the `exec` handler
-* `options` - List of options arguments private to the command. Follows the same spec as [top level options](#options-spec)
+- `alias` - Specify aliases for the command, as a single string or an array of strings.
+- `args` - Specify arguments for the command. `<>` means it's required and `[]` optional.
+  - all required args must be before optional args
+  - last one can specify variadic args with `..`, like `<names..>` or `[names..]`
+  - If you just want to get the list of args without naming it, you can specify with `<..>` or `[..]`
+  - named args can have an optional type like `<number value>` or `[number values..]`
+    - supported types are `number`, `float`, `string`, `boolean`, or [coercion](#value-coercion)
+- `usage` - usage message when help for the command is invoked - a string or a function that returns a string.
+  - `$0` will be replaced with program name and `$1` with command name.
+- `desc` - Description for the command - can be a string or a function that returns a string.
+- `exec` - The callback handler for the command - see [here](#command-exec-handler) for more details.
+- `default` - If true, set the command as default, which is invoked when no command was given in command line.
+  - Only one command can be default.
+  - Default command cannot have required args and must have the `exec` handler
+- `options` - List of options arguments private to the command. Follows the same spec as [top level options](#options-spec)
 
 ## Value Coercion
 
@@ -157,9 +157,9 @@ If none of the predefined types work for you, you can specify your own as a func
 
 You use any valid identifier for the value type, and then you define a field with the same name in your spec that can be:
 
-* `function` - will be called with the value to convert
-* `RegExp` - will be used to match the value. `undefined` is returned if it didn't match.
-* Anything else - will be used as the converted value.
+- `function` - will be called with the value to convert
+- `RegExp` - will be used to match the value. `undefined` is returned if it didn't match.
+- Anything else - will be used as the converted value.
 
 For example:
 
@@ -201,39 +201,43 @@ Use the method [`parse`](#parseargv-start-parsed) to parse command line argument
   verbatim: {},
   commands: [],
   index: 5,
-  error
+  error,
+  _: [],
+  argv: []
 }
 ```
 
 Where:
 
-* `index` - the index in `argv` parse stopped
-* `error` - If parse failed and your `parse-fail` event handler throws, then this will contain the parse error. See [skip default event behaviors](#skip-default-event-behaviors) for more details.
-* `source`, `opts`, `verbatim` - objects containing info for the options. See [details here](#parse-result-source-and-opts-objects)
-* `commands` - array of parsed command objects. See [`commands`](#parse-result-commands-object) for more details.
+- `index` - the index in `argv` parse stopped
+- `error` - If parse failed and your `parse-fail` event handler throws, then this will contain the parse error. See [skip default event behaviors](#skip-default-event-behaviors) for more details.
+- `source`, `opts`, `verbatim` - objects containing info for the options. See [details here](#parse-result-source-and-opts-objects)
+- `commands` - array of parsed command objects. See [`commands`](#parse-result-commands-object) for more details.
+- `argv` - original array of argv
+- `_` - remaining args in the `argv` array in case parsing was terminated by `--`.
 
 If any command with [`exec` handlers](#command-exec-handler) were specified, then `parse` will invoke them before returning the parse result object.
 
 ### Parse Result `source` and `opts` objects
 
-* `opts` - contains actual value for each option
-* `source` - contains info about where the option value came from
+- `opts` - contains actual value for each option
+- `source` - contains info about where the option value came from
 
-  * `cli` - option specified by user in the command line
-  * `default` - default value in your [options spec](#options-spec)
-  * `user` - values you applied by calling the [`applyConfig`](#applyconfigconfig-parsed-src) method
+  - `cli` - option specified by user in the command line
+  - `default` - default value in your [options spec](#options-spec)
+  - `user` - values you applied by calling the [`applyConfig`](#applyconfigconfig-parsed-src) method
 
-* `verbatim` - contains original unprocessed value as given by the user in the command line
+- `verbatim` - contains original unprocessed value as given by the user in the command line
 
-  * This is an array of values if there was actual values from the user
-  * If there's no explicit value (ie. boolean or counting options), then this doesn't contain a field for the option.
-  * If it's a boolean but the user specified with `--no-` prefix, then this contains a field with the value `["no-"]`
+  - This is an array of values if there was actual values from the user
+  - If there's no explicit value (ie. boolean or counting options), then this doesn't contain a field for the option.
+  - If it's a boolean but the user specified with `--no-` prefix, then this contains a field with the value `["no-"]`
 
 For example, with the following conditions:
 
 1. User specified `--foo-bar=test` in the command line
-1. You have an option `fooDefault` with default value `bar`
-1. You called `applyConfig` with `applyConfig({fooConfig: 1, fooBar: "oops"}, parsed)`
+2. You have an option `fooDefault` with default value `bar`
+3. You called `applyConfig` with `applyConfig({fooConfig: 1, fooBar: "oops"}, parsed)`
 
 You would get the following in the parse result object:
 
@@ -281,16 +285,25 @@ The `commands` object is an array of parsed commands:
 }
 ```
 
-* `name` is the name of the command used by the user in the command line that could be an alias
-* `long` is the original form of the command name (not the alias)
-* `unknown` - `true` if the command is not known
-* `args` - the processed named arguments
-* `argList` - list of all the arguments in unprocessed string form
-* `opts`, `source`, `verbatim` - info for the options private to the command
+- `name` is the name of the command used by the user in the command line that could be an alias
+- `long` is the original form of the command name (not the alias)
+- `unknown` - `true` if the command is not known
+- `args` - the processed named arguments
+- `argList` - list of all the arguments in unprocessed string form
+- `opts`, `source`, `verbatim` - info for the options private to the command
 
 ### Command `exec` handler
 
-If the command has an `exec` handler, then it will be called with the object:
+If the command has an `exec` handler, then it will be called with two arguments:
+
+```js
+exec(result, parsed);
+```
+
+- First one is the object for the command
+- Second one is the overall parsed object
+
+Info about the command object:
 
 ```js
 {
@@ -315,33 +328,33 @@ Where `opts` and `source` contain both the command's private options and top lev
 
 `NixClap` emits these events:
 
-* `help` - when `--help` is invoked, emitted with the parse result object.
-* `version` - when `--version` is invoked, emitted with the parse result object.
-* `parsed` - when all parsing is done but before command `exec` are invoked, emitted with `{ nixClap, parsed }` where `nixClap` is the NixClap instance.
-* `parse-fail` - when parse failed, emitted with parse result object, which has `error` field.
-* `unknown-option` - when an unknown option is found, emitted with option name
-* `unknown-command` - when an unknown command is found, emitted with command context, which has `name` field.
-* `no-action` - when you have commands with `exec` and user specified no command that triggered an `exec` call.
-* `exit` - When program is expected to terminate, emit with exit code.
+- `help` - when `--help` is invoked, emitted with the parse result object.
+- `version` - when `--version` is invoked, emitted with the parse result object.
+- `parsed` - when all parsing is done but before command `exec` are invoked, emitted with `{ nixClap, parsed }` where `nixClap` is the NixClap instance.
+- `parse-fail` - when parse failed, emitted with parse result object, which has `error` field.
+- `unknown-option` - when an unknown option is found, emitted with option name
+- `unknown-command` - when an unknown command is found, emitted with command context, which has `name` field.
+- `no-action` - when you have commands with `exec` and user specified no command that triggered an `exec` call.
+- `exit` - When program is expected to terminate, emit with exit code.
 
 ### Default Event Handlers
 
 NixClap has default handlers for these events:
 
-* `help` - Output help and emit `exit`
-* `version` - If `version` has been set, then output version and emit `exit`.
-* `parse-fail` - Output help and error message, and emit `exit`.
-* `unknown-option` - Throws Error `Unknown option ${name}`
-* `unknown-command` - Throws Error `Unkown command ${ctx.name}`
-* `no-action` - Output help with error `No command given` and emit `exit`
-* `exit` - calls `process.exit(code)`
+- `help` - Output help and emit `exit`
+- `version` - If `version` has been set, then output version and emit `exit`.
+- `parse-fail` - Output help and error message, and emit `exit`.
+- `unknown-option` - Throws Error `Unknown option ${name}`
+- `unknown-command` - Throws Error `Unkown command ${ctx.name}`
+- `no-action` - Output help with error `No command given` and emit `exit`
+- `exit` - calls `process.exit(code)`
 
 #### Skip Default Event Behaviors
 
 You can remove the default event handlers with one of these approaches:
 
-* With the [`removeDefaultHandlers`](#removedefaulthandlers) method.
-* By passing in `handlers` object in the `config` for the constructor.
+- With the [`removeDefaultHandlers`](#removedefaulthandlers) method.
+- By passing in `handlers` object in the `config` for the constructor.
 
 For example, using `removeDefaultHandlers`:
 
@@ -366,33 +379,33 @@ if (parsed.error) {
 
 These are methods `NixClap` class supports.
 
-* [`constructor(config)`](#constructorconfig)
-* [`version(v)`](#versionv)
-* [`help(setting)`](#helpsetting)
-* [`usage(msg), cmdUsage(msg)`](#usagemsg-cmdusagemsg)
-* [`init(options, commands)`](#initoptions-commands)
-* [`parse(argv, start, parsed)`](#parseargv-start-parsed)
-* [`parseAsync(argv, start, parsed)`](#parseasyncargv-start-parsed)
-* [`showHelp(err, cmdName)`](#showhelperr-cmdname)
-* [`removeDefaultHandlers()`](#removedefaulthandlers)
-* [`applyConfig(config, parsed, src)`](#applyconfigconfig-parsed-src)
-* [`runExec(parsed, skipDefault)`](#runexecparsed-skipdefault)
-* [`runExecAsync(parsed, skipDefault)`](#runexecasyncparsed-skipdefault)
+- [`constructor(config)`](#constructorconfig)
+- [`version(v)`](#versionv)
+- [`help(setting)`](#helpsetting)
+- [`usage(msg), cmdUsage(msg)`](#usagemsg-cmdusagemsg)
+- [`init(options, commands)`](#initoptions-commands)
+- [`parse(argv, start, parsed)`](#parseargv-start-parsed)
+- [`parseAsync(argv, start, parsed)`](#parseasyncargv-start-parsed)
+- [`showHelp(err, cmdName)`](#showhelperr-cmdname)
+- [`removeDefaultHandlers()`](#removedefaulthandlers)
+- [`applyConfig(config, parsed, src)`](#applyconfigconfig-parsed-src)
+- [`runExec(parsed, skipDefault)`](#runexecparsed-skipdefault)
+- [`runExecAsync(parsed, skipDefault)`](#runexecasyncparsed-skipdefault)
 
 ### `constructor(config)`
 
 `config` is object with:
 
-* `name` - set the program name. Will auto detect from `process.argv` if not specified.
-* `version` - set the program version. Can also set with [`version`](#versionv) method.
-* `help` - custom help option setting. Can also set with [`help`](#helpsetting) method.
-* `usage` - usage message. Can also set with [`usage`](#usagemsg-cmdusagemsg) method.
-* `cmdUsage` - generic usage message for commands. Can also set with [`cmdUsage`](#usagemsg-cmdusagemsg) method.
-* `skipExec` - If true, will not call command `exec` handlers after parse.
-* `skipExecDefault` - if true, will not call default command `exec` handler after parse.
-  * In case you need to do something before invoking the `exec` handlers, you can set these flags and call the [`runExec(parsed, skipDefault)`](#runexecparsed-skipdefault) method yourself.
-* `output` - callback for printing to console. Should take string as param. Default to calling `process.stdout.write`
-* `handlers` - custom event handlers.
+- `name` - set the program name. Will auto detect from `process.argv` if not specified.
+- `version` - set the program version. Can also set with [`version`](#versionv) method.
+- `help` - custom help option setting. Can also set with [`help`](#helpsetting) method.
+- `usage` - usage message. Can also set with [`usage`](#usagemsg-cmdusagemsg) method.
+- `cmdUsage` - generic usage message for commands. Can also set with [`cmdUsage`](#usagemsg-cmdusagemsg) method.
+- `skipExec` - If true, will not call command `exec` handlers after parse.
+- `skipExecDefault` - if true, will not call default command `exec` handler after parse.
+  - In case you need to do something before invoking the `exec` handlers, you can set these flags and call the [`runExec(parsed, skipDefault)`](#runexecparsed-skipdefault) method yourself.
+- `output` - callback for printing to console. Should take string as param. Default to calling `process.stdout.write`
+- `handlers` - custom event handlers.
 
 The `handlers` object can specify a function for each of the [events](#events) or set it to `false` to turn off the default handler.
 
@@ -454,16 +467,16 @@ Parse command line. Call without any params to parse `process.argv`.
 
 Return: The parse result object.
 
-* `argv` - array of CLI args. Defaults to `process.argv`.
-* `start` - index for argv from where to start parsing
-* `parsed` - previous result from `parse`. If passed, then parsing will add new data to it.
+- `argv` - array of CLI args. Defaults to `process.argv`.
+- `start` - index for argv from where to start parsing
+- `parsed` - previous result from `parse`. If passed, then parsing will add new data to it.
 
 ### `parseAsync(argv, start, parsed)`
 
 async version of [parse](#parseargv-start-parsed).
 
-* It will use [runExecAsync](#runexecasyncparsed-skipdefault) to invoke command `exec` handlers serially.
-* The command handler can return a Promise, which will be awaited.
+- It will use [runExecAsync](#runexecasyncparsed-skipdefault) to invoke command `exec` handlers serially.
+- The command handler can return a Promise, which will be awaited.
 
 Return: A promise the resolve with the parse result object.
 
@@ -471,8 +484,8 @@ Return: A promise the resolve with the parse result object.
 
 Show help message and then emit `exit`.
 
-* `err` - if valid, then `err.message` will be printed after help message and exit with code `1`.
-* `cmdName` - if valid, then will print help for the specific command.
+- `err` - if valid, then `err.message` will be printed after help message and exit with code `1`.
+- `cmdName` - if valid, then will print help for the specific command.
 
 ### `removeDefaultHandlers()`
 
@@ -482,8 +495,8 @@ If you've replaced the handler through specifying `handlers` in `config` for the
 
 Return: The `NixClap` instance itself.
 
-* You can pass in `"*"` to remove all default handlers.
-* You can pass in the event names you want to remove.
+- You can pass in `"*"` to remove all default handlers.
+- You can pass in the event names you want to remove.
 
 ie:
 
@@ -497,9 +510,9 @@ Allow you to apply extra config to the parsed object, overriding any `opts` with
 
 For example, you can allow user to specify options in their `package.json` file, and apply those after the command line is parsed.
 
-* `config` - Config object containing user options config
-* `parsed` - The parse result object from NixClap.
-* `src` - String, source to set if override. Default to `user`
+- `config` - Config object containing user options config
+- `parsed` - The parse result object from NixClap.
+- `src` - String, source to set if override. Default to `user`
 
 Example on applying user config from `package.json`:
 
@@ -517,8 +530,8 @@ Go through the commands in parsed and call their `exec` handler.
 
 Return: The number of commands with `exec` was invoked.
 
-* `parsed` - The parse result object.
-* `skipDefault` - `boolean`, if `true` then do not invoke default command's `exec` handler when no command with `exec` handler was given.
+- `parsed` - The parse result object.
+- `skipDefault` - `boolean`, if `true` then do not invoke default command's `exec` handler when no command with `exec` handler was given.
 
 ### `runExecAsync(parsed, skipDefault)`
 
@@ -528,12 +541,12 @@ Return: A promise that resolve with the number of commands with `exec` invoked.
 
 # Others
 
-* [argparse]
-* [yargs]
-* [commander]
-* [optimist]
-* [clap]
-* [clap.js]
+- [argparse]
+- [yargs]
+- [commander]
+- [optimist]
+- [clap]
+- [clap.js]
 
 [optimist]: https://www.npmjs.com/package/optimist
 [clap]: https://github.com/lahmatiy/clap
