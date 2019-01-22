@@ -1333,6 +1333,7 @@ sinon:
  _:
   ^4.0.1: 4.5.0
  4.5.0:
+  hasI: 1
   $: sha512-trdx+mB0VBBgoYucy6a9L7/jfQOmvGeaKZT4OOJ+lPAtI8623xyGr8wLiE4eojzBS8G9yXbhx42GHUOVLr4X2w==
   _: 'https://registry.npmjs.org/sinon/-/sinon-4.5.0.tgz'
   dependencies:

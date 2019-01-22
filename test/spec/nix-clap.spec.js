@@ -1428,7 +1428,7 @@ describe("nix-clap", function() {
       `  --apply-default                                    [boolean] [default: "test"]`,
       "  --empty-allow-cmd                                                    [boolean]",
       "  --has-allow-cmd, --hac                                               [boolean]",
-      "  --version, -V             Show version number",
+      "  --version, -V, -v         Show version number",
       "  --help, -?, -h            Show help. Add a command to show its help   [string]"
     ]);
   });
@@ -1549,8 +1549,8 @@ describe("nix-clap", function() {
       "  Output sum of numbers",
       "",
       "Options:",
-      "  --version, -V   Show version number",
-      "  --help, -?, -h  Show help. Add a command to show its help             [string]",
+      "  --version, -V, -v  Show version number",
+      "  --help, -?, -h     Show help. Add a command to show its help          [string]",
       "",
       "Command s is alias for sum",
       "Command sum has no options"
@@ -1563,8 +1563,8 @@ describe("nix-clap", function() {
       "  Output sum of numbers",
       "",
       "Options:",
-      "  --version, -V   Show version number",
-      "  --help, -?, -h  Show help. Add a command to show its help             [string]",
+      "  --version, -V, -v  Show version number",
+      "  --help, -?, -h     Show help. Add a command to show its help          [string]",
       "",
       "Command sum has no options"
     ]);
@@ -1576,8 +1576,8 @@ describe("nix-clap", function() {
       "  Output sorted numbers",
       "",
       "Options:",
-      "  --version, -V   Show version number",
-      "  --help, -?, -h  Show help. Add a command to show its help             [string]",
+      "  --version, -V, -v  Show version number",
+      "  --help, -?, -h     Show help. Add a command to show its help          [string]",
       "",
       "Command sr is alias for sort",
       `Command "sort" options:`,
@@ -1591,8 +1591,8 @@ describe("nix-clap", function() {
       "  Output sorted numbers",
       "",
       "Options:",
-      "  --version, -V   Show version number",
-      "  --help, -?, -h  Show help. Add a command to show its help             [string]",
+      "  --version, -V, -v  Show version number",
+      "  --help, -?, -h     Show help. Add a command to show its help          [string]",
       "",
       `Command "sort" options:`,
       "  --reverse, -r  Sort in descending order"
@@ -1622,7 +1622,55 @@ describe("nix-clap", function() {
       "Usage: test foo bar",
       "",
       "Options:",
-      "  --version, -V   Show version number",
+      "  --version, -V, -v  Show version number",
+      "  --help, -?, -h     Show help. Add a command to show its help          [string]",
+      "",
+      "Command foo has no options"
+    ]);
+    help = nc.makeHelp("blah");
+    expect(help).to.deep.equal([
+      "",
+      "Usage: blah blah",
+      "",
+      "Options:",
+      "  --version, -V, -v  Show version number",
+      "  --help, -?, -h     Show help. Add a command to show its help          [string]",
+      "",
+      "Command blah has no options"
+    ]);
+  });
+
+  it("should make help for version without used alias V and v", () => {
+    const nc = new NixClap({ name: "test" })
+      .cmdUsage("$0 $1")
+      .version("1.0.0")
+      .init(
+        {
+          xv: {
+            alias: ["v"]
+          },
+          xv2: {
+            alias: ["V"]
+          }
+        },
+        {
+          foo: {
+            usage: "$0 $1 bar"
+          },
+          blah: {
+            usage: () => "blah blah"
+          }
+        }
+      );
+    let help = nc.makeHelp("foo");
+    expect(help).to.deep.equal([
+      "",
+      "Usage: test foo bar",
+      "",
+      "Options:",
+      "  --xv, -v",
+      "  --xv2, -V",
+      "  --version       Show version number",
       "  --help, -?, -h  Show help. Add a command to show its help             [string]",
       "",
       "Command foo has no options"
@@ -1633,7 +1681,9 @@ describe("nix-clap", function() {
       "Usage: blah blah",
       "",
       "Options:",
-      "  --version, -V   Show version number",
+      "  --xv, -v",
+      "  --xv2, -V",
+      "  --version       Show version number",
       "  --help, -?, -h  Show help. Add a command to show its help             [string]",
       "",
       "Command blah has no options"
