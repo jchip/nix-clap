@@ -485,15 +485,40 @@ describe("nix-clap", function() {
         forceCache: "default",
         logLevel: "default"
       },
+      commands: [],
+      opts: {
+        arrayOptRequire: ["a", "b", "c"],
+        logLevel: "info",
+        forceCache: true,
+        applyDefault: "test"
+      },
+      verbatim: {
+        arrayOptRequire: ["a", "b", "c"]
+      },
+      index: 4,
+      optCmd: {}
+    });
+  });
+
+  const testOptArgTerminator = terminator => {
+    const nc = initParser();
+    const x = nc.parse(getArgv(`--array-opt-require a b c ${terminator} d`));
+    expect(x).to.deep.equal({
+      source: {
+        arrayOptRequire: "cli",
+        applyDefault: "default",
+        forceCache: "default",
+        logLevel: "default"
+      },
       commands: [
         {
-          name: "d",
-          long: "d",
-          unknown: true,
-          args: {},
           argList: [],
+          args: {},
+          long: "d",
+          name: "d",
           opts: {},
           source: {},
+          unknown: true,
           verbatim: {}
         }
       ],
@@ -509,36 +534,19 @@ describe("nix-clap", function() {
       index: 6,
       optCmd: {}
     });
+  };
+
+  it("should terminate option array with --. and parse the remaining args", () => {
+    testOptArgTerminator("-.");
   });
 
-  it("should terminate option array with -- and then parsing with --", () => {
-    const nc = initParser();
-    const x = nc.parse(getArgv("--array-opt-require a b c -- -- d"));
-    expect(x).to.deep.equal({
-      source: {
-        arrayOptRequire: "cli",
-        applyDefault: "default",
-        forceCache: "default",
-        logLevel: "default"
-      },
-      commands: [],
-      opts: {
-        arrayOptRequire: ["a", "b", "c"],
-        logLevel: "info",
-        forceCache: true,
-        applyDefault: "test"
-      },
-      verbatim: {
-        arrayOptRequire: ["a", "b", "c"]
-      },
-      index: 5,
-      optCmd: {}
-    });
+  it("should terminate option array with --. and parse the remaining args", () => {
+    testOptArgTerminator("--.");
   });
 
-  it("should terminate command array with --", () => {
+  const testCmdArgTerminator = terminator => {
     const nc = initParser();
-    const x = nc.parse(getArgv("cmd1 a b c -- d"));
+    const x = nc.parse(getArgv(`cmd1 a b c ${terminator} d`));
     expect(x).to.deep.equal({
       source: {
         applyDefault: "default",
@@ -578,6 +586,14 @@ describe("nix-clap", function() {
       index: 6,
       optCmd: {}
     });
+  };
+
+  it("should terminate command array with -.", () => {
+    testCmdArgTerminator("-.");
+  });
+
+  it("should terminate command array with --.", () => {
+    testCmdArgTerminator("--.");
   });
 
   it("should terminate command arg gathering with --", () => {
@@ -650,9 +666,9 @@ describe("nix-clap", function() {
     });
   });
 
-  it("should terminate command array with -- and then parsing with --", () => {
+  it("should terminate command array and parsing with --", () => {
     const nc = initParser();
-    const x = nc.parse(getArgv("cmd1 a b c -- -- d"));
+    const x = nc.parse(getArgv("cmd1 a b c -- d"));
     expect(x).to.deep.equal({
       source: {
         applyDefault: "default",
@@ -679,7 +695,7 @@ describe("nix-clap", function() {
         applyDefault: "test"
       },
       verbatim: {},
-      index: 5,
+      index: 4,
       optCmd: {}
     });
   });
