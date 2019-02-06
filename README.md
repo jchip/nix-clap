@@ -7,11 +7,78 @@ Simple, lightweight, flexible, and comprehensive Un\*x Command Line Argument Par
 
 # Features
 
-- Comprehensive and flexible parsing capabilities similar to conventional Un\*x parsing.
-- Parsing can be resumed after it's terminated by `--`.
-- A simple and straightforward JSON interface for specifying options and commands.
 - Lightweight with minimal dependencies
+- Comprehensive and flexible parsing capabilities similar to conventional Un\*x parsing.
+- Flexible handling of options and commands that can take variadic params.
+- A simple and straightforward JSON interface for specifying options and commands.
 - [Webpack] friendly - allows bundling your cli into a single JS file with webpack
+
+# Examples
+
+Options only:
+
+```js
+const NixClap = require("nix-clap");
+
+const options = {
+  names: {
+    desc: "specify names",
+    alias: ["n", "m"],
+    type: "string array"
+  }
+};
+
+const parsed = new NixClap()
+  .version("1.0.0")
+  .usage("$0 [options]")
+  .init(options)
+  .parse();
+
+console.log("names", parsed.opts.names);
+```
+
+With commands:
+
+```js
+const NixClap = require("nix-clap");
+
+const options = {
+  verbose: {
+    desc: "enable verbose mode",
+    alias: "v",
+    type: "boolean",
+    default: false
+  }
+};
+
+const commands = {
+  compile: {
+    desc: "run compile on the files",
+    args: "<files...>",
+    exec: parsed => {
+      console.log("compile", parsed.args.files, "verbose", parsed.opts.verbose);
+    }
+  }
+};
+
+const parsed = new NixClap()
+  .version("1.0.0")
+  .usage("$0 [options] <command> [options]")
+  .init(options, commands)
+  .parse();
+```
+
+> `version`, `help`, and `usage` must be called before `init`
+
+Usage:
+
+```bash
+$ my-prog compile --verbose file1.jsx file2.jsx file3.jsx
+```
+
+## More Examples
+
+See [examples](./examples) folder for more working samples.
 
 # Parsing Capabilities
 
@@ -30,8 +97,8 @@ Example: `prog -xazvf=hello --foo-option hello bar -- --enable-blah`
 - `-` options can be compounded, like `-xazvf`.
   - Last char can have args, like `-xazvf=hello` or `-xazvf hello`.
   - Other chars are treated as `boolean` options automatically.
-- Variadic array args can be terminated with `--`.
-  - ie: `cmd1 arg1 arg2 --some-array abc def ghi -- cmd2 arg1 arg2`.
+- Variadic array args are terminated by any other options such as `-x` or `--xyz`, or explicitly with `-.` or `--.`
+  - ie: `cmd1 arg1 arg2 --some-array abc def ghi -. cmd2 arg1 arg2`.
 - Allow arbitrary unknown options but with arguments specified through `=` only.
   - Since it's ambiguous whether to take a non-option arg following an unknown option as an argument or a command.
 - Counting number of option occurrences.
@@ -47,8 +114,8 @@ Example: `prog sum 1 2 3 4`
 - Commands can have aliases.
 - Possible to specify multiple commands.
 - Commands can have variadic array arguments.
-- Variadic array args can be terminated with `--`.
-  - ie: `prog order pizza soda -- pickup` (specifies two commands: `order` and `pickup`)
+- Variadic array args are terminated by any other options such as `-x` or `--xyz`, or explicitly with `-.` or `--.`
+  - ie: `prog order pizza soda -. pickup` (specifies two commands: `order` and `pickup`)
 - Command can have its own options that are binded to it only.
 - Top level options can be binded to specific commands only.
 - Unbind top level options can be specified before or after commands.
@@ -57,8 +124,9 @@ Example: `prog sum 1 2 3 4`
 
 ## Terminating and Resuming
 
-- `--` terminates parsing if not gathering variadic arguments for a command or an option.
+- `--` terminates parsing, with remaining args returned in `parsed._`.
 - Parsing can be resumed after it's terminated.
+- `-.` or `--.` can terminate variadic params for commands and options.
 
 # Install
 
@@ -72,24 +140,6 @@ This module exposes a class with a few methods.
 
 See [APIs](#apis) for more details.
 
-## Example
-
-```js
-const NixClap = require("nix-clap");
-
-const parsed = new NixClap()
-  .version("1.0.0")
-  .usage("$0 [options] <command> [options]")
-  .init(options, commands)
-  .parse();
-
-console.log(parsed.opts);
-```
-
-> `version`, `help`, and `usage` must be called before `init`
-
-See [examples](./examples) folder for more working samples.
-
 ## `options spec`
 
 ```js
@@ -99,6 +149,7 @@ const options = {
     type: "string",
     desc: "description",
     default: "foo",
+    require: true,
     requireArg: true,
     allowCmd: ["cmd1", "cmd2"]
   },
@@ -108,13 +159,16 @@ const options = {
 
 Where:
 
-- `alias` - Specify aliases for the option, as a single string or an array of strings.
-- `type` - Type of argument for the option, one of: `string`, `number`, `float`, `boolean`, `array`, `count`, or [coercion](#value-coercion)
-  - `array` can set type of elements as one of `string`, `number`, `float`, `boolean` like this: `number array` or `float array`
-- `desc` - Description for the option - a string or a function that returns string.
-- `default` - Default value to use for argument
-- `requireArg` - `true`|`false` whether argument for the option is required.
-- `allowCmd` - list of command names this option is allow to follow only.
+| field        | description                                                                                                                       |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| `alias`      | Specify aliases for the option, as a single string or an array of strings.                                                        |
+| `type`       | Type of argument for the option, one of: `string`, `number`, `float`, `boolean`, `array`, `count`, or [coercion](#value-coercion) |
+|              | `array` can set type of elements as one of `string`, `number`, `float`, `boolean` like this: `number array` or `float array`      |
+| `desc`       | Description for the option - a string or a function that returns string.                                                          |
+| `default`    | Default value to use for argument                                                                                                 |
+| `require`    | `true`/`false` whether this option must be specified.                                                                             |
+| `requireArg` | `true`/`false` whether argument for the option is required.                                                                       |
+| `allowCmd`   | list of command names this option is allow to follow only.                                                                        |
 
 ## `commands spec`
 
@@ -135,21 +189,29 @@ const commands = {
 
 Where:
 
-- `alias` - Specify aliases for the command, as a single string or an array of strings.
-- `args` - Specify arguments for the command. `<>` means it's required and `[]` optional.
+| field     | description                                                                                                                        |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `alias`   | Specify aliases for the command, as a single string or an array of strings.                                                        |
+| `args`    | Specify arguments for the command. `<>` means it's required and `[]` optional. See [rules](#rules-for-command-args) for more info. |
+| `usage`   | usage message when help for the command is invoked - a string or a function that returns a string.                                 |
+|           | `$0` will be replaced with program name and `$1` with command name.                                                                |
+| `desc`    | Description for the command - can be a string or a function that returns a string.                                                 |
+| `exec`    | The callback handler for the command - see [here](#command-exec-handler) for more details.                                         |
+| `default` | If `true`, set the command as default, which is invoked when no command was given in command line.                                 |
+|           | - Only one command can be default.                                                                                                 |
+|           | - Default command cannot have required args and must have the `exec` handler                                                       |
+| `options` | List of options arguments private to the command. Follows the same spec as [top level options](#options-spec)                      |
+
+### Rules for Command `args`
+
+Rules for when specifying `args` for the command:
+
   - all required args must be before optional args
   - last one can specify variadic args with `..`, like `<names..>` or `[names..]`
   - If you just want to get the list of args without naming it, you can specify with `<..>` or `[..]`
   - named args can have an optional type like `<number value>` or `[number values..]`
     - supported types are `number`, `float`, `string`, `boolean`, or [coercion](#value-coercion)
-- `usage` - usage message when help for the command is invoked - a string or a function that returns a string.
-  - `$0` will be replaced with program name and `$1` with command name.
-- `desc` - Description for the command - can be a string or a function that returns a string.
-- `exec` - The callback handler for the command - see [here](#command-exec-handler) for more details.
-- `default` - If true, set the command as default, which is invoked when no command was given in command line.
-  - Only one command can be default.
-  - Default command cannot have required args and must have the `exec` handler
-- `options` - List of options arguments private to the command. Follows the same spec as [top level options](#options-spec)
+
 
 ## Value Coercion
 

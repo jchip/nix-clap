@@ -48,9 +48,9 @@ new NixClap({})
       },
       // command sort
       sort: {
+        desc: "Output sorted numbers",
         alias: "sr",
         usage: () => "$0 $1 <num> [num ..]",
-        desc: "Output sorted numbers",
         // takes a variadic list of numbers into an array named _
         args: "<number _..>",
         exec: sort,
@@ -65,19 +65,20 @@ new NixClap({})
       },
       // command times
       times: {
-        args: "<number _..>",
+        desc: "Show product of numbers",
         alias: ["t", "product", "p"],
         usage: "$0 $1 <num> [num ..]",
-        desc: "Show product of numbers",
+        args: "<number _..>",
         exec: parsed => {
           console.log("product:", parsed.args._.reduce((p, v) => p * v, 1));
         }
       },
       // command divide
       divide: {
+        desc: "Show result of dividend/divisor",
         alias: ["d", "div"],
         usage: "$0 $1 <dividend> <divisor>",
-        desc: "Show result of dividend/divisor",
+        args: "<dividend> <divisor>",
         exec: parsed => {
           let dividend, divisor;
           if (parsed.opts.switch) {
@@ -90,7 +91,6 @@ new NixClap({})
           const args = parsed.args;
           console.log(`quotient of ${dividend}/${divisor}:`, dividend / divisor);
         },
-        args: "<dividend> <divisor>",
         options: {
           switch: {
             alias: "s",
