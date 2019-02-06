@@ -847,7 +847,18 @@ describe("nix-clap", function() {
           type: []
         }
       })
-    ).to.throw("Option foo argument type must be a string");
+    ).to.throw("type 'array' is not valid: expect string");
+  });
+
+  it("should fail for unknown option field", () => {
+    expect(() =>
+      new NixClap().init({
+        foo: {
+          desc: "foo",
+          bar: "oops"
+        }
+      })
+    ).to.throw("option 'foo' field 'bar' is not valid");
   });
 
   it("should handle requireArg option missing arg", () => {
