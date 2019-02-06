@@ -7,11 +7,12 @@ Simple, lightweight, flexible, and comprehensive Un\*x Command Line Argument Par
 
 # Features
 
-- Lightweight with minimal dependencies
+- Lightweight with minimal dependencies.
 - Comprehensive and flexible parsing capabilities similar to conventional Un\*x parsing.
 - Flexible handling of options and commands that can take variadic params.
 - A simple and straightforward JSON interface for specifying options and commands.
-- [Webpack] friendly - allows bundling your cli into a single JS file with webpack
+- Very informative result that tells you where each option came from.
+- [Webpack] friendly - allows bundling your cli into a single JS file with webpack.
 
 # Examples
 
@@ -54,7 +55,7 @@ const options = {
 const commands = {
   compile: {
     desc: "run compile on the files",
-    args: "<files...>",
+    args: "<string files...>",
     exec: parsed => {
       console.log("compile", parsed.args.files, "verbose", parsed.opts.verbose);
     }
@@ -84,7 +85,7 @@ See [examples](./examples) folder for more working samples.
 
 ## Options
 
-Example: `prog -xazvf=hello --foo-option hello bar -- --enable-blah`
+Example: `prog -xazvf=hello --foo-option hello bar -. --enable-blah`
 
 - Support `-` single char options or `--` long form options.
 - Options can have aliases.

@@ -1,5 +1,7 @@
 "use strict";
 
+/* eslint-disable max-params */
+
 /*
 
 - all `-` and `--` options can specify arg with `=` or ` `
@@ -16,7 +18,7 @@ describe("nix-clap", function() {
     return new NixClap().init();
   });
 
-  const initParser = (cmdExec, nc, handlers) => {
+  const initParser = (cmdExec, nc, handlers, extraOpts) => {
     nc =
       nc ||
       new NixClap({
@@ -34,85 +36,88 @@ describe("nix-clap", function() {
 
     nc.removeDefaultHandlers("no-action", "parse-fail", "unknown-command", "unknown-option");
     return nc.init(
-      {
-        "log-level": {
-          alias: "q",
-          type: "string",
-          desc: "One of: debug,verbose,info,warn,error,fyi,none",
-          default: "info"
+      Object.assign(
+        {
+          "log-level": {
+            alias: "q",
+            type: "string",
+            desc: "One of: debug,verbose,info,warn,error,fyi,none",
+            default: "info"
+          },
+          "str-opt": {
+            type: "string"
+          },
+          "require-arg-opt": {
+            alias: "rao",
+            type: "string",
+            requireArg: true
+          },
+          "force-cache": {
+            alias: ["f", "fc"],
+            type: "boolean",
+            desc: "Don't check registry if cache exists.",
+            default: true
+          },
+          "bar-bool": {
+            alias: "b",
+            type: "boolean"
+          },
+          foobool: {
+            type: "boolean"
+          },
+          "array-opt-require": {
+            alias: "a",
+            type: "array",
+            requireArg: true
+          },
+          "subtype-array": {
+            type: "number array"
+          },
+          fooNum: {
+            type: "number"
+          },
+          floatNum: {
+            type: "float"
+          },
+          customFn: {
+            type: "xfoo",
+            xfoo: () => "xfoo"
+          },
+          customRegex: {
+            type: "rxmatch",
+            rxmatch: /^test$/i
+          },
+          customOther: {
+            type: "rxother",
+            rxother: "oops"
+          },
+          "bool-2": {
+            type: "boolean"
+          },
+          "missing-type": {},
+          "bool-3": {
+            alias: "x"
+          },
+          "count-opt": {
+            type: "count",
+            alias: "c"
+          },
+          "apply-default": {
+            type: "boolean",
+            default: "test"
+          },
+          "empty-allow-cmd": {
+            type: "boolean",
+            allowCmd: []
+          },
+          "has-allow-cmd": {
+            alias: "hac",
+            type: "boolean",
+            allowCmd: ["cmd1", "cmd4"]
+          }
         },
-        "str-opt": {
-          type: "string"
-        },
-        "require-arg-opt": {
-          alias: "rao",
-          type: "string",
-          requireArg: true
-        },
-        "force-cache": {
-          alias: ["f", "fc"],
-          type: "boolean",
-          desc: "Don't check registry if cache exists.",
-          default: true
-        },
-        "bar-bool": {
-          alias: "b",
-          type: "boolean"
-        },
-        foobool: {
-          type: "boolean"
-        },
-        "array-opt-require": {
-          alias: "a",
-          type: "array",
-          requireArg: true
-        },
-        "subtype-array": {
-          type: "number array"
-        },
-        fooNum: {
-          type: "number"
-        },
-        floatNum: {
-          type: "float"
-        },
-        customFn: {
-          type: "xfoo",
-          xfoo: () => "xfoo"
-        },
-        customRegex: {
-          type: "rxmatch",
-          rxmatch: /^test$/i
-        },
-        customOther: {
-          type: "rxother",
-          rxother: "oops"
-        },
-        "bool-2": {
-          type: "boolean"
-        },
-        "missing-type": {},
-        "bool-3": {
-          alias: "x"
-        },
-        "count-opt": {
-          type: "count",
-          alias: "c"
-        },
-        "apply-default": {
-          type: "boolean",
-          default: "test"
-        },
-        "empty-allow-cmd": {
-          type: "boolean",
-          allowCmd: []
-        },
-        "has-allow-cmd": {
-          alias: "hac",
-          type: "boolean",
-          allowCmd: ["cmd1", "cmd4"]
-        }
-      },
+        extraOpts
+      ),
       {
         cmd1: {
           args: "<..>",
@@ -866,6 +871,20 @@ describe("nix-clap", function() {
     expect(nc.parse(getArgv("--rao")).error.message).to.equal("option rao requires argument");
     expect(nc.parse(getArgv("--require-arg-opt")).error.message).to.equal(
       "option require-arg-opt requires argument"
+    );
+  });
+
+  it("should handle require option", () => {
+    const nc = initParser(null, null, null, {
+      requireMe: {
+        desc: "must have",
+        require: true,
+        type: "string"
+      }
+    });
+    expect(nc.parse(getArgv("--requireMe yup")).opts.requireMe).to.equal("yup");
+    expect(nc.parse(getArgv("--str-opt a")).error.message).to.equal(
+      "Required option 'requireMe' missing"
     );
   });
 
