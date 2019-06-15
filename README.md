@@ -207,12 +207,11 @@ Where:
 
 Rules for when specifying `args` for the command:
 
-  - all required args must be before optional args
-  - last one can specify variadic args with `..`, like `<names..>` or `[names..]`
-  - If you just want to get the list of args without naming it, you can specify with `<..>` or `[..]`
-  - named args can have an optional type like `<number value>` or `[number values..]`
-    - supported types are `number`, `float`, `string`, `boolean`, or [coercion](#value-coercion)
-
+- all required args must be before optional args
+- last one can specify variadic args with `..`, like `<names..>` or `[names..]`
+- If you just want to get the list of args without naming it, you can specify with `<..>` or `[..]`
+- named args can have an optional type like `<number value>` or `[number values..]`
+  - supported types are `number`, `float`, `string`, `boolean`, or [coercion](#value-coercion)
 
 ## Value Coercion
 
@@ -391,6 +390,9 @@ Where `opts` and `source` contain both the command's private options and top lev
 
 `NixClap` emits these events:
 
+- `help` - when `--help` is invoked, emitted with the parse result object.
+- `pre-help` - before output for `--help`
+- `post-help` - after output for `--help`
 - `help` - when `--help` is invoked, emitted with the parse result object.
 - `version` - when `--version` is invoked, emitted with the parse result object.
 - `parsed` - when all parsing is done but before command `exec` are invoked, emitted with `{ nixClap, parsed }` where `nixClap` is the NixClap instance.
