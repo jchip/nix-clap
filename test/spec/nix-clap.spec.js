@@ -129,6 +129,9 @@ describe("nix-clap", function() {
             },
             "cmd1-bar": {
               type: "string"
+            },
+            dev: {
+              type: "array"
             }
           }
         },
@@ -549,6 +552,47 @@ describe("nix-clap", function() {
     testOptArgTerminator("--.");
   });
 
+  it("should terminate command args array with another --option that takes array args", () => {
+    const nc = initParser();
+    const x = nc.parse(getArgv(`cmd1 a b c --dev x y z`));
+
+    expect(x).to.deep.equal({
+      source: {
+        logLevel: "default",
+        forceCache: "default",
+        applyDefault: "default"
+      },
+      commands: [
+        {
+          name: "cmd1",
+          long: "cmd1",
+          unknown: false,
+          args: {},
+          argList: ["a", "b", "c"], // should've gather cmd's args
+          opts: {
+            dev: ["x", "y", "z"], // should've process cmd's option --dev and collected its args
+            cmd1Foo: "boo"
+          },
+          source: {
+            dev: "cli",
+            cmd1Foo: "default"
+          },
+          verbatim: {
+            dev: ["x", "y", "z"]
+          }
+        }
+      ],
+      opts: {
+        logLevel: "info",
+        forceCache: true,
+        applyDefault: "test"
+      },
+      optCmd: {},
+      verbatim: {},
+      index: 8
+    });
+  });
+
   const testCmdArgTerminator = terminator => {
     const nc = initParser();
     const x = nc.parse(getArgv(`cmd1 a b c ${terminator} d`));
@@ -705,7 +749,7 @@ describe("nix-clap", function() {
     });
   });
 
-  it("should terminate parsing with --", () => {
+  it.only("should terminate parsing with --", () => {
     const nc = initParser();
     const line =
       "cmd1 a --cmd1-bar woo -q v --count-opt -ccc -. -- --fooNum=900 --missing-type yes --no-foobool -bnxb";
