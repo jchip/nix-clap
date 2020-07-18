@@ -1,12 +1,11 @@
 language: node_js
 node_js:
-  - v6
-  - v8
   - v10
-script: fun coverage
+  - v12
+  - v14
 notifications:
   email:
     - joel123@gmail.com
+before_install: npm i -g fyn
 install: fyn --pg none
-before_install:
-  - npm install -g fyn
+script: fun coverage
