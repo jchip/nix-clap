@@ -749,7 +749,7 @@ describe("nix-clap", function() {
     });
   });
 
-  it.only("should terminate parsing with --", () => {
+  it("should terminate parsing with --", () => {
     const nc = initParser();
     const line =
       "cmd1 a --cmd1-bar woo -q v --count-opt -ccc -. -- --fooNum=900 --missing-type yes --no-foobool -bnxb";
