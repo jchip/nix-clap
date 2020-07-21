@@ -178,7 +178,7 @@ describe("nix-clap", function() {
   it("should parse single required param for command", () => {
     const nc = initParser().removeAllListeners("parse-fail");
     const parsed = nc.parse(getArgv("cmd3"));
-    expect(parsed.error.message).to.equal("Not enough arguments for command cmd3");
+    expect(parsed.error.message).contains("Not enough arguments for command cmd3");
     const x = nc.parse(getArgv("cmd3 test"));
     expect(x.commands.length, "should have only one command").to.equal(1);
     expect(x.commands[0]).to.deep.equal({
@@ -648,7 +648,7 @@ describe("nix-clap", function() {
   it("should terminate command arg gathering with --", () => {
     const nc = initParser();
     let parsed = nc.parse(getArgv("cmd7 a -- d e f"));
-    expect(parsed.error.message).to.equal("Not enough arguments for command cmd7");
+    expect(parsed.error.message).contains("Not enough arguments for command cmd7");
     parsed = nc.parse(getArgv("cmd7 a b -- d"));
     expect(parsed).to.deep.equal({
       source: {
@@ -1132,7 +1132,7 @@ describe("nix-clap", function() {
 
   it("should handle optional args for command", () => {
     const nc = initParser();
-    expect(nc.parse(getArgv("6")).error.message).to.equal("Not enough arguments for command cmd6");
+    expect(nc.parse(getArgv("6")).error.message).contains("Not enough arguments for command cmd6");
     let x = nc.parse(getArgv("cmd6 1"));
     expect(x).to.deep.equal({
       source: {
