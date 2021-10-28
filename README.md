@@ -1,4 +1,4 @@
-[![NPM version][npm-image]][npm-url] [![Build Status][travis-image]][travis-url]
+[![NPM version][npm-image]][npm-url] [![Build Status][build-image]][build-url]
 [![Dependency Status][daviddm-image]][daviddm-url] [![devDependency Status][daviddm-dev-image]][daviddm-dev-url]
 [![coverage][coverage-image]][coverage-url]
 
@@ -643,8 +643,8 @@ Return: A promise that resolve with the number of commands with `exec` invoked.
 [argparse]: https://github.com/nodeca/argparse
 [yargs]: https://github.com/yargs/yargs
 [commander]: https://github.com/tj/commander.js
-[travis-image]: https://travis-ci.org/jchip/nix-clap.svg?branch=master
-[travis-url]: https://travis-ci.org/jchip/nix-clap
+[build-image]: https://github.com/jchip/nix-clap/actions/workflows/node.js.yml/badge.svg
+[build-url]: https://github.com/jchip/nix-clap/actions/workflows/node.js.yml
 [npm-image]: https://badge.fury.io/js/nix-clap.svg
 [npm-url]: https://npmjs.org/package/nix-clap
 [daviddm-image]: https://david-dm.org/jchip/nix-clap/status.svg
