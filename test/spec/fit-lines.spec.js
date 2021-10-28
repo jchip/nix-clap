@@ -1,6 +1,7 @@
 "use strict";
 
 const fitLines = require("../../lib/xtil").fitLines;
+const { expect } = require("chai");
 
 describe("fitLines", function() {
   it("should return [] for no strs", () => {

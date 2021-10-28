@@ -1,5 +1,6 @@
 [![NPM version][npm-image]][npm-url] [![Build Status][travis-image]][travis-url]
 [![Dependency Status][daviddm-image]][daviddm-url] [![devDependency Status][daviddm-dev-image]][daviddm-dev-url]
+[![coverage][coverage-image]][coverage-url]
 
 # NixClap
 
@@ -444,18 +445,41 @@ if (parsed.error) {
 
 These are methods `NixClap` class supports.
 
-- [`constructor(config)`](#constructorconfig)
-- [`version(v)`](#versionv)
-- [`help(setting)`](#helpsetting)
-- [`usage(msg), cmdUsage(msg)`](#usagemsg-cmdusagemsg)
-- [`init(options, commands)`](#initoptions-commands)
-- [`parse(argv, start, parsed)`](#parseargv-start-parsed)
-- [`parseAsync(argv, start, parsed)`](#parseasyncargv-start-parsed)
-- [`showHelp(err, cmdName)`](#showhelperr-cmdname)
-- [`removeDefaultHandlers()`](#removedefaulthandlers)
-- [`applyConfig(config, parsed, src)`](#applyconfigconfig-parsed-src)
-- [`runExec(parsed, skipDefault)`](#runexecparsed-skipdefault)
-- [`runExecAsync(parsed, skipDefault)`](#runexecasyncparsed-skipdefault)
+- [NixClap](#nixclap)
+- [Features](#features)
+- [Examples](#examples)
+  - [More Examples](#more-examples)
+- [Parsing Capabilities](#parsing-capabilities)
+  - [Options](#options)
+  - [Commands](#commands)
+  - [Terminating and Resuming](#terminating-and-resuming)
+- [Install](#install)
+- [Interface](#interface)
+  - [`options spec`](#options-spec)
+  - [`commands spec`](#commands-spec)
+    - [Rules for Command `args`](#rules-for-command-args)
+  - [Value Coercion](#value-coercion)
+  - [Parse Result](#parse-result)
+    - [Parse Result `source` and `opts` objects](#parse-result-source-and-opts-objects)
+    - [Parse Result `commands` object](#parse-result-commands-object)
+    - [Command `exec` handler](#command-exec-handler)
+  - [Events](#events)
+    - [Default Event Handlers](#default-event-handlers)
+      - [Skip Default Event Behaviors](#skip-default-event-behaviors)
+  - [APIs](#apis)
+    - [`constructor(config)`](#constructorconfig)
+    - [`version(v)`](#versionv)
+    - [`help(setting)`](#helpsetting)
+    - [`usage(msg)`, `cmdUsage(msg)`](#usagemsg-cmdusagemsg)
+    - [`init(options, commands)`](#initoptions-commands)
+    - [`parse(argv, start, parsed)`](#parseargv-start-parsed)
+    - [`parseAsync(argv, start, parsed)`](#parseasyncargv-start-parsed)
+    - [`showHelp(err, cmdName)`](#showhelperr-cmdname)
+    - [`removeDefaultHandlers()`](#removedefaulthandlers)
+    - [`applyConfig(config, parsed, src)`](#applyconfigconfig-parsed-src)
+    - [`runExec(parsed, skipDefault)`](#runexecparsed-skipdefault)
+    - [`runExecAsync(parsed, skipDefault)`](#runexecasyncparsed-skipdefault)
+- [Others](#others)
 
 ### `constructor(config)`
 
@@ -628,3 +652,5 @@ Return: A promise that resolve with the number of commands with `exec` invoked.
 [daviddm-dev-image]: https://david-dm.org/jchip/nix-clap/dev-status.svg
 [daviddm-dev-url]: https://david-dm.org/jchip/nix-clap?type=dev
 [webpack]: https://webpack.js.org/
+[coverage-image]: https://coveralls.io/repos/github/jchip/nix-clap/badge.svg?branch=master
+[coverage-url]: https://coveralls.io/github/jchip/nix-clap?branch=master

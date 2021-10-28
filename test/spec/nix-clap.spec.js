@@ -12,6 +12,7 @@
 */
 
 const NixClap = require("../../lib/nix-clap");
+const { expect } = require("chai");
 
 describe("nix-clap", function() {
   it("should init", () => {
@@ -455,6 +456,14 @@ describe("nix-clap", function() {
       index: 5,
       optCmd: {}
     });
+  });
+
+  it("should skip exec", () => {
+    let execed = false;
+    const nc = initParser(() => (execed = true));
+    nc.skipExec();
+    nc.parse(getArgv("cmd8 1 2"));
+    expect(execed).to.equal(false);
   });
 
   it("should terminate option arg gathering with --", () => {
