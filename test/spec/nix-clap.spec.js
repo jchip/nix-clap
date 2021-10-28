@@ -129,7 +129,12 @@ describe("nix-clap", function() {
               default: "boo"
             },
             "cmd1-bar": {
+              alias: "1r",
               type: "string"
+            },
+            "cmd1-boo": {
+              alias: "1b",
+              type: "boolean"
             },
             dev: {
               type: "array"
@@ -599,6 +604,86 @@ describe("nix-clap", function() {
       optCmd: {},
       verbatim: {},
       index: 8
+    });
+  });
+
+  it("should accept opt with variadic args that terminates with --. in middle of command args", () => {
+    const nc = initParser();
+    const x = nc.parse(getArgv(`cmd1 a --dev x y z --. b c`));
+
+    expect(x).to.deep.equal({
+      source: {
+        logLevel: "default",
+        forceCache: "default",
+        applyDefault: "default"
+      },
+      commands: [
+        {
+          name: "cmd1",
+          long: "cmd1",
+          unknown: false,
+          args: {},
+          argList: ["a", "b", "c"], // should've gather cmd's args
+          opts: {
+            dev: ["x", "y", "z"], // should've process cmd's option --dev and collected its args
+            cmd1Foo: "boo"
+          },
+          source: {
+            dev: "cli",
+            cmd1Foo: "default"
+          },
+          verbatim: {
+            dev: ["x", "y", "z"]
+          }
+        }
+      ],
+      opts: {
+        logLevel: "info",
+        forceCache: true,
+        applyDefault: "test"
+      },
+      optCmd: {},
+      verbatim: {},
+      index: 9
+    });
+  });
+
+  it("should accept opt in middle of command args", () => {
+    const nc = initParser();
+    const x = nc.parse(getArgv(`cmd1 a --1b b --1f --. c`));
+
+    expect(x).to.deep.equal({
+      source: {
+        logLevel: "default",
+        forceCache: "default",
+        applyDefault: "default"
+      },
+      commands: [
+        {
+          name: "cmd1",
+          long: "cmd1",
+          unknown: false,
+          args: {},
+          argList: ["a", "b", "c"], // should've gather cmd's args
+          opts: {
+            cmd1Boo: true,
+            cmd1Foo: "boo" // should've process cmd's option --dev and collected its args
+          },
+          source: {
+            cmd1Boo: "cli",
+            cmd1Foo: "cli"
+          },
+          verbatim: {}
+        }
+      ],
+      opts: {
+        logLevel: "info",
+        forceCache: true,
+        applyDefault: "test"
+      },
+      optCmd: {},
+      verbatim: {},
+      index: 7
     });
   });
 
