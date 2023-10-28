@@ -102,7 +102,7 @@ export type NixClapConfig = {
    */
   Promise?: any;
   /**
-   * Customer exit function.
+   * Custom exit function.
    *
    * Default is to emit the `exit` event
    */
