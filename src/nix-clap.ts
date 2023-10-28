@@ -22,12 +22,12 @@ export const defaultOutput = (s: string) => {
  *
  * @param code
  */
-export const defaultExit = code => {
+export const defaultExit = (code: number) => {
   process.exit(code);
 };
 
 /**
- *
+ * Configuration for NixClap
  */
 export type NixClapConfig = {
   /**
@@ -38,6 +38,11 @@ export type NixClapConfig = {
    * Version of your app/program
    */
   version?: number | string;
+  /**
+   * Alias for option to show version.  ie: `app -v`
+   *
+   * Default: `["V", "v"]`
+   */
   versionAlias?: string;
   /**
    * custom help option setting.
@@ -99,7 +104,7 @@ export type NixClapConfig = {
   /**
    * Customer exit function.
    *
-   * Default is to call `process.exit`
+   * Default is to emit the `exit` event
    */
   exit?: (code: number) => void;
 };
@@ -123,6 +128,10 @@ export class NixClap extends EventEmitter {
   private _cliOptions: any;
   private _defaults: any;
 
+  /**
+   *
+   * @param config
+   */
   constructor(config?: NixClapConfig) {
     super();
     config = config || {};
@@ -183,15 +192,32 @@ export class NixClap extends EventEmitter {
     this.Promise = config.Promise || Promise;
   }
 
-  _getVersionOpt(verAlias) {
+  private _getVersionOpt(verAlias) {
     return {
       alias: this._versionAlias || verAlias,
       desc: "Show version number"
     };
   }
 
-  removeDefaultHandlers(x) {
-    const evts = x === "*" ? Object.keys(this._evtHandlers) : arguments;
+  /**
+   * Remove NixClap's default handlers
+   *
+   * If you've replaced the handler through specifying `handlers` in `config` for the constructor, then this will not remove your handler.
+   *
+   *
+   * - You can pass in `"*"` to remove all default handlers.
+   * - You can pass in the event names you want to remove.
+   *
+   * ie:
+   * ```js
+   * nc.removeDefaultHandlers("parse-fail", "unknown-option", "unknown-command");
+   * ```
+   * @param events Names of events to remove the default handlers
+   *
+   * @returns The `NixClap` instance itself.
+   */
+  removeDefaultHandlers(...events: string[]) {
+    const evts = events[0] === "*" ? Object.keys(this._evtHandlers) : events;
     for (let i = 0; i < evts.length; i++) {
       const evtName = evts[i];
       this.removeListener(evtName, this._evtHandlers[evtName]);
@@ -199,7 +225,16 @@ export class NixClap extends EventEmitter {
     return this;
   }
 
-  applyConfig(config, parsed, src) {
+  /**
+   * Allow you to apply extra config to the parsed object, overriding any `opts` with `source` not start with `cli`.
+   *
+   * For example, you can allow user to specify options in their `package.json` file, and apply those after the command line is parsed.
+   * @param config - Config object containing user options config
+   * @param parsed - The parse result object from NixClap.
+   * @param src - Name of the source that provided the config.  Default to `user`
+   * @returns
+   */
+  applyConfig(config: any, parsed: any, src?: string) {
     const source = parsed.source;
 
     for (const x in config) {
@@ -212,7 +247,13 @@ export class NixClap extends EventEmitter {
     return this;
   }
 
-  init(options?, commands?) {
+  /**
+   * Initialize your options and commands
+   * @param options
+   * @param commands
+   * @returns The `NixClap` instance itself.
+   */
+  init(options?: any, commands?: any) {
     options = Object.assign({}, options);
 
     if (this._version) {
@@ -236,39 +277,92 @@ export class NixClap extends EventEmitter {
     return this;
   }
 
-  usage(msg) {
+  /**
+   * Set usage message for the program, which can be override by individual command's own usage.
+   *
+   * @param msg any string. `$0` will be replaced with program name and `$1` with command name.
+   * @returns `this`
+   */
+  usage(msg: string) {
     this._usage = msg;
     return this;
   }
 
-  cmdUsage(msg) {
+  /**
+   * Set generic usage message for commands, which can be override by individual command's own usage.
+   *
+   * @param msg any string. `$0` will be replaced with program name and `$1` with command name.
+   * @returns The `NixClap` instance itself.
+   * @param msg
+   * @returns `this`
+   */
+  cmdUsage(msg: string) {
     this._cmdUsage = msg;
     return this;
   }
 
-  version(v) {
+  /**
+   * Set the app's version
+   *
+   * @param v version
+   * @returns `this`
+   */
+  version(v: number | string) {
     this._version = v;
     return this;
   }
 
-  help(custom) {
+  /**
+   * Set a custom option setting for invoking help.
+   *
+   * Default is:
+   *
+   * ```js
+   * {
+   *   alias: "h",
+   *   desc: "Show help"
+   * }
+   * ```
+   *
+   * Option name is always `help`. Call `help(false)` to turn off the default `--help` option.
+   *
+   * > Must be called before the `init` method.
+   * @param custom
+   * @returns `this`
+   */
+  help(custom: any) {
     this._helpOpt = custom;
     return this;
   }
 
+  /**
+   *
+   */
   get commands() {
     return this._commands;
   }
 
+  /**
+   *
+   */
   get cliOptions() {
     return this._cliOptions;
   }
 
+  /**
+   *
+   * @returns
+   */
   showVersion() {
     this.output(`${this._version}\n`);
     return this.exit(0);
   }
 
+  /**
+   *
+   * @param cmdName
+   * @returns
+   */
   makeHelp(cmdName?) {
     let cmdCtx;
     let cmd;
@@ -324,6 +418,12 @@ export class NixClap extends EventEmitter {
     return usage.concat(commandsHelp, optionHelp, cmdHelp);
   }
 
+  /**
+   *
+   * @param err
+   * @param cmdName
+   * @returns
+   */
   showHelp(err, cmdName?) {
     this.emit("pre-help", { self: this });
     this.output(`${this.makeHelp(cmdName).join("\n")}\n`);
@@ -337,6 +437,10 @@ export class NixClap extends EventEmitter {
     return this.exit(code);
   }
 
+  /**
+   *
+   * @param parsed
+   */
   checkRequireOptions(parsed) {
     const missing = Object.keys(this._cliOptions._options)
       .filter(name => {
@@ -350,11 +454,23 @@ export class NixClap extends EventEmitter {
     }
   }
 
+  /**
+   * Set invoking command `exec` to false for all commands
+   */
   skipExec() {
     this._skipExec = true;
     this._skipExecDefault = true;
   }
 
+  /**
+   *
+   * Parse command line
+   *
+   * @param argv argv list
+   * @param start index of the argv list to start parsing
+   * @param parsed Previous parsed result
+   * @returns parsed result
+   */
   parse(argv, start?, parsed?) {
     parsed = this._parse(argv, start, parsed);
 
@@ -367,6 +483,14 @@ export class NixClap extends EventEmitter {
     return parsed;
   }
 
+  /**
+   * Async version of `parse`
+   *
+   * @param argv argv list
+   * @param start index of the argv list to start parsing
+   * @param parsed Previous parsed result
+   * @returns
+   */
   parseAsync(argv, start?, parsed?) {
     parsed = this._parse(argv, start, parsed);
 
@@ -381,7 +505,14 @@ export class NixClap extends EventEmitter {
     });
   }
 
-  _parse(argv, start, parsed?) {
+  /**
+   *
+   * @param argv
+   * @param start
+   * @param parsed
+   * @returns
+   */
+  private _parse(argv, start, parsed?) {
     if (argv === undefined) {
       argv = process.argv;
       if (this._name === undefined) {
@@ -425,6 +556,15 @@ export class NixClap extends EventEmitter {
     return parsed;
   }
 
+  /**
+   * Go through the commands in parsed and call their `exec` handler.
+   *
+   * The `parse` method call this at the end unless `skipExec` flag is set.
+   *
+   * @param parsed -  The parse result object.
+   * @param skipDefault - Do not invoke default command's `exec` handler.
+   * @returns The number of commands with `exec` was invoked.
+   */
   runExec(parsed, skipDefault) {
     const count = this._execCmds(parsed);
     if (count > 0) return count;
@@ -433,6 +573,13 @@ export class NixClap extends EventEmitter {
     return this._runDefaultCmd(parsed);
   }
 
+  /**
+   * async version of `runExec`
+   *
+   * @param parsed -  The parse result object.
+   * @param skipDefault - Do not invoke default command's `exec` handler.
+   * @returns A promise that resolve with the number of commands with `exec` invoked.
+   */
   runExecAsync(parsed, skipDefault) {
     return this._execCmdsAsync(parsed).then(count => {
       if (count > 0) return count;
@@ -441,7 +588,12 @@ export class NixClap extends EventEmitter {
     });
   }
 
-  _runDefaultCmd(parsed) {
+  /**
+   *
+   * @param parsed
+   * @returns
+   */
+  private _runDefaultCmd(parsed) {
     const defaultCmd = this._commands.defaultCmd;
 
     if (!defaultCmd) return 0;
@@ -452,7 +604,10 @@ export class NixClap extends EventEmitter {
     return this._doExec(parsed, defaultCmdCtx);
   }
 
-  _verifyOptions() {
+  /**
+   *
+   */
+  private _verifyOptions() {
     const top = this.cliOptions.list;
     const topAlias = this.cliOptions.alias;
     objEach(this.commands.list, (cmd, cmdName) => {
