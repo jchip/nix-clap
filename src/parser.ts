@@ -1,12 +1,31 @@
 /* eslint-disable one-var,no-magic-numbers,max-params,complexity,max-statements */
 
 import assert from "assert";
+import { NixClap } from "./nix-clap";
 import { CMD, OPTIONS, TARGET } from "./symbols";
 import { camelCase, toBoolean } from "./xtil";
 
 const PARSING = 1;
 const GATHERING_OPT_PARAMS = 2;
 const PARSING_CMD = 3;
+
+/**
+ *
+ */
+export type ParsedResult = {
+  source: any;
+  commands: any[];
+  opts: any;
+  optCmd: any;
+  verbatim: any;
+  nixClap: NixClap;
+  /**
+   * Remaining argv that were not consumed due to the `--` terminating option
+   */
+  _?: any;
+  error?: any;
+  index?: number;
+};
 
 /**
  * Parser
@@ -20,13 +39,13 @@ export class Parser {
   private _optType: any;
   private _optArgs: any;
   private _cmdArgs: any;
-  private _parsed: any;
+  private _parsed: ParsedResult;
   private _optCtx: any;
   private _cmdCtx: any;
   private _multiCommand: any;
   private _argv: any;
 
-  constructor(nc) {
+  constructor(nc: NixClap) {
     this._nc = nc;
     this._cliOptions = nc.cliOptions;
     this._commands = nc.commands;
@@ -368,8 +387,8 @@ export class Parser {
     }
   }
 
-  get _defaultParsedObjet() {
-    const parsed = {
+  get _defaultParsedObjet(): ParsedResult {
+    const parsed: ParsedResult = {
       source: {},
       commands: [],
       opts: {},

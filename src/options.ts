@@ -49,13 +49,18 @@ export type OptionSpec = {
   require?: boolean;
 };
 
+/**
+ *
+ */
+export type OptionsData = Record<string, OptionSpec>;
+
 /*
  * Options
  */
 export class Options {
   private _options: any;
   private _alias: any;
-  constructor(options) {
+  constructor(options: OptionsData) {
     this._options = dup(options);
     this._alias = {};
     this.processOptions();

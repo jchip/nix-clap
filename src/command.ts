@@ -51,6 +51,10 @@ export type CommandSpec = {
    */
   custom?: any;
   customDefault?: any;
+  /**
+   *
+   */
+  subCommands?: Record<string, CommandSpec>;
 };
 
 /*

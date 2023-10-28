@@ -1,9 +1,14 @@
 /* eslint-disable no-magic-numbers */
 
 import assert from "assert";
-import { Command } from "./command";
+import { CommandSpec, Command } from "./command";
 import { CMD } from "./symbols";
 import { objEach, fitLines } from "./xtil";
+
+/**
+ * Data to specify a collection of commands
+ */
+export type CommandsData = Record<string, CommandSpec>;
 
 /*
  * Commands
@@ -14,7 +19,7 @@ export class Commands {
   private _count: any;
   private _execCount: any;
   private _defaultCmd: any;
-  constructor(commands) {
+  constructor(commands: CommandsData) {
     this._commands = {};
     this._alias = {};
     this._count = 0;
@@ -34,7 +39,7 @@ export class Commands {
         this._defaultCmd = name;
       }
       if (!cmd.alias) return;
-      const alias = Array.isArray(cmd.alias) ? cmd.alias : [cmd.alias];
+      const alias = [].concat(cmd.alias);
       alias.forEach(a => {
         assert(
           !this._alias.hasOwnProperty(a),
