@@ -2009,7 +2009,7 @@ describe("nix-clap", function () {
   });
 
   it("should show help for no-action event", () => {
-    const nc = new NixClap({ noActionShowHelp: true, ...noOutputExit })
+    const nc = new NixClap({ ...noOutputExit })
       .cmdUsage("$0 $1")
       .version("1.0.0")
       .init({}, numCommands);

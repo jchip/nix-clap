@@ -25,6 +25,84 @@ export const defaultOutput = (s: string) => {
 export const defaultExit = code => {
   process.exit(code);
 };
+
+/**
+ *
+ */
+export type NixClapConfig = {
+  /**
+   * Name of your app/program
+   */
+  name?: string;
+  /**
+   * Version of your app/program
+   */
+  version?: number | string;
+  versionAlias?: string;
+  /**
+   * custom help option setting.
+   *
+   * Can also set with the `help` method.
+   *
+   */
+  help?: any;
+  /**
+   * Alias for the help option
+   *
+   * Default is `["?", "h"]`
+   */
+  helpAlias?: string | string[];
+  /**
+   * Name of the default command
+   */
+  defaultCommand?: string;
+  /**
+   * Usage message
+   *
+   * Can also set with the `usage` method.
+   */
+  usage?: string;
+  /**
+   * Generic usage message for commands.
+   *
+   * Can also set with the `cmdUsage` method
+   */
+  cmdUsage?: string;
+  /**
+   * Set to `true` to skip calling command `exec` handlers after parse.
+   *
+   * - In case you need to do some processing before invoking the `exec` handlers, you can set this flag
+   *   and call the `runExec` method yourself.
+   */
+  skipExec?: boolean;
+  /**
+   * Set to `true` to skip calling default command `exec` handler after parse.
+   *
+   * - In case you need to do some processing before invoking the `exec` handlers, you can set this flag
+   *   and call the `runExec` method yourself.
+   */
+  skipExecDefault?: boolean;
+  /**
+   * function to output text
+   *
+   * Default is write the stdout.
+   */
+  output?: any;
+  /**
+   * Custom event handlers
+   */
+  handlers?: any;
+  /**
+   * Custom Promise implementation
+   */
+  Promise?: any;
+  /**
+   * Customer exit function.
+   *
+   * Default is to call `process.exit`
+   */
+  exit?: (code: number) => void;
+};
 /**
  *
  */
@@ -45,7 +123,7 @@ export class NixClap extends EventEmitter {
   private _cliOptions: any;
   private _defaults: any;
 
-  constructor(config?) {
+  constructor(config?: NixClapConfig) {
     super();
     config = config || {};
     this._name = config.name;
@@ -401,7 +479,7 @@ export class NixClap extends EventEmitter {
     });
   }
 
-  _doExec(parsed, cmdCtx) {
+  private _doExec(parsed, cmdCtx) {
     const cmd = cmdCtx[CMD];
     if (cmd.exec) {
       const source = Object.assign({}, parsed.source, cmdCtx.source);
@@ -423,7 +501,7 @@ export class NixClap extends EventEmitter {
     return false;
   }
 
-  _execCmds(parsed) {
+  private _execCmds(parsed) {
     let count = 0;
     parsed.commands.forEach(cmdCtx => {
       count += this._doExec(parsed, cmdCtx) ? 1 : 0;
@@ -431,7 +509,7 @@ export class NixClap extends EventEmitter {
     return count;
   }
 
-  _execCmdsAsync(parsed) {
+  private _execCmdsAsync(parsed) {
     let count = 0;
     return parsed.commands
       .reduce((promise, cmdCtx) => {
