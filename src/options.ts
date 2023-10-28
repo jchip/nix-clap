@@ -17,6 +17,38 @@ const OPTION_FIELDS = {
   allowCmd: ["array"]
 };
 
+/**
+ * Option Spec
+ */
+export type OptionSpec = {
+  /**
+   * Aliases for the option
+   */
+  alias?: string | string[];
+  /**
+   * Description of the option
+   */
+  desc?: string;
+  /**
+   * Arguments that the options accepts
+   */
+  args?: string;
+  /**
+   * Specify the type of the argument for the option
+   *
+   * **type** can be one of: `string`, `number`, `float`, `boolean`, `array`, `count`, or `coercion`
+   */
+  type?: string;
+  /**
+   * Specify the commands that this option applies to only
+   */
+  allowCmd?: string[];
+  /**
+   * Specify if this option is a required option
+   */
+  require?: boolean;
+};
+
 /*
  * Options
  */

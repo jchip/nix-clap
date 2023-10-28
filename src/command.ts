@@ -5,6 +5,54 @@ import { Options } from "./options";
 import { cbOrVal, dup, makeDefaults, applyDefaults } from "./xtil";
 
 const SUPPORT_TYPES = ["number", "string", "float", "boolean"];
+
+/**
+ *
+ */
+export type CommandExecFunc = (result: any, parsed: any) => void;
+
+/**
+ *
+ */
+export type CommandSpec = {
+  /**
+   * Execute funtion to invoke for the command
+   */
+  exec: CommandExecFunc;
+  /**
+   * Aliases for the command
+   */
+  alias?: string | string[];
+  /**
+   * Description of the command
+   */
+  desc?: string;
+  /**
+   * Arguments for the command
+   *
+   * **Format**: `"[number cans] [enum] [boolean diet] [string..]"`
+   */
+  args?: string;
+  /**
+   *
+   */
+  defaultCommand?: boolean;
+  /**
+   *
+   */
+  defaultValues?: any[];
+  usage?: string;
+  /**
+   * Options for the command only
+   */
+  options?: any;
+  /**
+   * Custom value coercion for arguments
+   */
+  custom?: any;
+  customDefault?: any;
+};
+
 /*
  * Command
  */
