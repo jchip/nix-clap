@@ -1,25 +1,51 @@
-"use strict";
-
-/* eslint-disable no-magic-numbers,no-process-exit,max-statements,prefer-template,complexity */
-
-const assert = require("assert");
-const Path = require("path");
-const xtil = require("./xtil");
-const symbols = require("./symbols");
-const Options = require("./options");
-const Commands = require("./commands");
-const EventEmitter = require("events");
-const Parser = require("./parser");
-
-const objEach = xtil.objEach;
-const makeDefaults = xtil.makeDefaults;
-const applyDefaults = xtil.applyDefaults;
-const CMD = symbols.CMD;
+/* eslint-disable no-magic-numbers,no-process-exit,max-statements,prefer-template,complexity, prefer-rest-params */
+import assert from "assert";
+import Path from "path";
+import { objEach, makeDefaults, applyDefaults, noop } from "./xtil";
+import { CMD } from "./symbols";
+import { Options } from "./options";
+import { Commands } from "./commands";
+import EventEmitter from "events";
+import { Parser } from "./parser";
 
 const HELP = Symbol("help");
 
-class NixClap extends EventEmitter {
-  constructor(config) {
+/**
+ *
+ * @param s
+ */
+export const defaultOutput = (s: string) => {
+  process.stdout.write(s);
+};
+
+/**
+ *
+ * @param code
+ */
+export const defaultExit = code => {
+  process.exit(code);
+};
+/**
+ *
+ */
+export class NixClap extends EventEmitter {
+  private _name: any;
+  private _version: any;
+  private _versionAlias: any;
+  private _helpOpt: any;
+  private _commands: any;
+  private _usage: any;
+  private _cmdUsage: any;
+  private exit: any;
+  private output: any;
+  private _evtHandlers: any;
+  private _skipExec: any;
+  private _skipExecDefault: any;
+  private Promise: any;
+  private _cliOptions: any;
+  private _defaults: any;
+
+  constructor(config?) {
     super();
     config = config || {};
     this._name = config.name;
@@ -42,23 +68,23 @@ class NixClap extends EventEmitter {
     this._usage = config.usage || "$0";
     this._cmdUsage = config.cmdUsage || "$0 $1";
     this.exit = config.exit || (n => this.emit("exit", n));
-    this.output = config.output || (s => process.stdout.write(s));
+    this.output = config.output || defaultOutput;
     this._evtHandlers = {
-      "pre-help": () => {},
+      "pre-help": noop,
       help: parsed => this.showHelp(null, parsed.opts.help || parsed.optCmd.help),
-      "post-help": () => {},
+      "post-help": noop,
       version: () => this.showVersion(),
       "parse-fail": parsed => this.showHelp(parsed.error),
       parsed: () => undefined,
       "unknown-option": name => {
         throw new Error(`Unknown option ${name}`);
       },
-      "unknown-options-v2": xtil.noop,
+      "unknown-options-v2": noop,
       "unknown-command": ctx => {
         throw new Error(`Unknown command ${ctx.name}`);
       },
       "no-action": () => this.showHelp(new Error("No command given")),
-      "new-command": xtil.noop,
+      "new-command": noop,
       "regex-unmatch": data => {
         const ctx = data.ctx;
         const key = ctx.hasOwnProperty("args") ? "command" : "option";
@@ -67,7 +93,7 @@ class NixClap extends EventEmitter {
             `  Default will be used.\n`
         );
       },
-      exit: code => process.exit(code)
+      exit: defaultExit
     };
     const handlers = config.handlers || {};
     objEach(this._evtHandlers, (handler, name) => {
@@ -108,7 +134,7 @@ class NixClap extends EventEmitter {
     return this;
   }
 
-  init(options, commands) {
+  init(options?, commands?) {
     options = Object.assign({}, options);
 
     if (this._version) {
@@ -165,7 +191,7 @@ class NixClap extends EventEmitter {
     return this.exit(0);
   }
 
-  makeHelp(cmdName) {
+  makeHelp(cmdName?) {
     let cmdCtx;
     let cmd;
     if (cmdName) {
@@ -220,7 +246,7 @@ class NixClap extends EventEmitter {
     return usage.concat(commandsHelp, optionHelp, cmdHelp);
   }
 
-  showHelp(err, cmdName) {
+  showHelp(err, cmdName?) {
     this.emit("pre-help", { self: this });
     this.output(`${this.makeHelp(cmdName).join("\n")}\n`);
     let code = 0;
@@ -251,7 +277,7 @@ class NixClap extends EventEmitter {
     this._skipExecDefault = true;
   }
 
-  parse(argv, start, parsed) {
+  parse(argv, start?, parsed?) {
     parsed = this._parse(argv, start, parsed);
 
     if (!this._skipExec && this.runExec(parsed, this._skipExecDefault) === 0) {
@@ -263,7 +289,7 @@ class NixClap extends EventEmitter {
     return parsed;
   }
 
-  parseAsync(argv, start, parsed) {
+  parseAsync(argv, start?, parsed?) {
     parsed = this._parse(argv, start, parsed);
 
     if (this._skipExec) return this.Promise.resolve(parsed);
@@ -277,7 +303,7 @@ class NixClap extends EventEmitter {
     });
   }
 
-  _parse(argv, start, parsed) {
+  _parse(argv, start, parsed?) {
     if (argv === undefined) {
       argv = process.argv;
       if (this._name === undefined) {
@@ -418,5 +444,3 @@ class NixClap extends EventEmitter {
       .then(() => count);
   }
 }
-
-module.exports = NixClap;

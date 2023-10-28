@@ -1,19 +1,19 @@
-"use strict";
-
 /* eslint-disable no-magic-numbers */
 
-const assert = require("assert");
-const Command = require("./command");
-const CMD = require("./symbols").CMD;
-const xtil = require("./xtil");
-
-const objEach = xtil.objEach;
-const fitLines = xtil.fitLines;
+import assert from "assert";
+import { Command } from "./command";
+import { CMD } from "./symbols";
+import { objEach, fitLines } from "./xtil";
 
 /*
  * Commands
  */
-class Commands {
+export class Commands {
+  private _commands: any;
+  private _alias: any;
+  private _count: any;
+  private _execCount: any;
+  private _defaultCmd: any;
   constructor(commands) {
     this._commands = {};
     this._alias = {};
@@ -77,17 +77,20 @@ class Commands {
       }
     }
 
-    return {
+    const r = {
       name,
       long,
       unknown,
-      [CMD]: cmd,
       args: {},
       argList: [],
       opts: {},
       source: {},
       verbatim: {}
     };
+
+    Object.defineProperty(r, CMD, { value: cmd, enumerable: false, configurable: false });
+
+    return r;
   }
 
   makeHelp(progName) {
@@ -113,5 +116,3 @@ class Commands {
     return data.reduce((help, strs) => help.concat(fitLines(strs, "  ", "    ", cmdWidth, 80)), []);
   }
 }
-
-module.exports = Commands;

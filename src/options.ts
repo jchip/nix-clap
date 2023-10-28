@@ -2,8 +2,8 @@
 
 /* eslint-disable max-statements, no-magic-numbers */
 
-const assert = require("assert");
-const xtil = require("./xtil");
+import assert from "assert";
+import { cbOrVal, camelCase, dup, fitLines, objEach } from "./xtil";
 const SUPPORT_TYPES = ["count", "string", "number", "float", "boolean"];
 const OPTION_FIELDS = {
   alias: ["string", "array"],
@@ -17,16 +17,12 @@ const OPTION_FIELDS = {
   allowCmd: ["array"]
 };
 
-const cbOrVal = xtil.cbOrVal;
-const camelCase = xtil.camelCase;
-const dup = xtil.dup;
-const fitLines = xtil.fitLines;
-const objEach = xtil.objEach;
-
 /*
  * Options
  */
-class Options {
+export class Options {
+  private _options: any;
+  private _alias: any;
   constructor(options) {
     this._options = dup(options);
     this._alias = {};
@@ -166,5 +162,3 @@ class Options {
     return help;
   }
 }
-
-module.exports = Options;

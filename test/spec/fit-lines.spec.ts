@@ -1,9 +1,7 @@
-"use strict";
+import { fitLines } from "../../src/xtil";
+import { expect } from "chai";
 
-const fitLines = require("../../lib/xtil").fitLines;
-const { expect } = require("chai");
-
-describe("fitLines", function() {
+describe("fitLines", function () {
   it("should return [] for no strs", () => {
     expect(fitLines([])).to.deep.equal([]);
   });

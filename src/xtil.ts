@@ -1,48 +1,90 @@
-"use strict";
+import stripAnsi from "strip-ansi";
+/* eslint-disable no-magic-numbers,max-params,@typescript-eslint/no-empty-function */
 
-const stripAnsi = require("strip-ansi");
-/* eslint-disable no-magic-numbers,max-params, */
-
-function camelCase(str) {
+/**
+ *
+ * @param str
+ * @returns
+ */
+export function camelCase(str: string) {
   return str.split("-").reduce((cc, w) => `${cc}${w[0].toUpperCase()}${w.slice(1)}`);
 }
 
-function objEach(obj, iterator) {
+/**
+ *
+ * @param obj
+ * @param iterator
+ */
+export function objEach(obj, iterator) {
   for (const key in obj) {
     iterator(obj[key], key);
   }
 }
 
-function cbOrVal(x) {
+/**
+ *
+ * @param x
+ * @returns
+ */
+export function cbOrVal(x) {
   return typeof x === "function" ? x() : x;
 }
 
-// specialized obj dup for nix-clap
-function dup(obj) {
+/**
+ * specialized obj dup for nix-clap
+ * @param obj
+ * @returns
+ */
+export function dup(obj: any) {
   const copy = {};
   if (obj) {
-    objEach(obj, (val, key) => {
+    objEach(obj, (val: any, key: string) => {
       copy[key] = val && val.constructor.name === "Object" ? Object.assign({}, val) : val;
     });
   }
   return copy;
 }
 
-function noAnsiLen(str) {
+/**
+ * find the length of a string without ANSI codes
+ * @param str
+ * @returns
+ */
+export function noAnsiLen(str: string) {
   return stripAnsi(str).length;
 }
 
-function padStr(str, w) {
-  const len = Math.max(0, w - noAnsiLen(str));
+/**
+ * Pad a string with trailing spaces
+ * @param str
+ * @param width
+ * @returns
+ */
+export function padStr(str: string, width: number) {
+  const len = Math.max(0, width - noAnsiLen(str));
   return `${str}${Array(len + 1).join(" ")}`;
 }
 
-function padStrRight(str, w) {
-  const len = w - noAnsiLen(str);
+/**
+ * Pad a string with leading spaces
+ * @param str
+ * @param width - width
+ * @returns
+ */
+export function padStrRight(str: string, width: number) {
+  const len = width - noAnsiLen(str);
   return `${Array(len + 1).join(" ")}${str}`;
 }
 
-function fitLine(strs, margin, indent, lineWidth) {
+/**
+ *
+ * @param strs
+ * @param margin
+ * @param indent
+ * @param lineWidth
+ * @returns
+ */
+export function fitLine(strs: string[], margin: string, indent: string, lineWidth: number) {
   const out = [margin + strs[0]];
 
   const add = (str, last) => {
@@ -69,7 +111,22 @@ function fitLine(strs, margin, indent, lineWidth) {
   return out.map(x => x.trimRight());
 }
 
-function fitLines(strs, margin, indent, leftWidth, lineWidth) {
+/**
+ *
+ * @param strs
+ * @param margin
+ * @param indent
+ * @param leftWidth
+ * @param lineWidth
+ * @returns
+ */
+export function fitLines(
+  strs: string[],
+  margin?: string,
+  indent?: string,
+  leftWidth?: number,
+  lineWidth?: number
+) {
   if (strs.length === 0) return [];
   if (strs.length === 1) return [`${margin}${strs[0]}`];
 
@@ -81,7 +138,7 @@ function fitLines(strs, margin, indent, leftWidth, lineWidth) {
   }
 }
 
-function makeDefaults(options) {
+export function makeDefaults(options) {
   const defaults = {};
   objEach(options, (opt, name) => {
     if (opt.hasOwnProperty("default")) {
@@ -91,8 +148,14 @@ function makeDefaults(options) {
   return defaults;
 }
 
-function applyDefaults(defaults, ctx, src) {
-  objEach(defaults, (val, key) => {
+/**
+ *
+ * @param defaults
+ * @param ctx
+ * @param src
+ */
+export function applyDefaults(defaults: any, ctx: any, src?: any) {
+  objEach(defaults, (val: any, key: string) => {
     if (!ctx.opts.hasOwnProperty(key)) {
       ctx.opts[key] = val;
       ctx.source[key] = src || "default";
@@ -100,21 +163,14 @@ function applyDefaults(defaults, ctx, src) {
   });
 }
 
-function toBoolean(value) {
+/**
+ * Convert a string to a boolean
+ * @param value
+ * @returns
+ */
+export function toBoolean(value: string) {
   const x = value.toUpperCase();
   return x && x !== "0" && x !== "FALSE" && x !== "NO";
 }
 
-module.exports = {
-  camelCase,
-  objEach,
-  cbOrVal,
-  dup,
-  fitLines,
-  padStr,
-  padStrRight,
-  makeDefaults,
-  applyDefaults,
-  toBoolean,
-  noop: () => {}
-};
+export const noop = () => {};

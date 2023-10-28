@@ -1,24 +1,27 @@
-"use strict";
-
 /* eslint-disable max-statements, no-magic-numbers */
 
-const assert = require("assert");
-const Options = require("./options");
-const xtil = require("./xtil");
-
-const cbOrVal = xtil.cbOrVal;
-const dup = xtil.dup;
-const makeDefaults = xtil.makeDefaults;
-const applyDefaults = xtil.applyDefaults;
+import assert from "assert";
+import { Options } from "./options";
+import { cbOrVal, dup, makeDefaults, applyDefaults } from "./xtil";
 
 const SUPPORT_TYPES = ["number", "string", "float", "boolean"];
 /*
  * Command
  */
-class Command {
-  constructor(name, command) {
+export class Command {
+  private _cmd: any;
+  private _args: any;
+  private _defaults: any;
+  private _options: any;
+  private _needArgs: any;
+  private _expectArgs: any;
+  private _variadic: any;
+  constructor(name: string, command: any) {
     try {
-      const cmd = dup(command);
+      const cmd: any = dup(command);
+      if (cmd.hasOwnProperty("default")) {
+        cmd.defaultCommand = cmd.default;
+      }
       this._cmd = cmd;
       cmd.alias = [].concat(cmd.aliases || cmd.alias || []);
       cmd.name = name;
@@ -152,5 +155,3 @@ class Command {
     return this._cmd;
   }
 }
-
-module.exports = Command;

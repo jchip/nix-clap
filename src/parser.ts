@@ -1,29 +1,31 @@
-"use strict";
-
-/* eslint-disable one-var, max-statements, no-magic-numbers */
 /* eslint-disable one-var,no-magic-numbers,max-params,complexity,max-statements */
 
-const assert = require("assert");
+import assert from "assert";
+import { CMD, OPTIONS, TARGET } from "./symbols";
+import { camelCase, toBoolean } from "./xtil";
 
 const PARSING = 1;
 const GATHERING_OPT_PARAMS = 2;
 const PARSING_CMD = 3;
 
-const symbols = require("./symbols");
-
-const CMD = symbols.CMD;
-const OPTIONS = symbols.OPTIONS;
-const TARGET = symbols.TARGET;
-
-const xtil = require("./xtil");
-
-const camelCase = xtil.camelCase;
-const toBoolean = xtil.toBoolean;
-
-/*
+/**
  * Parser
  */
-class Parser {
+export class Parser {
+  private _nc: any;
+  private _cliOptions: any;
+  private _commands: any;
+  private _states: any;
+  private _state: any;
+  private _optType: any;
+  private _optArgs: any;
+  private _cmdArgs: any;
+  private _parsed: any;
+  private _optCtx: any;
+  private _cmdCtx: any;
+  private _multiCommand: any;
+  private _argv: any;
+
   constructor(nc) {
     this._nc = nc;
     this._cliOptions = nc.cliOptions;
@@ -411,5 +413,3 @@ class Parser {
     return this._parsed;
   }
 }
-
-module.exports = Parser;

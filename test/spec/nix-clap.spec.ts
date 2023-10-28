@@ -1,5 +1,3 @@
-"use strict";
-
 /* eslint-disable max-params */
 
 /*
@@ -11,21 +9,36 @@
 
 */
 
-const assert = require("assert");
-const NixClap = require("../../lib/nix-clap");
-const { expect } = require("chai");
+import assert from "assert";
+import { NixClap, defaultOutput, defaultExit } from "../../src/nix-clap";
+import { expect } from "chai";
 
-describe("nix-clap", function() {
+describe("nix-clap", function () {
+  const noop = () => undefined;
+  const noOutputExit = { output: noop, exit: noop };
   it("should init", () => {
     return new NixClap().init();
   });
 
-  const initParser = (cmdExec, nc, handlers, extraOpts) => {
+  it("should provide default output and exit setup", () => {
+    defaultOutput("\ntesting defaultOutput to stdout - you should see this\n");
+    let called: number = 0;
+    const save = process.exit;
+    process.exit = (n => (called = n)) as any;
+    defaultExit(100);
+    expect(called).to.equal(100);
+    let o = "";
+    const nc = new NixClap({ version: 100, output: (s: string) => (o = s) }).init();
+    nc.showVersion();
+    expect(o).to.equal("100\n");
+    process.exit = save;
+  });
+
+  const initParser = (cmdExec?, nc?, handlers?, extraOpts?) => {
     nc =
       nc ||
       new NixClap({
-        exit: () => undefined,
-        output: () => undefined,
+        ...noOutputExit,
         handlers: Object.assign(
           {
             "parse-fail": parsed => {
@@ -262,6 +275,7 @@ describe("nix-clap", function() {
       customOther: "oops"
     });
     expect(x.commands.length, "should have one command").to.equal(1);
+
     expect(x.commands[0]).to.deep.equal({
       name: "cmd1",
       long: "cmd1",
@@ -292,7 +306,7 @@ describe("nix-clap", function() {
   });
 
   it("should use default when option RegExp unmatch", () => {
-    const nc = new NixClap().init({
+    const nc = new NixClap({ ...noOutputExit }).init({
       regex: {
         type: "enum",
         enum: /^test$/,
@@ -305,7 +319,7 @@ describe("nix-clap", function() {
   });
 
   it("should return undefined if command RegExp didn't match and no default", () => {
-    const nc = new NixClap().init(
+    const nc = new NixClap({ ...noOutputExit }).init(
       {},
       {
         foo: {
@@ -320,7 +334,7 @@ describe("nix-clap", function() {
   });
 
   it("should log error if type coercion function throws", () => {
-    const parsed = new NixClap({ output: () => undefined })
+    const parsed = new NixClap({ ...noOutputExit })
       .init({
         foo: {
           type: "bar",
@@ -1027,7 +1041,7 @@ describe("nix-clap", function() {
 
   it("should fail for unknown option arg type", () => {
     expect(() =>
-      new NixClap().init({
+      new NixClap({ ...noOutputExit }).init({
         foo: {
           type: "blah"
         }
@@ -1035,7 +1049,7 @@ describe("nix-clap", function() {
     ).to.throw("Unknown argument type blah for option foo");
 
     expect(() =>
-      new NixClap().init({
+      new NixClap({ ...noOutputExit }).init({
         foo: {
           type: "blah array"
         }
@@ -1043,7 +1057,7 @@ describe("nix-clap", function() {
     ).to.throw("Unknown array argument type blah for option foo");
 
     expect(() =>
-      new NixClap().init({
+      new NixClap({ ...noOutputExit }).init({
         foo: {
           type: []
         }
@@ -1053,7 +1067,7 @@ describe("nix-clap", function() {
 
   it("should fail for unknown option field", () => {
     expect(() =>
-      new NixClap().init({
+      new NixClap({ ...noOutputExit }).init({
         foo: {
           desc: "foo",
           bar: "oops"
@@ -1071,13 +1085,18 @@ describe("nix-clap", function() {
   });
 
   it("should handle require option", () => {
-    const nc = initParser(null, null, null, {
-      requireMe: {
-        desc: "must have",
-        require: true,
-        type: "string"
+    const nc = initParser(
+      null,
+      null,
+      { "parse-fail": () => {} },
+      {
+        requireMe: {
+          desc: "must have",
+          require: true,
+          type: "string"
+        }
       }
-    });
+    );
     expect(nc.parse(getArgv("--requireMe yup")).opts.requireMe).to.equal("yup");
     expect(nc.parse(getArgv("--str-opt a")).error.message).to.equal(
       "Required option 'requireMe' missing"
@@ -1170,7 +1189,7 @@ describe("nix-clap", function() {
   });
 
   it("should handle type coercion for commands", () => {
-    const nc = new NixClap().init(
+    const nc = new NixClap({ ...noOutputExit }).init(
       {},
       {
         foo: {
@@ -1238,7 +1257,7 @@ describe("nix-clap", function() {
   });
 
   it("should use name passed to construtor", () => {
-    const nc = initParser(null, new NixClap({ name: "foo" }));
+    const nc = initParser(null, new NixClap({ name: "foo", ...noOutputExit }));
     process.argv = getArgv("node blah.js cmd1 a --cmd1-bar woo");
     nc.parse();
     const h = nc.makeHelp();
@@ -1421,7 +1440,7 @@ describe("nix-clap", function() {
 
   it("should fail if command option conflict with top level", () => {
     expect(() =>
-      new NixClap().init(
+      new NixClap({ ...noOutputExit }).init(
         {
           blah: {}
         },
@@ -1438,7 +1457,7 @@ describe("nix-clap", function() {
 
   it("should fail if command option conflict with top level alias", () => {
     expect(() =>
-      new NixClap().init(
+      new NixClap({ ...noOutputExit }).init(
         {
           blah: { alias: "b" }
         },
@@ -1455,7 +1474,7 @@ describe("nix-clap", function() {
 
   it("should fail if command option alias conflict with top level option", () => {
     expect(() =>
-      new NixClap().init(
+      new NixClap({ ...noOutputExit }).init(
         {
           blah: { alias: "b" }
         },
@@ -1472,7 +1491,7 @@ describe("nix-clap", function() {
 
   it("should fail if command option alias conflict with top level option alias", () => {
     expect(() =>
-      new NixClap().init(
+      new NixClap({ ...noOutputExit }).init(
         {
           blah: { alias: "foo" }
         },
@@ -1489,7 +1508,7 @@ describe("nix-clap", function() {
 
   it("should fail if option alias conflict", () => {
     expect(() =>
-      new NixClap().init({
+      new NixClap({ ...noOutputExit }).init({
         blah: { alias: "foo" },
         plug: { alias: "foo" }
       })
@@ -1498,7 +1517,7 @@ describe("nix-clap", function() {
 
   it("should fail if command option alias conflict", () => {
     expect(() =>
-      new NixClap().init(
+      new NixClap({ ...noOutputExit }).init(
         {},
         {
           cmd: {
@@ -1514,7 +1533,7 @@ describe("nix-clap", function() {
 
   it("should fail if command alias conflict", () => {
     expect(() =>
-      new NixClap().init(
+      new NixClap({ ...noOutputExit }).init(
         {},
         {
           cmd: {
@@ -1530,7 +1549,7 @@ describe("nix-clap", function() {
 
   it("should fail if command specify variadic not in last arg", () => {
     expect(() => {
-      return new NixClap().init(
+      return new NixClap({ ...noOutputExit }).init(
         {},
         {
           cmd: {
@@ -1543,7 +1562,7 @@ describe("nix-clap", function() {
 
   it("should fail if command specify invalid arg", () => {
     expect(() => {
-      return new NixClap().init(
+      return new NixClap({ ...noOutputExit }).init(
         {},
         {
           cmd: {
@@ -1556,7 +1575,7 @@ describe("nix-clap", function() {
 
   it("should fail if command specify invalid arg type", () => {
     expect(() => {
-      return new NixClap().init(
+      return new NixClap({ ...noOutputExit }).init(
         {},
         {
           cmd: {
@@ -1626,17 +1645,17 @@ describe("nix-clap", function() {
   });
 
   it("should support auto --version option", () => {
-    const save = process.exit;
     let exited;
-    process.exit = n => (exited = n);
-    const nc = initParser(null, new NixClap({ name: "test" }).version("1.0.0"));
+    const nc = initParser(
+      null,
+      new NixClap({ name: "test", ...noOutputExit, exit: n => (exited = n) }).version("1.0.0")
+    );
     nc.parse(getArgv("--version"));
-    process.exit = save;
     expect(exited).to.equal(0);
   });
 
   it("should make help text", () => {
-    const nc = initParser(null, new NixClap().version("1.0.0").usage("test"));
+    const nc = initParser(null, new NixClap({ ...noOutputExit }).version("1.0.0").usage("test"));
     expect(nc.makeHelp()).to.deep.equal([
       "",
       "Usage: test",
@@ -1683,27 +1702,20 @@ describe("nix-clap", function() {
   });
 
   it("should turn off version and help option", () => {
-    const nc = new NixClap()
-      .version("")
-      .usage("")
-      .help(false)
-      .init({}, {});
+    const nc = new NixClap({ ...noOutputExit }).version("").usage("").help(false).init({}, {});
     const help = nc.makeHelp();
     expect(help).to.deep.equal([""]);
   });
 
   it("should turn help through config", () => {
-    const nc = new NixClap({ help: false })
-      .version("")
-      .usage("")
-      .init({}, {});
+    const nc = new NixClap({ help: false, ...noOutputExit }).version("").usage("").init({}, {});
     const help = nc.makeHelp();
     expect(help).to.deep.equal([""]);
   });
 
   it("should show help and exit on parse error", () => {
     let exited;
-    const outputed = [];
+    const outputed: any[] = [];
     const nc = new NixClap({
       name: "test",
       exit: n => (exited = n),
@@ -1718,7 +1730,7 @@ describe("nix-clap", function() {
 
   it("should show help for --help", () => {
     let exited;
-    const outputed = [];
+    const outputed: any[] = [];
     const nc = new NixClap({
       name: "test",
       exit: n => (exited = n),
@@ -1732,7 +1744,7 @@ describe("nix-clap", function() {
 
   it("should show help for a command", () => {
     let exited;
-    const outputed = [];
+    const outputed: any[] = [];
     const nc = new NixClap({
       name: "test",
       exit: n => (exited = n),
@@ -1749,7 +1761,7 @@ describe("nix-clap", function() {
 
   it("should show help for a command if --help follow command", () => {
     let exited;
-    const outputed = [];
+    const outputed: any[] = [];
     const nc = new NixClap({
       name: "test",
       exit: n => (exited = n),
@@ -1768,13 +1780,13 @@ describe("nix-clap", function() {
     sum: {
       alias: "s",
       desc: "Output sum of numbers",
-      exec: () => undefined,
+      exec: noop,
       args: "<number _..>"
     },
     sort: {
       alias: "sr",
       desc: "Output sorted numbers",
-      exec: () => undefined,
+      exec: noop,
       args: "<number _..>",
       options: {
         reverse: {
@@ -1786,7 +1798,7 @@ describe("nix-clap", function() {
   };
 
   it("should make help for command", () => {
-    const nc = new NixClap()
+    const nc = new NixClap({ ...noOutputExit })
       .cmdUsage("$0 $1")
       .version("1.0.0")
       .init({}, numCommands);
@@ -1851,7 +1863,7 @@ describe("nix-clap", function() {
   });
 
   it("should make help for command with custom usage", () => {
-    const nc = new NixClap({ name: "test" })
+    const nc = new NixClap({ name: "test", ...noOutputExit })
       .cmdUsage("$0 $1")
       .version("1.0.0")
       .init(
@@ -1890,7 +1902,7 @@ describe("nix-clap", function() {
   });
 
   it("should make help for version without used alias V and v", () => {
-    const nc = new NixClap({ name: "test" })
+    const nc = new NixClap({ name: "test", ...noOutputExit })
       .cmdUsage("$0 $1")
       .version("1.0.0")
       .init(
@@ -1940,7 +1952,7 @@ describe("nix-clap", function() {
   });
 
   it("should emit no-action event", () => {
-    const nc = new NixClap()
+    const nc = new NixClap({ ...noOutputExit })
       .removeDefaultHandlers("*")
       .cmdUsage("$0 $1")
       .version("1.0.0")
@@ -1954,6 +1966,7 @@ describe("nix-clap", function() {
   it("should not emit no-action event when there's no command with exec", () => {
     let called;
     const nc = new NixClap({
+      ...noOutputExit,
       handlers: {
         "no-action": () => (called = true)
       }
@@ -1975,6 +1988,7 @@ describe("nix-clap", function() {
   it("should not emit no-action event in parseAsync when there's no command with exec", () => {
     let called;
     const nc = new NixClap({
+      ...noOutputExit,
       handlers: {
         "no-action": () => (called = true)
       }
@@ -1995,7 +2009,7 @@ describe("nix-clap", function() {
   });
 
   it("should show help for no-action event", () => {
-    const nc = new NixClap({ noActionShowHelp: true })
+    const nc = new NixClap({ noActionShowHelp: true, ...noOutputExit })
       .cmdUsage("$0 $1")
       .version("1.0.0")
       .init({}, numCommands);
@@ -2010,8 +2024,8 @@ describe("nix-clap", function() {
       new NixClap().init(
         {},
         {
-          foo: { args: "[a]", exec: () => undefined, defaultCommand: true },
-          bar: { exec: () => undefined, defaultCommand: true }
+          foo: { args: "[a]", exec: noop, defaultCommand: true },
+          bar: { exec: noop, defaultCommand: true }
         }
       )
     ).to.throw("Trying to set command bar as default but foo is already set.");
@@ -2019,11 +2033,11 @@ describe("nix-clap", function() {
 
   it("should fail when setting a command that requires args as default", () => {
     expect(() =>
-      new NixClap().init(
+      new NixClap({ ...noOutputExit }).init(
         {},
         {
-          foo: { args: "<a> [b]", exec: () => undefined, defaultCommand: true },
-          bar: { defaultCommand: true, exec: () => undefined }
+          foo: { args: "<a> [b]", exec: noop, defaultCommand: true },
+          bar: { defaultCommand: true, exec: noop }
         }
       )
     ).to.throw("Init command foo failed - Command foo set as default but requires arguments");
@@ -2031,23 +2045,30 @@ describe("nix-clap", function() {
 
   it("should fail when setting a command that requires args as default", () => {
     expect(() =>
-      new NixClap().init(
+      new NixClap({ ...noOutputExit }).init(
         {},
-        { foo: { args: "<a> [b]", exec: () => undefined, defaultCommand: true } }
+        {
+          foo: {
+            args: "<a> [b]",
+            exec: noop,
+            // test using old default instead of defaultCommand flag
+            default: true
+          }
+        }
       )
     ).to.throw("Init command foo failed - Command foo set as default but requires arguments");
   });
 
   it("should fail when default command doesn't have exec handler", () => {
-    expect(() => new NixClap().init({}, { foo: { args: "[b]", defaultCommand: true } })).to.throw(
-      "Init command foo failed - Command foo set as default but has no exec handler"
-    );
+    expect(() =>
+      new NixClap({ ...noOutputExit }).init({}, { foo: { args: "[b]", defaultCommand: true } })
+    ).to.throw("Init command foo failed - Command foo set as default but has no exec handler");
   });
 
   it("should invoke default command handler", () => {
     let called;
     const exec = ctx => (called = ctx);
-    const nc = new NixClap().init(
+    const nc = new NixClap({ ...noOutputExit }).init(
       {},
       {
         foo: {
@@ -2069,7 +2090,10 @@ describe("nix-clap", function() {
   it("should invoke default command handler in parseAsync", () => {
     let called;
     const exec = ctx => (called = ctx);
-    const nc = new NixClap().init({}, { foo: { args: "[b]", exec, default: true }, bar: {} });
+    const nc = new NixClap({ ...noOutputExit }).init(
+      {},
+      { foo: { args: "[b]", exec, defaultCommand: true }, bar: {} }
+    );
     return nc.parseAsync([]).then(() => {
       expect(called).to.be.ok;
       expect(called.name).to.equal("foo");
@@ -2077,14 +2101,14 @@ describe("nix-clap", function() {
   });
 
   it("should skip help if event handler throws", () => {
-    const nc = new NixClap().init({}, {});
+    const nc = new NixClap({ ...noOutputExit }).init({}, {});
     const parsed = nc.removeDefaultHandlers("help").parse(["--help"]);
     expect(parsed).to.be.ok;
     expect(parsed.source.help).to.equal("cli");
   });
 
   it("should skip version if event handler throws", () => {
-    const nc = new NixClap({ version: "test" }).init({}, {});
+    const nc = new NixClap({ version: "test", ...noOutputExit }).init({}, {});
     const parsed = nc.removeDefaultHandlers("version").parse(["--version"]);
     expect(parsed).to.be.ok;
     expect(parsed.opts.version).to.be.true;
@@ -2113,13 +2137,13 @@ describe("nix-clap", function() {
         defaultCommand: true
       }
     };
-    let nc = new NixClap({}).init({}, commands);
+    let nc = new NixClap(noOutputExit).init({}, commands);
     let parsed = nc.parse(getArgv("cmd1"));
     expect(parsed).to.be.ok;
     expect(parsed.commands[0].name).to.equal("cmd1");
     expect(called).to.equal(true);
     called = undefined;
-    nc = new NixClap({ skipExec: true }).init({}, commands);
+    nc = new NixClap({ skipExec: true, ...noOutputExit }).init({}, commands);
     parsed = nc.parse(getArgv("cmd1"));
     expect(parsed).to.be.ok;
     expect(parsed.commands[0].name).to.equal("cmd1");
@@ -2136,7 +2160,7 @@ describe("nix-clap", function() {
         defaultCommand: true
       }
     };
-    let nc = new NixClap({}).init({}, commands);
+    let nc = new NixClap({ ...noOutputExit }).init({}, commands);
     return nc
       .parseAsync(getArgv("cmd1"))
       .then(parsed => {
@@ -2146,7 +2170,7 @@ describe("nix-clap", function() {
         called = undefined;
       })
       .then(() => {
-        nc = new NixClap({ skipExec: true }).init({}, commands);
+        nc = new NixClap({ skipExec: true, ...noOutputExit }).init({}, commands);
         return nc.parseAsync(getArgv("cmd1")).then(parsed => {
           expect(parsed).to.be.ok;
           expect(parsed.commands[0].name).to.equal("cmd1");
@@ -2162,16 +2186,16 @@ describe("nix-clap", function() {
         exec: () => {
           called = true;
         },
-        default: true
+        defaultCommand: true
       }
     };
-    let nc = new NixClap({}).init({}, commands);
+    let nc = new NixClap({ ...noOutputExit }).init({}, commands);
     let parsed = nc.parse([]);
     expect(parsed).to.be.ok;
     expect(parsed.commands).to.be.empty;
     expect(called).to.equal(true);
     called = undefined;
-    nc = new NixClap({ skipExecDefault: true }).init({}, commands);
+    nc = new NixClap({ skipExecDefault: true, ...noOutputExit }).init({}, commands);
     parsed = nc.removeDefaultHandlers("no-action").parse([]);
     expect(parsed).to.be.ok;
     expect(parsed.commands).to.be.empty;
@@ -2185,10 +2209,10 @@ describe("nix-clap", function() {
         exec: () => {
           called = true;
         },
-        default: true
+        defaultCommand: true
       }
     };
-    let nc = new NixClap({}).init({}, commands);
+    let nc = new NixClap({ ...noOutputExit }).init({}, commands);
     return nc
       .parseAsync([])
       .then(parsed => {
@@ -2198,7 +2222,7 @@ describe("nix-clap", function() {
         called = undefined;
       })
       .then(() => {
-        nc = new NixClap({ skipExecDefault: true }).init({}, commands);
+        nc = new NixClap({ ...noOutputExit, skipExecDefault: true }).init({}, commands);
         return nc
           .removeDefaultHandlers("no-action")
           .parseAsync([])
