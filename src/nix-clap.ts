@@ -1,53 +1,235 @@
 /* eslint-disable no-magic-numbers,no-process-exit,max-statements,prefer-template,complexity, prefer-rest-params */
-import assert from "assert";
 import Path from "path";
-import { objEach, makeDefaults, applyDefaults, noop } from "./xtil";
-import { CMD } from "./symbols";
-import { Options } from "./options";
-import { Commands } from "./commands";
+import { objEach, noop } from "./xtil";
 import EventEmitter from "events";
 import { Parser } from "./parser";
+import { Command, CommandSpec } from "./command";
+import { OptionSpec } from "./option";
+import { CommandNode } from "./command-node";
+import { rootCommandName } from "./base";
+import { ClapNode } from "./clap-node";
 
 const HELP = Symbol("help");
 
 /**
+ * Writes the given string to the standard output.
  *
- * @param s
+ * @param s - The string to be written to the standard output.
  */
 export const defaultOutput = (s: string) => {
   process.stdout.write(s);
 };
 
 /**
+ * Exits the Node.js process with the specified exit code.
  *
- * @param code
+ * @param code - The exit code to terminate the process with.
  */
-export const defaultExit = code => {
+export const defaultExit = (code: number) => {
   process.exit(code);
 };
+
 /**
+ * Configuration options for NixClap.
  *
+ * @property {string} [name] - Name of your app/program.
+ * @property {number | string} [version] - Version of your app/program.
+ * @property {string} [versionAlias] - Alias for option to show version. Default: `["V", "v"]`.
+ * @property {any} [help] - Custom help option setting. Can also set with the `help` method.
+ * @property {string | string[]} [helpAlias] - Alias for the help option. Default: `["?", "h"]`.
+ * @property {string} [defaultCommand] - Name of the default command. It can be only one of the top level commands.
+ * Sub commands cannot be the default command.
+ * @property {boolean} [allowUnknownCommand] - When encounter an unknown command, take it and continue processing.
+ * @property {string} [usage] - Usage message. Can also set with the `usage` method.
+ * @property {string} [cmdUsage] - Generic usage message for commands. Can also set with the `cmdUsage` method.
+ * @property {boolean} [skipExec] - Set to `true` to skip calling command `exec` handlers after parse.
+ * In case you need to do some processing before invoking the `exec` handlers, you can set this flag
+ * and call the `runExec` method yourself.
+ * @property {boolean} [skipExecDefault] - Set to `true` to skip calling default command `exec` handler after parse.
+ * In case you need to do some processing before invoking the `exec` handlers, you can set this flag
+ * and call the `runExec` method yourself.
+ * @property {any} [output] - Function to output text. Default is write to stdout.
+ * @property {any} [handlers] - Custom event handlers.
+ * @property {(code: number) => void} [exit] - Custom exit function. Default is to emit the `exit` event.
+ */
+export type NixClapConfig = {
+  /**
+   * Name of your app/program
+   */
+  name?: string;
+  /**
+   * Version of your app/program
+   */
+  version?: number | string;
+  /**
+   * Alias for option to show version.  ie: `app -v`
+   *
+   * Default: `["V", "v"]`
+   */
+  versionAlias?: string;
+  /**
+   * custom help option setting.
+   *
+   * Can also set with the `help` method.
+   *
+   */
+  help?: any;
+  /**
+   * Alias for the help option
+   *
+   * Default is `["?", "h"]`
+   */
+  helpAlias?: string | string[];
+  /**
+   * Name of the default command.  It can be only one of the top level commands. Sub commands
+   * cannot be the default command.
+   *
+   * **How it's triggered**:
+   *   - If there are no non-option argument
+   *   - If the first non-option argument is not a valid command
+   */
+  defaultCommand?: string;
+  /**
+   * When encounter an unknown command, take it and continue processing.
+   */
+  allowUnknownCommand?: boolean;
+  /**
+   * Usage message
+   *
+   * Can also set with the `usage` method.
+   */
+  usage?: string;
+  /**
+   * Generic usage message for commands.
+   *
+   * Can also set with the `cmdUsage` method
+   */
+  cmdUsage?: string;
+  /**
+   * Set to `true` to skip calling command `exec` handlers after parse.
+   *
+   * - In case you need to do some processing before invoking the `exec` handlers, you can set this flag
+   *   and call the `runExec` method yourself.
+   */
+  skipExec?: boolean;
+  /**
+   * Set to `true` to skip calling default command `exec` handler after parse.
+   *
+   * - In case you need to do some processing before invoking the `exec` handlers, you can set this flag
+   *   and call the `runExec` method yourself.
+   */
+  skipExecDefault?: boolean;
+  /**
+   * function to output text
+   *
+   * Default is write the stdout.
+   */
+  output?: any;
+  /**
+   * Custom event handlers
+   */
+  handlers?: any;
+  /**
+   * Custom exit function.
+   *
+   * Default is to emit the `exit` event
+   */
+  exit?: (code: number) => void;
+};
+
+/**
+ * Represents the result of parsing command-line arguments.
+ *
+ * @property {ClapNode[]} [errorNodes] - Optional array of nodes that encountered errors during parsing.
+ * @property {CommandNode} command - The command node that was parsed.
+ * @property {string[]} _ - Array of non-option arguments.
+ * @property {string[]} argv - Array of all arguments passed to the command.
+ * @property {number} index - The current index in the argument list.
+ */
+export type ParseResult = {
+  errorNodes?: ClapNode[];
+  command: CommandNode;
+  _: string[];
+  argv: string[];
+  index: number;
+};
+
+/**
+ * The `NixClap` class is an extension of `EventEmitter` that provides a command-line interface (CLI) parser
+ * with support for commands, options, and event handling.
+ *
+ * @remarks
+ * This class allows you to define commands and options, handle various events, and parse command-line arguments.
+ * It also provides methods to display help and version information.
+ *
+ * @example
+ * ```typescript
+ * const nc = new NixClap({
+ *   name: "my-cli",
+ *   version: "1.0.0",
+ *   help: {
+ *     alias: ["?", "h"],
+ *     desc: "Show help"
+ *   }
+ * });
+ *
+ * nc.init({
+ *   verbose: {
+ *     alias: "v",
+ *     desc: "Enable verbose mode"
+ *   }
+ * }, {
+ *   start: {
+ *     desc: "Start the application"
+ *   }
+ * });
+ *
+ * nc.parse(process.argv);
+ * ```
+ *
+ * @param config - Configuration object for initializing the `NixClap` instance.
+ *
+ * @event pre-help - Emitted before displaying help.
+ * @event help - Emitted when help is requested.
+ * @event post-help - Emitted after displaying help.
+ * @event parse-fail - Emitted when parsing fails.
+ * @event no-action - Emitted when no command is given.
+ * @event exit - Emitted when the application is about to exit.
+ *
+ * @public
  */
 export class NixClap extends EventEmitter {
-  private _name: any;
-  private _version: any;
-  private _versionAlias: any;
-  private _helpOpt: any;
-  private _commands: any;
-  private _usage: any;
-  private _cmdUsage: any;
-  private exit: any;
-  private output: any;
+  /**
+   * @private
+   * @property {string} _name - The name associated with the instance.
+   */
+  private _name: string;
+  private _version: string | number | false;
+  private _versionAlias: string;
+  private _helpOpt: OptionSpec;
+  private _usage: string;
+  private _cmdUsage: string;
+  private exit: (code: number) => void;
+  /**
+   * Represents the output of the process.
+   */
+  output: (s: string) => void;
   private _evtHandlers: any;
   private _skipExec: any;
-  private _skipExecDefault: any;
-  private Promise: any;
-  private _cliOptions: any;
-  private _defaults: any;
+  private _skipExecDefault: boolean;
+  // private _defaults: any;
+  private _config: NixClapConfig;
+  _rootCommand?: Command;
 
-  constructor(config?) {
+  /**
+   * Constructs a new instance of the NixClap class.
+   *
+   * @param config - Optional configuration object for NixClap.
+   *
+   */
+  constructor(config?: NixClapConfig) {
     super();
-    config = config || {};
+    this._config = config = config || {};
     this._name = config.name;
     this._version = config.version || false;
 
@@ -58,9 +240,10 @@ export class NixClap extends EventEmitter {
       : {
           [HELP]: true,
           alias: config.helpAlias || ["?", "h"],
-          type: "string",
+          args: "[cmd string]",
           desc: () => {
-            const cmdText = this._commands.count > 0 ? " Add a command to show its help" : "";
+            const cmdText =
+              this._rootCommand.subCommandCount > 0 ? " Add a command to show its help" : "";
             return `Show help.${cmdText}`;
           }
         };
@@ -71,28 +254,20 @@ export class NixClap extends EventEmitter {
     this.output = config.output || defaultOutput;
     this._evtHandlers = {
       "pre-help": noop,
-      help: parsed => this.showHelp(null, parsed.opts.help || parsed.optCmd.help),
+      help: parsed => this.showHelp(parsed.error, parsed.command.optNodes.help.argsMap.cmd),
       "post-help": noop,
-      version: () => this.showVersion(),
-      "parse-fail": parsed => this.showHelp(parsed.error),
-      parsed: () => undefined,
-      "unknown-option": name => {
-        throw new Error(`Unknown option ${name}`);
-      },
-      "unknown-options-v2": noop,
-      "unknown-command": ctx => {
-        throw new Error(`Unknown command ${ctx.name}`);
-      },
+      // version: () => this.showVersion(),
+      "parse-fail": parsed => this.showHelp(parsed.command.getErrorNodes()[0].error),
+      // parsed: () => undefined,
+      // "unknown-option": name => {
+      //   throw new Error(`Unknown option ${name}`);
+      // },
+      // "unknown-options-v2": noop,
+      // "unknown-command": ctx => {
+      //   throw new Error(`Unknown command ${ctx.name}`);
+      // },
       "no-action": () => this.showHelp(new Error("No command given")),
-      "new-command": noop,
-      "regex-unmatch": data => {
-        const ctx = data.ctx;
-        const key = ctx.hasOwnProperty("args") ? "command" : "option";
-        this.output(
-          `warning: ${key} ${ctx.name} value ${data.value} does not match allowed values.` +
-            `  Default will be used.\n`
-        );
-      },
+      // "new-command": noop,
       exit: defaultExit
     };
     const handlers = config.handlers || {};
@@ -102,18 +277,34 @@ export class NixClap extends EventEmitter {
     });
     this._skipExec = config.skipExec;
     this._skipExecDefault = config.skipExecDefault;
-    this.Promise = config.Promise || Promise;
   }
 
-  _getVersionOpt(verAlias) {
+  private _getVersionOpt(verAlias) {
     return {
       alias: this._versionAlias || verAlias,
       desc: "Show version number"
     };
   }
 
-  removeDefaultHandlers(x) {
-    const evts = x === "*" ? Object.keys(this._evtHandlers) : arguments;
+  /**
+   * Remove NixClap's default handlers
+   *
+   * If you've replaced the handler through specifying `handlers` in `config` for the constructor, then this will not remove your handler.
+   *
+   *
+   * - You can pass in `"*"` to remove all default handlers.
+   * - You can pass in the event names you want to remove.
+   *
+   * ie:
+   * ```js
+   * nc.removeDefaultHandlers("parse-fail", "unknown-option", "unknown-command");
+   * ```
+   * @param events Names of events to remove the default handlers
+   *
+   * @returns The `NixClap` instance itself.
+   */
+  removeDefaultHandlers(...events: string[]) {
+    const evts = events[0] === "*" ? Object.keys(this._evtHandlers) : events;
     for (let i = 0; i < evts.length; i++) {
       const evtName = evts[i];
       this.removeListener(evtName, this._evtHandlers[evtName]);
@@ -121,21 +312,31 @@ export class NixClap extends EventEmitter {
     return this;
   }
 
-  applyConfig(config, parsed, src) {
-    const source = parsed.source;
+  // applyConfig(config: any, parsed: any, src?: string) {
+  //   const source = parsed.source;
 
-    for (const x in config) {
-      if (!source.hasOwnProperty(x) || !source[x].startsWith("cli")) {
-        parsed.opts[x] = config[x];
-        source[x] = src || "user";
-      }
-    }
+  //   for (const x in config) {
+  //     if (!source.hasOwnProperty(x) || !source[x].startsWith("cli")) {
+  //       parsed.opts[x] = config[x];
+  //       source[x] = src || "user";
+  //     }
+  //   }
 
-    return this;
-  }
+  //   return this;
+  // }
 
-  init(options?, commands?) {
-    options = Object.assign({}, options);
+  /**
+   * Initializes the command-line interface with the provided options and commands.
+   *
+   * @param options - An optional record of option specifications. Each key represents an option name,
+   * and the value is an `OptionSpec` object that defines the option's properties.
+   * @param commands - An optional record of command specifications. Each key represents a command name,
+   * and the value is a `CommandSpec` object that defines the command's properties.
+   *
+   * @returns The current instance of the class for method chaining.
+   */
+  init(options?: Record<string, OptionSpec>, commands?: Record<string, CommandSpec>) {
+    options = { ...options };
 
     if (this._version) {
       let verAlias = ["V", "v"];
@@ -147,64 +348,109 @@ export class NixClap extends EventEmitter {
     }
 
     if (this._helpOpt) {
-      options.help = this._helpOpt;
+      // eslint-disable-next-line dot-notation
+      options["help"] = this._helpOpt;
     }
 
-    this._cliOptions = new Options(options);
-    this._commands = new Commands(commands);
-    this._verifyOptions();
-    this._defaults = makeDefaults(options);
+    // this._commands = new Commands(commands);
+    this._rootCommand = new Command(rootCommandName, {
+      options,
+      subCommands: commands,
+      desc: ""
+    });
+
+    // this._verifyOptions();
+    // this._defaults = makeDefaults(options);
 
     return this;
   }
 
-  usage(msg) {
+  /**
+   * Set usage message for the program, which can be override by individual command's own usage.
+   *
+   * @param msg any string. `$0` will be replaced with program name and `$1` with command name.
+   * @returns `this`
+   */
+  usage(msg: string) {
     this._usage = msg;
     return this;
   }
 
-  cmdUsage(msg) {
+  /**
+   * Set generic usage message for commands, which can be override by individual command's own usage.
+   *
+   * @param msg any string. `$0` will be replaced with program name and `$1` with command name.
+   * @returns The `NixClap` instance itself.
+   * @param msg
+   * @returns `this`
+   */
+  cmdUsage(msg: string) {
     this._cmdUsage = msg;
     return this;
   }
 
-  version(v) {
+  /**
+   * Set the app's version
+   *
+   * @param v version
+   * @returns `this`
+   */
+  version(v: number | string) {
     this._version = v;
     return this;
   }
 
-  help(custom) {
+  /**
+   * Set a custom option setting for invoking help.
+   *
+   * Default is:
+   *
+   * ```js
+   * {
+   *   alias: "h",
+   *   desc: "Show help"
+   * }
+   * ```
+   *
+   * Option name is always `help`. Call `help(false)` to turn off the default `--help` option.
+   *
+   * > Must be called before the `init` method.
+   * @param custom
+   * @returns `this`
+   */
+  help(custom: any) {
     this._helpOpt = custom;
     return this;
   }
 
-  get commands() {
-    return this._commands;
-  }
-
-  get cliOptions() {
-    return this._cliOptions;
-  }
-
+  /**
+   *
+   * @returns
+   */
   showVersion() {
     this.output(`${this._version}\n`);
     return this.exit(0);
   }
 
-  makeHelp(cmdName?) {
-    let cmdCtx;
-    let cmd;
+  /**
+   * Generates help text for the specified command or the root command if no command name is provided.
+   *
+   * @param cmdName - The name of the command to generate help for. If not provided, help for the root command is generated.
+   * @returns An array of strings representing the help text.
+   */
+  makeHelp(cmdName?: string) {
+    let cmd = this._rootCommand;
     if (cmdName) {
-      cmdCtx = this._commands.getContext(cmdName);
-      if (cmdCtx.unknown) {
+      const matched = this._rootCommand.matchSubCommand(cmdName);
+      if (!matched.cmd) {
         return [`Unknown command: ${cmdName}`];
       }
-      cmd = cmdCtx[CMD];
+      cmd = matched.cmd;
     }
 
     const usage = [""];
-    let usageMsg;
-    if (cmd) {
+    let usageMsg: string;
+    if (this._usage && cmd) {
       usageMsg = cmd.usage || this._cmdUsage;
     }
 
@@ -213,39 +459,43 @@ export class NixClap extends EventEmitter {
     }
 
     if (usageMsg) {
-      usageMsg = usageMsg.replace("$0", this._name || "").replace("$1", cmdName || "");
+      usageMsg = usageMsg.replace("$0", this._name || "").replace("$1", cmdName || "<command>");
       usage.push(`Usage: ${usageMsg}`.trim(), "");
-    }
-
-    const options = this._cliOptions.makeHelp();
-    const optionHelp = options && options.length ? ["Options:"].concat(options) : [];
-
-    let commandsHelp = [];
-
-    if (!cmd) {
-      const cmds = this._commands.makeHelp(this._name);
-      commandsHelp = cmds && cmds.length ? ["Commands:"].concat(cmds, "") : [];
-    } else if (cmd.desc) {
-      usage.push(`  ${cmd.desc}`, "");
-    }
-
-    let cmdHelp = [];
-    if (cmd) {
-      cmdHelp.push("");
-      if (cmdCtx.name !== cmdCtx.long) {
-        cmdHelp.push(`Command ${cmdName} is alias for ${cmdCtx.long}`);
+      if (cmd.desc) {
+        usage.push(`  ${cmd.desc}`);
       }
-      const cmdOptions = cmd.options.makeHelp();
-      if (cmdOptions.length) {
-        cmdHelp = cmdHelp.concat(`Command "${cmdCtx.long}" options:`, cmdOptions);
-      } else {
-        cmdHelp.push(`Command ${cmdCtx.long} has no options`);
+      if (cmdName && cmd.name !== cmdName) {
+        usage.push(`Command '${cmdName}' is alias for '${cmd.name}'`);
       }
     }
 
-    return usage.concat(commandsHelp, optionHelp, cmdHelp);
+    const commandsHelp = cmd.subCommandCount > 0 ? ["Commands:"].concat(cmd.makeHelp()) : [];
+
+    const makeOptionsHelp = () => {
+      const options = cmd.options.makeHelp();
+
+      if (options && options.length) {
+        return ["", "Options:"].concat(options);
+      }
+      if (cmd.name && cmd.name !== "~root-command~") {
+        return [`Command ${cmd.name} has no options`];
+      }
+      return [];
+    };
+
+    // console.log(usage, commandsHelp, optionHelp);
+
+    const helpText = usage.concat(commandsHelp, makeOptionsHelp());
+    // console.log(helpText);
+    return helpText;
   }
 
+  /**
+   *
+   * @param err
+   * @param cmdName
+   * @returns
+   */
   showHelp(err, cmdName?) {
     this.emit("pre-help", { self: this });
     this.output(`${this.makeHelp(cmdName).join("\n")}\n`);
@@ -259,51 +509,91 @@ export class NixClap extends EventEmitter {
     return this.exit(code);
   }
 
-  checkRequireOptions(parsed) {
-    const missing = Object.keys(this._cliOptions._options)
-      .filter(name => {
-        const opt = this._cliOptions._options[name];
-        return opt.require && !parsed.opts.hasOwnProperty(name);
-      })
-      .map(x => `'${x}'`);
+  /**
+   * Set to skip exec for all command to true or false
+   */
+  skipExec(skip = true) {
+    this._skipExec = skip;
+    this._skipExecDefault = skip;
+  }
 
-    if (missing.length > 0) {
-      parsed.error = Error(`Required option ${missing.join(", ")} missing`);
+  /**
+   * Parses the given arguments and returns the result.
+   *
+   * @param argv - An optional array of strings representing the arguments to parse.
+   * @param start - An optional number indicating the starting index for parsing.
+   * @returns The result of the parsing as a `ParseResult` object.
+   *
+   * The method first calls `parse2` to perform the initial parsing. If there are any
+   * failures detected by `_checkFailures`, it returns the parsed result immediately.
+   * If there are no failures and `_skipExec` is not set, it proceeds to execute the
+   * parsed result by calling `runExec`.
+   */
+  parse(argv?: string[], start?: number): ParseResult {
+    const parsed = this.parse2(argv, start);
+
+    if (this._checkFailures(parsed)) {
+      return parsed;
     }
-  }
 
-  skipExec() {
-    this._skipExec = true;
-    this._skipExecDefault = true;
-  }
-
-  parse(argv, start?, parsed?) {
-    parsed = this._parse(argv, start, parsed);
-
-    if (!this._skipExec && this.runExec(parsed, this._skipExecDefault) === 0) {
-      if (this._commands.execCount > 0) {
-        this.emit("no-action");
-      }
+    if (!this._skipExec) {
+      this.runExec(parsed);
     }
 
     return parsed;
   }
 
-  parseAsync(argv, start?, parsed?) {
-    parsed = this._parse(argv, start, parsed);
+  /**
+   *
+   * @param argv
+   * @param start
+   * @returns
+   */
+  async parseAsync(argv?: string[], start?: number): Promise<ParseResult> {
+    const parsed = this.parse2(argv, start);
 
-    if (this._skipExec) return this.Promise.resolve(parsed);
-
-    return this.runExecAsync(parsed, this._skipExecDefault).then(count => {
-      if (count === 0 && this._commands.execCount > 0) {
-        this.emit("no-action");
-      }
-
+    if (this._checkFailures(parsed)) {
       return parsed;
-    });
+    }
+
+    if (!this._skipExec) {
+      await this.runExecAsync(parsed);
+    }
+
+    return parsed;
   }
 
-  _parse(argv, start, parsed?) {
+  /**
+   *
+   * @param parsed
+   * @returns
+   */
+  _checkFailures(parsed: ParseResult): boolean {
+    if (parsed.errorNodes.length > 0) {
+      this.emit("parse-fail", parsed);
+      return true;
+    }
+
+    // check if user specified --help, to show help and exit
+    if (this._helpOpt && this._helpOpt[HELP] && parsed.command.optNodes.help?.source === "cli") {
+      this.emit("help", parsed);
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Parses the given command-line arguments starting from the specified index.
+   * If no arguments are provided, it defaults to using `process.argv`.
+   *
+   * @param argv - The array of command-line arguments to parse.
+   * @param start - The index to start parsing from. Defaults to 0.
+   * @returns An object containing the parsed command, the original arguments,
+   *          any error nodes, the remaining unparsed arguments, and the index
+   *          at which parsing stopped.
+   */
+  parse2(argv: string[], start = 0) {
     if (argv === undefined) {
       argv = process.argv;
       if (this._name === undefined) {
@@ -314,133 +604,100 @@ export class NixClap extends EventEmitter {
 
     const parser = new Parser(this);
 
-    parsed = parser.parse(argv, start, parsed);
-    Object.defineProperties(parsed, {
-      _: { value: argv.slice(parsed.index + 1), enumerable: false },
-      argv: { value: argv, enumerable: false }
-    });
-
-    if (!parsed.error) {
-      this.checkRequireOptions(parsed);
+    const { command, index } = parser.parse(argv, start);
+    const missing = command.checkRequiredOptions();
+    if (missing.length > 0) {
+      command.addError(new Error("missing these required options " + missing.join(", ")));
     }
 
-    if (parsed.error) {
-      this.emit("parse-fail", parsed);
-      return parsed;
+    // apply default args
+    command.applyDefaults();
+    command.makeCamelCaseOptions();
+
+    return {
+      command,
+      argv,
+      errorNodes: command.getErrorNodes(),
+      _: argv.slice(index),
+      index
+    };
+  }
+
+  /**
+   * Go through the commands in parsed and call their `exec` handler.
+   *
+   * The `parse` method call this at the end unless `skipExec` flag is set.
+   *
+   * @param parsed -  The parse result object.
+   * @returns The number of commands with `exec` was invoked.
+   */
+  runExec(parsed: ParseResult): number {
+    const command = parsed.command;
+
+    let count = command.invokeExec(true);
+    if (count === 0 && command.cmdSpec.getExecCount() > 0) {
+      const defaultCmd = this._makeDefaultExecCommand(parsed);
+      if (defaultCmd) {
+        count = defaultCmd.invokeExec(true);
+      }
+      if (count === 0) {
+        this.emit("no-action");
+      }
     }
 
-    if (this._version && parsed.opts.version) {
-      this.emit("version", parsed);
-      return parsed;
-    } else if (this._helpOpt && this._helpOpt[HELP] && parsed.source.help === "cli") {
-      this.emit("help", parsed);
-      return parsed;
-    }
-
-    applyDefaults(this._defaults, parsed);
-    parsed.commands.forEach(cmdCtx => {
-      cmdCtx[CMD].applyDefaults(cmdCtx);
-    });
-
-    this.emit("parsed", { nixClap: this, parsed });
-
-    return parsed;
-  }
-
-  runExec(parsed, skipDefault) {
-    const count = this._execCmds(parsed);
-    if (count > 0) return count;
-    if (skipDefault === true) return 0;
-
-    return this._runDefaultCmd(parsed);
-  }
-
-  runExecAsync(parsed, skipDefault) {
-    return this._execCmdsAsync(parsed).then(count => {
-      if (count > 0) return count;
-      if (skipDefault === true) return 0;
-      return this._runDefaultCmd(parsed);
-    });
-  }
-
-  _runDefaultCmd(parsed) {
-    const defaultCmd = this._commands.defaultCmd;
-
-    if (!defaultCmd) return 0;
-
-    const defaultParsed = this._parse([defaultCmd], 0);
-    const defaultCmdCtx = defaultParsed.commands[0];
-
-    return this._doExec(parsed, defaultCmdCtx);
-  }
-
-  _verifyOptions() {
-    const top = this.cliOptions.list;
-    const topAlias = this.cliOptions.alias;
-    objEach(this.commands.list, (cmd, cmdName) => {
-      objEach(cmd.options.list, (opt, optName) => {
-        assert(
-          !top.hasOwnProperty(optName),
-          `Command ${cmdName} option ${optName} conflicts with top level option`
-        );
-        assert(
-          !topAlias.hasOwnProperty(optName),
-          `Command ${cmdName} option ${optName} conflicts with top level alias`
-        );
-      });
-      objEach(cmd.options.alias, (optName, aliasName) => {
-        assert(
-          !top.hasOwnProperty(aliasName),
-          `Command ${cmdName} option ${optName} alias ${aliasName} conflicts with top level option`
-        );
-        assert(
-          !topAlias.hasOwnProperty(aliasName),
-          `Command ${cmdName} option ${optName} alias ${aliasName} conflicts with top level alias`
-        );
-      });
-    });
-  }
-
-  _doExec(parsed, cmdCtx) {
-    const cmd = cmdCtx[CMD];
-    if (cmd.exec) {
-      const source = Object.assign({}, parsed.source, cmdCtx.source);
-      const opts = Object.assign({}, parsed.opts, cmdCtx.opts);
-      return (
-        cmd.exec(
-          {
-            name: cmdCtx.name,
-            long: cmdCtx.long,
-            source,
-            opts,
-            args: cmdCtx.args,
-            argList: cmdCtx.argList
-          },
-          parsed
-        ) || true
-      );
-    }
-    return false;
-  }
-
-  _execCmds(parsed) {
-    let count = 0;
-    parsed.commands.forEach(cmdCtx => {
-      count += this._doExec(parsed, cmdCtx) ? 1 : 0;
-    });
     return count;
   }
 
-  _execCmdsAsync(parsed) {
-    let count = 0;
-    return parsed.commands
-      .reduce((promise, cmdCtx) => {
-        return promise.then(() => {
-          const r = this._doExec(parsed, cmdCtx);
-          if (r) count++;
-          return r;
-        });
-      }, this.Promise.resolve())
-      .then(() => count);
+  /**
+   *
+   * @param parsed
+   * @returns
+   */
+  async runExecAsync(parsed: ParseResult): Promise<number> {
+    const command = parsed.command;
+
+    let count = await command.invokeExecAsync(true);
+    if (count === 0 && command.cmdSpec.getExecCount() > 0) {
+      const defaultCmd = this._makeDefaultExecCommand(parsed);
+      if (defaultCmd) {
+        count = await defaultCmd.invokeExecAsync(true);
+      }
+      if (count === 0) {
+        this.emit("no-action");
+      }
+    }
+
+    return count;
+  }
+
+  /**
+   *
+   * @param parsed
+   * @returns
+   */
+  _makeDefaultExecCommand(parsed: ParseResult): CommandNode {
+    const command = parsed.command;
+
+    if (
+      !this._skipExecDefault &&
+      this._config.defaultCommand &&
+      command.getExecCommands([], true).length === 0
+    ) {
+      // trigger default command?
+      // console.log("checking default command", this._config.defaultCommand);
+
+      const matched = command.cmdSpec.matchSubCommand(this._config.defaultCommand);
+      if (matched.cmd) {
+        const defaultCmd = new CommandNode(matched.name, matched.alias, matched.cmd);
+        defaultCmd.applyDefaults();
+        command.addCommandNode(defaultCmd);
+        return defaultCmd;
+      } else {
+        command.addError(new Error(`default command ${this._config.defaultCommand} not found`));
+        parsed.errorNodes = command.getErrorNodes();
+      }
+    }
+
+    return undefined;
   }
 }

@@ -1,6 +1,6 @@
 "use strict";
 
-const NixClap = require("..");
+import { CommandExecFunc, NixClap } from "../src";
 
 /*
  * Example to implement a cli program that has these commands:
@@ -18,15 +18,22 @@ const NixClap = require("..");
 //
 // exec for command sum
 //
-const sum = parsed => {
-  console.log("sum:", parsed.args._.reduce((s, x) => s + x, 0));
+const sum: CommandExecFunc = cmd => {
+  const json = cmd.jsonMeta;
+  console.log(
+    "sum:",
+    json.args._.reduce((s, v) => s + v, 0)
+  );
 };
 
 //
 // exec for command sort
 //
-const sort = parsed => {
-  console.log("sorted:", parsed.args._.sort((a, b) => (parsed.opts.reverse ? b - a : a - b)));
+const sort: CommandExecFunc = cmd => {
+  const json = cmd.jsonMeta;
+  const numbers = [...json.args._];
+  const sorted = numbers.sort((a, b) => (json.opts.reverse ? b - a : a - b));
+  console.log("sort:", sorted);
 };
 
 new NixClap({})
@@ -42,8 +49,8 @@ new NixClap({})
         alias: "s",
         usage: "$0 $1 num [num ..]",
         desc: "Output sum of numbers",
-        // takes a variadic list of numbers into an array named _
-        args: "<number _..>",
+        // takes a variadic list of numbers into an array
+        args: "<_ number..>",
         exec: sum
       },
       // command sort
@@ -51,8 +58,8 @@ new NixClap({})
         desc: "Output sorted numbers",
         alias: "sr",
         usage: () => "$0 $1 <num> [num ..]",
-        // takes a variadic list of numbers into an array named _
-        args: "<number _..>",
+        // takes a variadic list of numbers into an array
+        args: "<_ number..>",
         exec: sort,
         // options for command sort
         options: {
@@ -68,9 +75,13 @@ new NixClap({})
         desc: "Show product of numbers",
         alias: ["t", "product", "p"],
         usage: "$0 $1 <num> [num ..]",
-        args: "<number _..>",
-        exec: parsed => {
-          console.log("product:", parsed.args._.reduce((p, v) => p * v, 1));
+        args: "<_ number..>",
+        exec: cmd => {
+          const json = cmd.jsonMeta;
+          console.log(
+            "product:",
+            json.args._.reduce((p, v) => p * v, 1)
+          );
         }
       },
       // command divide
@@ -79,16 +90,17 @@ new NixClap({})
         alias: ["d", "div"],
         usage: "$0 $1 <dividend> <divisor>",
         args: "<dividend> <divisor>",
-        exec: parsed => {
-          let dividend, divisor;
-          if (parsed.opts.switch) {
-            dividend = parsed.args.divisor;
-            divisor = parsed.args.dividend;
+        exec: cmd => {
+          const json = cmd.jsonMeta;
+          let dividend;
+          let divisor;
+          if (json.opts.switch) {
+            dividend = json.args.divisor;
+            divisor = json.args.dividend;
           } else {
-            dividend = parsed.args.dividend;
-            divisor = parsed.args.divisor;
+            dividend = json.args.dividend;
+            divisor = json.args.divisor;
           }
-          const args = parsed.args;
           console.log(`quotient of ${dividend}/${divisor}:`, dividend / divisor);
         },
         options: {

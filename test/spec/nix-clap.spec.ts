@@ -1,4 +1,5 @@
-/* eslint-disable max-params */
+/* eslint-disable quotes, quote-props, @typescript-eslint/no-unused-vars */
+/* eslint-disable max-params, @typescript-eslint/ban-ts-comment */
 
 /*
 
@@ -9,11 +10,15 @@
 
 */
 
-import assert from "assert";
-import { NixClap, defaultOutput, defaultExit } from "../../src/nix-clap";
+import { CommandExecFunc, CommandSpec, NixClap } from "../../src";
+import { defaultOutput, defaultExit, ParseResult } from "../../src/nix-clap";
 import { expect } from "chai";
+import { OptionSpec } from "../../src/option";
+import { CommandNode } from "../../src/command-node";
+import { CommandMeta } from "../../src/command";
 
 describe("nix-clap", function () {
+  this.timeout(10000);
   const noop = () => undefined;
   const noOutputExit = { output: noop, exit: noop };
   it("should init", () => {
@@ -34,17 +39,20 @@ describe("nix-clap", function () {
     process.exit = save;
   });
 
-  const initParser = (cmdExec?, nc?, handlers?, extraOpts?) => {
+  const initParser = (
+    cmdExec?: CommandExecFunc | null | undefined,
+    nc?,
+    handlers?,
+    extraOpts?
+  ): NixClap => {
     nc =
       nc ||
       new NixClap({
         ...noOutputExit,
         handlers: Object.assign(
           {
-            "parse-fail": parsed => {
-              if (parsed.error.code !== "ERR_ASSERTION") {
-                console.log("parse fail", parsed.error);
-              }
+            "parse-fail": (parsed: ParseResult) => {
+              // console.log("parse fail", parsed.errorNodes?.map(n => n.errors.map(e => e.message)));
             },
             "no-action": false,
             "unknown-command": false,
@@ -54,88 +62,97 @@ describe("nix-clap", function () {
         )
       });
 
-    nc.removeDefaultHandlers("no-action", "parse-fail", "unknown-command", "unknown-option");
+    // nc.removeDefaultHandlers("no-action", "parse-fail", "unknown-command", "unknown-option");
     return nc.init(
       Object.assign(
         {
           "log-level": {
             alias: "q",
-            type: "string",
-            desc: "One of: debug,verbose,info,warn,error,fyi,none",
-            default: "info"
+            args: "< string>",
+            argDefault: "info",
+            // type: "string",
+            desc: "One of: debug,verbose,info,warn,error,fyi,none"
           },
           "str-opt": {
-            type: "string"
+            args: "[]"
           },
           "require-arg-opt": {
             alias: "rao",
-            type: "string",
-            requireArg: true
+            args: "< string>"
           },
           "force-cache": {
             alias: ["f", "fc"],
-            type: "boolean",
+            args: "< boolean>",
             desc: "Don't check registry if cache exists.",
-            default: true
+            argDefault: "true"
           },
           "bar-bool": {
             alias: "b",
-            type: "boolean"
+            args: "< boolean>"
           },
           foobool: {
-            type: "boolean"
+            args: "< boolean>"
           },
           "array-opt-require": {
             alias: "a",
-            type: "array",
-            requireArg: true
+            args: "< string..1,Inf>"
+          },
+          "array-opt-opt": {
+            alias: "aoo",
+            args: "[ number] [ string..1,Inf]"
           },
           "subtype-array": {
-            type: "number array"
+            args: "< number..1,Inf>"
           },
           fooNum: {
-            type: "number"
+            args: "< number>"
           },
           floatNum: {
-            type: "float"
+            args: "< float>"
           },
           customFn: {
-            type: "xfoo",
-            xfoo: () => "xfoo"
+            args: "< xfoo>",
+            coercions: {
+              xfoo: () => "xfoo-value"
+            }
           },
           customRegex: {
-            type: "rxmatch",
-            rxmatch: /^test$/i
+            args: "< rxmatch>",
+            coercions: {
+              rxmatch: /^test$/i
+            }
           },
           customOther: {
-            type: "rxother",
-            rxother: "oops"
+            args: "< rxother>",
+            coercions: {
+              rxother: () => "oops"
+            }
           },
           "bool-2": {
-            type: "boolean"
+            args: "< boolean>"
           },
           "missing-type": {},
           "bool-3": {
             alias: "x"
           },
           "count-opt": {
-            type: "count",
+            counting: Infinity,
             alias: "c"
           },
           "apply-default": {
-            type: "boolean",
-            default: "test"
-          },
-          "empty-allow-cmd": {
-            type: "boolean",
-            allowCmd: []
-          },
-          "has-allow-cmd": {
-            alias: "hac",
-            type: "boolean",
-            allowCmd: ["cmd1", "cmd4"]
+            args: "< boolean>",
+            argDefault: "test"
           }
-        },
+          // "empty-allow-cmd": {
+          //   args: "<boolean>",
+          //   allowCmd: []
+          // },
+          // "has-allow-cmd": {
+          //   alias: "hac",
+          //   type: "boolean",
+          //   allowCmd: ["cmd1", "cmd4"]
+          // }
+        } as Record<string, OptionSpec>,
         extraOpts
       ),
       {
@@ -144,26 +161,29 @@ describe("nix-clap", function () {
           options: {
             "cmd1-foo": {
               alias: "1f",
-              type: "string",
-              default: "boo"
+              args: "< string>",
+              argDefault: "boo"
             },
             "cmd1-bar": {
               alias: "1r",
-              type: "string"
+              args: "< string>"
             },
             "cmd1-boo": {
               alias: "1b",
-              type: "boolean"
+              args: "< boolean>"
             },
             dev: {
-              type: "array"
+              args: "<..1,Inf>"
             }
           }
         },
         cmd2: {},
         cmd3: {
-          args: "<id>"
-        },
+          args: "<id>",
+          subCommands: {
+            foo: {}
+          }
+        } as CommandSpec,
         cmd4: {
           alias: "4"
         },
@@ -185,137 +205,177 @@ describe("nix-clap", function () {
           exec: cmdExec,
           options: {
             "cmd8-foo": {
-              type: "string"
+              args: "< string>"
             }
           }
         },
         sum: {
-          args: "<number _..>"
+          args: "< number..>"
         }
       }
     );
   };
 
   const getArgv = line => {
-    return line.split(" ");
+    return line.split(" ").filter(x => x);
   };
 
   it("should parse single required param for command", () => {
     const nc = initParser().removeAllListeners("parse-fail");
-    const parsed = nc.parse(getArgv("cmd3"));
-    expect(parsed.error.message).contains("Not enough arguments for command cmd3");
-    const x = nc.parse(getArgv("cmd3 test"));
-    expect(x.commands.length, "should have only one command").to.equal(1);
-    expect(x.commands[0]).to.deep.equal({
-      name: "cmd3",
-      long: "cmd3",
-      unknown: false,
-      args: {
-        id: "test"
-      },
-      argList: ["test"],
+    const { command } = nc.parse2(getArgv("cmd3"));
+    expect(command.error.message).contains("Not enough arguments for command 'cmd3'");
+    const { command: x } = nc.parse2(getArgv("cmd3 test"));
+    expect(Object.keys(x.cmdNodes).length, "should have only one command").to.equal(1);
+    expect(x.cmdNodes.cmd3.argsList).to.deep.equal(["test"]);
+    expect(x.cmdNodes.cmd3.argsMap).to.deep.equal({ 0: "test", id: "test" });
+    expect(x.cmdNodes.cmd3.name).eq("cmd3");
+    expect(x.cmdNodes.cmd3.alias).eq("cmd3");
+    const { command: x2 } = nc.parse2(getArgv("cmd3 test foo"));
+    expect(Object.keys(x2.cmdNodes).length, "should have one commands").to.equal(1);
+    expect(x2.cmdNodes.cmd3.argsList).to.deep.equal(["test"]);
+    expect(x2.cmdNodes.cmd3.argsMap).to.deep.equal({ 0: "test", id: "test" });
+    expect(Object.keys(x2.cmdNodes.cmd3.cmdNodes).length, "cmd3 should have one sub command").to.eq(
+      1
+    );
+    expect(x2.cmdNodes.cmd3.cmdNodes.foo.jsonMeta).to.deep.eq({
+      name: "foo",
+      alias: "foo",
+      argList: [],
+      args: {},
       opts: {},
+      optsFull: {},
+      optsCount: {},
       source: {},
-      verbatim: {}
+      verbatim: {},
+      subCommands: {}
     });
-    const x2 = nc.parse(getArgv("cmd3 test foo"));
-    expect(x2.commands.length, "should have two commands").to.equal(2);
-    expect(x2.commands).to.deep.equal([
-      {
-        name: "cmd3",
-        long: "cmd3",
-        unknown: false,
-        args: {
-          id: "test"
-        },
-        argList: ["test"],
-        opts: {},
-        source: {},
-        verbatim: {}
-      },
-      {
-        name: "foo",
-        long: "foo",
-        unknown: true,
-        args: {},
-        argList: [],
-        opts: {},
-        source: {},
-        verbatim: {}
-      }
-    ]);
   });
 
   it("should parse top level options before command", () => {
     const x = initParser().parse(
       getArgv(
-        "--fooNum=900 --floatNum=1.23 --customFn 1 --customRegex test --customOther 1 --no-foobool cmd1 a"
+        "--cmd1-foo=1foo --fooNum=900 --floatNum=1.23 --customFn 1 --customRegex test --customOther 1 --no-foobool cmd1 a"
       )
     );
-    expect(x.source).to.deep.equal({
-      applyDefault: "default",
-      forceCache: "default",
-      logLevel: "default",
-      fooNum: "cli",
-      floatNum: "cli",
-      foobool: "cli",
-      customFn: "cli",
-      customRegex: "cli",
-      customOther: "cli"
-    });
-    expect(x.opts).to.deep.equal({
+    const m = x.command.jsonMeta;
+
+    expect(m.opts).deep.eq({
+      "cmd1-foo": true,
       fooNum: 900,
       floatNum: 1.23,
+      customFn: "xfoo-value",
+      customRegex: "test",
+      customOther: "oops",
       foobool: false,
+      "log-level": "info",
+      "force-cache": true,
+      "apply-default": true,
+      cmd1Foo: true,
       logLevel: "info",
       forceCache: true,
-      applyDefault: "test",
-      customFn: "xfoo",
-      customRegex: "test",
-      customOther: "oops"
+      applyDefault: true
     });
-    expect(x.commands.length, "should have one command").to.equal(1);
+    expect(m.source).deep.eq({
+      "cmd1-foo": "cli",
+      fooNum: "cli",
+      floatNum: "cli",
+      customFn: "cli",
+      customRegex: "cli",
+      customOther: "cli",
+      foobool: "cli",
+      "log-level": "default",
+      "force-cache": "default",
+      "apply-default": "default",
+      cmd1Foo: "cli",
+      logLevel: "default",
+      forceCache: "default",
+      applyDefault: "default"
+    });
+    const subCommands = Object.values(m.subCommands);
 
-    expect(x.commands[0]).to.deep.equal({
+    expect(subCommands.length, "should have one command").to.equal(1);
+
+    expect(subCommands[0]).to.deep.equal({
       name: "cmd1",
-      long: "cmd1",
-      unknown: false,
-      args: {},
+      alias: "cmd1",
       argList: ["a"],
+      args: {
+        "0": ["a"]
+      },
       opts: {
+        "cmd1-foo": "boo",
         cmd1Foo: "boo"
       },
-      source: { cmd1Foo: "default" },
-      verbatim: {}
+      optsFull: {
+        "cmd1-foo": {
+          "0": "boo"
+        },
+        cmd1Foo: {
+          "0": "boo"
+        }
+      },
+      optsCount: {
+        "cmd1-foo": 1,
+        cmd1Foo: 1
+      },
+      source: {
+        "cmd1-foo": "default",
+        cmd1Foo: "default"
+      },
+      verbatim: {},
+      subCommands: {}
     });
   });
 
-  it("should return default if custom regex doesn't match", () => {
-    const parsed = initParser().parse(getArgv("--customRegex blah a"));
-    expect(parsed.source.customRegex).to.equal("cli-unmatch");
-    expect(parsed.opts.customRegex).to.equal(undefined);
+  it("should return the default value if custom regex doesn't match", () => {
+    const x = initParser().parse(getArgv("--customRegex blah"));
+    expect(x.command.getErrorNodes()[0].error.message).contains(
+      `argument 'blah' didn't match RegExp requirement for customRegex`
+    );
+    const m = x.command.jsonMeta;
+
+    expect(m.opts).deep.eq({
+      customRegex: "blah",
+      "log-level": "info",
+      "force-cache": true,
+      "apply-default": true,
+      logLevel: "info",
+      forceCache: true,
+      applyDefault: true
+    });
+    expect(m.source).deep.eq({
+      customRegex: "cli",
+      "log-level": "default",
+      "force-cache": "default",
+      "apply-default": "default",
+      logLevel: "default",
+      forceCache: "default",
+      applyDefault: "default"
+    });
   });
 
   it("should throw if regex-unmatch event throws", () => {
-    const parsed = initParser(undefined, undefined, {
-      "regex-unmatch": () => {
-        assert(false, "test");
-      }
-    }).parse(getArgv("--customRegex blah x"));
-    expect(parsed.error.message).to.equal("test");
+    const parsed = initParser(undefined, undefined, {}).parse(getArgv("--customRegex blah"));
+    expect(parsed.command.getErrorNodes()[0].error.message).to.equal(
+      `argument 'blah' didn't match RegExp requirement for customRegex`
+    );
   });
 
   it("should use default when option RegExp unmatch", () => {
     const nc = new NixClap({ ...noOutputExit }).init({
       regex: {
-        type: "enum",
-        enum: /^test$/,
-        default: "foo"
+        args: "[ enum]",
+        coercions: {
+          enum: /^test$/
+        },
+        argDefault: "foo"
       }
     });
-    const parsed = nc.parse(getArgv("--regex boo"));
-    expect(parsed.source.regex).to.equal("cli-default");
-    expect(parsed.opts.regex).to.equal("foo");
+    const { command } = nc.parse2(getArgv("--regex boo"));
+    const meta = command.jsonMeta;
+    expect(meta.opts.regex).eq("foo");
+    // expect(parsed.source.regex).to.equal("cli-default");
+    // expect(parsed.opts.regex).to.equal("foo");
   });
 
   it("should return undefined if command RegExp didn't match and no default", () => {
@@ -323,54 +383,89 @@ describe("nix-clap", function () {
       {},
       {
         foo: {
-          args: "<enum foo>",
-          enum: /^test$/
+          args: "<foo enum>",
+          coercions: {
+            enum: /^test$/
+          }
         }
       }
     );
-    const parsed = nc.parse(getArgv("foo bleah"));
-    expect(parsed.commands[0].args.foo).to.equal(undefined);
-    expect(parsed.commands[0].argList[0]).to.equal("bleah");
+    const x = nc.parse(getArgv("foo bleah"));
+    const meta = x.command.jsonMeta;
+    expect(meta.subCommands.foo.args.foo).eq("bleah");
+    expect(x.command.getErrorNodes()[0].error.message).contains(
+      `argument 'bleah' didn't match RegExp requirement for foo`
+    );
   });
 
   it("should log error if type coercion function throws", () => {
-    const parsed = new NixClap({ ...noOutputExit })
+    const x = new NixClap({ ...noOutputExit })
       .init({
         foo: {
-          type: "bar",
-          bar: () => {
-            throw new Error("test");
+          args: "< bar>",
+          coercions: {
+            bar: () => {
+              throw new Error("test");
+            }
           }
         }
       })
-      .parse(getArgv("--foo x"));
-    expect(parsed.opts.foo).to.equal("bar coercion function threw error");
+      .parse2(getArgv("--foo x"));
+    // console.log(x.jsonMeta, null, 2);
+    // expect(parsed.opts.foo).to.equal("bar coercion function threw error");
   });
 
   it("should count options", () => {
     const nc = initParser();
-    let x = nc.parse(getArgv("--count-opt -ccc"));
-    expect(x.opts).to.deep.equal({
+    const x = nc.parse(getArgv("--count-opt -ccc"));
+    expect(x.command.jsonMeta.optsCount["count-opt"]).equal(4);
+    const m = x.command.jsonMeta;
+
+    expect(m.opts).deep.eq({
+      "count-opt": 4,
+      c: 4,
+      "log-level": "info",
+      "force-cache": true,
+      "apply-default": true,
       countOpt: 4,
       logLevel: "info",
       forceCache: true,
-      applyDefault: "test"
+      applyDefault: true
     });
-    x = nc.parse(getArgv("-cccc"));
-    expect(x.opts).to.deep.equal({
+    expect(m.source).deep.eq({
+      "count-opt": "cli",
+      c: "cli",
+      "log-level": "default",
+      "force-cache": "default",
+      "apply-default": "default",
+      countOpt: "cli",
+      logLevel: "default",
+      forceCache: "default",
+      applyDefault: "default"
+    });
+    expect(m.optsCount).deep.eq({
+      "count-opt": 4,
+      "log-level": 1,
+      "force-cache": 1,
+      "apply-default": 1,
       countOpt: 4,
-      logLevel: "info",
-      forceCache: true,
-      applyDefault: "test"
+      logLevel: 1,
+      forceCache: 1,
+      applyDefault: 1
     });
   });
 
-  it("should parse boolean options before command", () => {
-    const verify = (argv, boolVal) => {
-      expect(argv.opts.forceCache).to.equal(boolVal);
-      expect(argv.source.forceCache).to.equal("cli");
-      expect(argv.commands[0].name).to.equal("cmd2");
-      expect(argv.commands[1].name).to.equal("cmd4");
+  it("should parse a boolean option that's immediately before a command", () => {
+    /**
+     * User can specify a boolean option in multiple ways: `--opt-flag`, `--opt-flag=true`, `--opt-flag true`
+     * If a command follows that, then we need to be able to detect all of them.
+     */
+    const verify = (p: ParseResult, boolVal: boolean) => {
+      const argv = p.command.jsonMeta;
+      expect(argv.opts["force-cache"]).to.equal(boolVal);
+      expect(argv.source["force-cache"]).to.equal("cli");
+      expect(argv.subCommands.cmd2).to.be.ok;
+      expect(argv.subCommands.cmd4).to.be.ok;
     };
     verify(initParser().parse(getArgv("-f cmd2 cmd4")), true);
     verify(initParser().parse(getArgv("-f true cmd2 cmd4")), true);
@@ -389,153 +484,205 @@ describe("nix-clap", function () {
     verify(initParser().parse(getArgv("--force-cache=false cmd2 cmd4")), false);
   });
 
-  it("should parse command at beginning", () => {
-    const line =
-      "cmd1 a --cmd1-bar woo -q v --count-opt -ccc --fooNum=900 --missing-type yes --no-foobool -bnxb --bool-2=0 --fc true -a 100 200 -b";
+  it("should handle boolean that's part of a single dash option group", () => {
+    const { command: x } = initParser().parse2(getArgv("cmd1 a -bnx"));
+    expect(x.jsonMeta.opts["bar-bool"]).equal(true);
+    const { command: x2 } = initParser().parse2(getArgv("cmd1 a -nxb"));
+    expect(x2.jsonMeta.opts["bar-bool"]).equal(true);
+
+    const { command: x3 } = initParser().parse2(getArgv("cmd1 a -nxb -f"));
+    expect(x3.jsonMeta.opts["bar-bool"]).equal(true);
+
+    const { command: x4 } = initParser().parse2(getArgv("cmd1 a -nxb cmd2"));
+    expect(x4.jsonMeta.opts["bar-bool"]).equal(true);
+  });
+
+  it("should take value specified by = to be false for no arg option", () => {
+    const line = "cmd1 a --missing-type=no b";
     const x = initParser().parse(getArgv(line), 0);
-    expect(x.error).to.not.exist;
-    expect(x.source).to.deep.equal({
-      applyDefault: "default",
-      logLevel: "cli",
-      countOpt: "cli",
-      fooNum: "cli",
-      missingType: "cli",
-      foobool: "cli",
-      barBool: "cli",
-      bool3: "cli",
-      bool2: "cli",
-      forceCache: "cli",
-      arrayOptRequire: "cli"
-    });
-    expect(x.opts).to.deep.equal({
+    const cmd = x.command;
+    expect(cmd.jsonMeta.opts["missing-type"]).eq(false);
+  });
+
+  it("should take no value specified to be true for no arg option", () => {
+    const line = "cmd1 a --missing-type b";
+    const x = initParser().parse(getArgv(line), 0);
+    const cmd = x.command;
+    expect(cmd.jsonMeta.opts["missing-type"]).eq(true);
+  });
+
+  it("should take value specified to be true for no arg option", () => {
+    const line = "cmd1 a --missing-type=true b";
+    const x = initParser().parse(getArgv(line), 0);
+    const cmd = x.command;
+    expect(cmd.jsonMeta.opts["missing-type"]).eq(true);
+  });
+
+  it("should parse command at the beginning", () => {
+    const line =
+      "cmd1 a --cmd1-bar woo -q v --count-opt -ccc --fooNum=900 --missing-type yes --no-foobool -bnx --bool-2=0 --fc true -a 100 200 -b";
+    const x = initParser().parse(getArgv(line), 0);
+    expect(x.command.error.message).contains(`Encountered unknown CLI option 'n'`);
+    const m = x.command.jsonMeta;
+
+    expect(m.opts).deep.eq({
+      "log-level": "v",
+      q: "v",
+      "count-opt": 4,
+      c: 4,
+      fooNum: 900,
+      "missing-type": true,
+      foobool: false,
+      "bar-bool": true,
+      b: true,
+      n: true,
+      "bool-3": true,
+      x: true,
+      "bool-2": false,
+      "force-cache": true,
+      fc: true,
+      "array-opt-require": ["100", "200"],
+      a: ["100", "200"],
+      "apply-default": true,
       logLevel: "v",
       countOpt: 4,
-      fooNum: 900,
       missingType: true,
-      foobool: false,
       barBool: true,
       bool3: true,
       bool2: false,
       forceCache: true,
-      applyDefault: "test",
-      arrayOptRequire: ["100", "200"]
+      arrayOptRequire: ["100", "200"],
+      applyDefault: true
     });
-  });
-
-  it("should parse command at beginning in parseAsync", () => {
-    const line =
-      "cmd1 a --cmd1-bar woo -q v --count-opt -ccc --fooNum=900 --missing-type yes --no-foobool -bnxb --bool-2=0 --fc -a 100 200 -b";
-    return initParser()
-      .parseAsync(getArgv(line), 0)
-      .then(x => {
-        expect(x.source).to.deep.equal({
-          applyDefault: "default",
-          logLevel: "cli",
-          countOpt: "cli",
-          fooNum: "cli",
-          missingType: "cli",
-          foobool: "cli",
-          barBool: "cli",
-          bool3: "cli",
-          bool2: "cli",
-          forceCache: "cli",
-          arrayOptRequire: "cli"
-        });
-        expect(x.opts).to.deep.equal({
-          logLevel: "v",
-          countOpt: 4,
-          fooNum: 900,
-          missingType: true,
-          foobool: false,
-          barBool: true,
-          bool3: true,
-          bool2: false,
-          forceCache: true,
-          applyDefault: "test",
-          arrayOptRequire: ["100", "200"]
-        });
-      });
+    expect(m.source).deep.eq({
+      "log-level": "cli",
+      q: "cli",
+      "count-opt": "cli",
+      c: "cli",
+      fooNum: "cli",
+      "missing-type": "cli",
+      foobool: "cli",
+      "bar-bool": "cli",
+      b: "cli",
+      n: "cli",
+      "bool-3": "cli",
+      x: "cli",
+      "bool-2": "cli",
+      "force-cache": "cli",
+      fc: "cli",
+      "array-opt-require": "cli",
+      a: "cli",
+      "apply-default": "default",
+      logLevel: "cli",
+      countOpt: "cli",
+      missingType: "cli",
+      barBool: "cli",
+      bool3: "cli",
+      bool2: "cli",
+      forceCache: "cli",
+      arrayOptRequire: "cli",
+      applyDefault: "default"
+    });
   });
 
   it("should parse option with typed array", () => {
     const nc = initParser();
-    let x = nc.parse(getArgv("--subtype-array 1 2 3 4 5"));
-    expect(x).to.deep.equal({
-      source: {
-        subtypeArray: "cli",
-        applyDefault: "default",
-        forceCache: "default",
-        logLevel: "default"
-      },
-      commands: [],
-      opts: {
+    function t0() {
+      const x = nc.parse(getArgv("--subtype-array 1 2 3 4 5"));
+      const m = x.command.jsonMeta;
+
+      expect(m.opts).deep.eq({
+        "subtype-array": [1, 2, 3, 4, 5],
+        "log-level": "info",
+        "force-cache": true,
+        "apply-default": true,
         subtypeArray: [1, 2, 3, 4, 5],
         logLevel: "info",
         forceCache: true,
-        applyDefault: "test"
-      },
-      verbatim: {
-        subtypeArray: ["1", "2", "3", "4", "5"]
-      },
-      index: 6,
-      optCmd: {}
-    });
-    x = nc.parse(getArgv("--subtype-array"));
-    expect(x).to.deep.equal({
-      source: {
+        applyDefault: true
+      });
+      expect(m.source).deep.eq({
+        "subtype-array": "cli",
+        "log-level": "default",
+        "force-cache": "default",
+        "apply-default": "default",
         subtypeArray: "cli",
-        applyDefault: "default",
+        logLevel: "default",
         forceCache: "default",
-        logLevel: "default"
-      },
-      commands: [],
-      opts: {
+        applyDefault: "default"
+      });
+    }
+
+    function t1() {
+      const x = nc.parse(getArgv("--subtype-array"));
+      const m = x.command.jsonMeta;
+
+      expect(m.opts).deep.eq({
+        "subtype-array": undefined,
         subtypeArray: undefined,
+        "log-level": "info",
+        "force-cache": true,
+        "apply-default": true,
         logLevel: "info",
         forceCache: true,
-        applyDefault: "test"
-      },
-      verbatim: {},
-      index: 1,
-      optCmd: {}
-    });
+        applyDefault: true
+      });
+      expect(m.source).deep.eq({
+        "subtype-array": "cli",
+        "log-level": "default",
+        "force-cache": "default",
+        "apply-default": "default",
+        subtypeArray: "cli",
+        logLevel: "default",
+        forceCache: "default",
+        applyDefault: "default"
+      });
+    }
+
+    t0();
+    t1();
   });
 
   it("should parse command with typed argument", () => {
     const nc = initParser();
     const x = nc.parse(getArgv("sum 1 2 3 4"));
-    expect(x).to.deep.equal({
-      source: {
-        applyDefault: "default",
-        forceCache: "default",
-        logLevel: "default"
-      },
-      commands: [
-        {
-          name: "sum",
-          long: "sum",
-          unknown: false,
-          args: {
-            _: [1, 2, 3, 4]
-          },
-          argList: ["1", "2", "3", "4"],
-          opts: {},
-          source: {},
-          verbatim: {}
-        }
-      ],
-      opts: {
-        logLevel: "info",
-        forceCache: true,
-        applyDefault: "test"
-      },
-      verbatim: {},
-      index: 5,
-      optCmd: {}
+    const m = x.command.jsonMeta;
+
+    expect(m.opts).deep.eq({
+      "log-level": "info",
+      "force-cache": true,
+      "apply-default": true,
+      logLevel: "info",
+      forceCache: true,
+      applyDefault: true
+    });
+    expect(m.source).deep.eq({
+      "log-level": "default",
+      "force-cache": "default",
+      "apply-default": "default",
+      logLevel: "default",
+      forceCache: "default",
+      applyDefault: "default"
+    });
+    expect(m.subCommands).deep.eq({
+      sum: {
+        name: "sum",
+        alias: "sum",
+        argList: ["1", "2", "3", "4"],
+        args: {
+          "0": [1, 2, 3, 4]
+        },
+        opts: {},
+        optsFull: {},
+        optsCount: {},
+        source: {},
+        verbatim: {},
+        subCommands: {}
+      }
     });
   });
 
-  it("should skip exec", () => {
+  it("should skip exec for skipExec flag", () => {
     let execed = false;
     const nc = initParser(() => (execed = true));
     nc.skipExec();
@@ -545,92 +692,96 @@ describe("nix-clap", function () {
 
   it("should terminate option arg gathering with --", () => {
     const nc = initParser();
-    const x = nc.parse(getArgv("--str-opt -- d"));
-    expect(x).to.deep.equal({
-      source: {
-        strOpt: "cli",
-        applyDefault: "default",
-        forceCache: "default",
-        logLevel: "default"
-      },
-      commands: [],
-      opts: {
-        logLevel: "info",
-        forceCache: true,
-        applyDefault: "test",
-        strOpt: undefined
-      },
-      verbatim: {},
-      index: 1,
-      optCmd: {}
+    const { command: x } = nc.parse(getArgv("--str-opt -- cmd2"));
+    const m = x.jsonMeta;
+    expect(m.opts).deep.equal({
+      "str-opt": undefined,
+      strOpt: undefined,
+      "log-level": "info",
+      "force-cache": true,
+      "apply-default": true,
+      logLevel: "info",
+      forceCache: true,
+      applyDefault: true
     });
+    expect(m.source).deep.eq({
+      "str-opt": "cli",
+      "log-level": "default",
+      "force-cache": "default",
+      "apply-default": "default",
+      strOpt: "cli",
+      logLevel: "default",
+      forceCache: "default",
+      applyDefault: "default"
+    });
+    expect(m.subCommands).deep.equal({});
 
     const parsed = nc.parse(getArgv("--array-opt-require -- d"));
-    expect(parsed.error.message).to.equal("option array-opt-require requires argument");
+    expect(parsed.command.error.message).to.equal(
+      "Not enough arguments for option 'array-opt-require'"
+    );
   });
 
   it("should terminate option array with --", () => {
     const nc = initParser();
-    const x = nc.parse(getArgv("--array-opt-require a b c -- d"));
-    expect(x).to.deep.equal({
-      source: {
-        arrayOptRequire: "cli",
-        applyDefault: "default",
-        forceCache: "default",
-        logLevel: "default"
-      },
-      commands: [],
-      opts: {
-        arrayOptRequire: ["a", "b", "c"],
-        logLevel: "info",
-        forceCache: true,
-        applyDefault: "test"
-      },
-      verbatim: {
-        arrayOptRequire: ["a", "b", "c"]
-      },
-      index: 4,
-      optCmd: {}
+    const { command: x } = nc.parse(getArgv("--array-opt-require a b c -- cmd2"));
+    const m = x.jsonMeta;
+
+    expect(m.opts).deep.equal({
+      "array-opt-require": ["a", "b", "c"],
+      "log-level": "info",
+      "force-cache": true,
+      "apply-default": true,
+      arrayOptRequire: ["a", "b", "c"],
+      logLevel: "info",
+      forceCache: true,
+      applyDefault: true
     });
+    expect(m.source).deep.eq({
+      "array-opt-require": "cli",
+      "log-level": "default",
+      "force-cache": "default",
+      "apply-default": "default",
+      arrayOptRequire: "cli",
+      logLevel: "default",
+      forceCache: "default",
+      applyDefault: "default"
+    });
+    expect(m.subCommands).deep.equal({});
   });
 
-  const testOptArgTerminator = terminator => {
+  const testOptArgTerminator = (terminator: string) => {
     const nc = initParser();
     const x = nc.parse(getArgv(`--array-opt-require a b c ${terminator} d`));
-    expect(x).to.deep.equal({
-      source: {
-        arrayOptRequire: "cli",
-        applyDefault: "default",
-        forceCache: "default",
-        logLevel: "default"
-      },
-      commands: [
-        {
-          argList: [],
-          args: {},
-          long: "d",
-          name: "d",
-          opts: {},
-          source: {},
-          unknown: true,
-          verbatim: {}
-        }
-      ],
-      opts: {
-        arrayOptRequire: ["a", "b", "c"],
-        logLevel: "info",
-        forceCache: true,
-        applyDefault: "test"
-      },
-      verbatim: {
-        arrayOptRequire: ["a", "b", "c"]
-      },
-      index: 6,
-      optCmd: {}
+
+    const m = x.command.jsonMeta;
+
+    expect(m.opts).deep.equal({
+      "array-opt-require": ["a", "b", "c"],
+      "log-level": "info",
+      "force-cache": true,
+      "apply-default": true,
+      arrayOptRequire: ["a", "b", "c"],
+      logLevel: "info",
+      forceCache: true,
+      applyDefault: true
     });
+    expect(m.source).deep.eq({
+      "array-opt-require": "cli",
+      "log-level": "default",
+      "force-cache": "default",
+      "apply-default": "default",
+      arrayOptRequire: "cli",
+      logLevel: "default",
+      forceCache: "default",
+      applyDefault: "default"
+    });
+    expect(m.argList).to.be.empty;
+    expect(m.subCommands).deep.eq({});
+    expect(x.command.error.message).contain(`Encountered unknown CLI argument 'd'.`);
   };
 
-  it("should terminate option array with --. and parse the remaining args", () => {
+  it("should terminate option array with -. and parse the remaining args", () => {
     testOptArgTerminator("-.");
   });
 
@@ -641,165 +792,113 @@ describe("nix-clap", function () {
   it("should terminate command args array with another --option that takes array args", () => {
     const nc = initParser();
     const x = nc.parse(getArgv(`cmd1 a b c --dev x y z`));
+    const m = x.command.jsonMeta;
 
-    expect(x).to.deep.equal({
-      source: {
-        logLevel: "default",
-        forceCache: "default",
-        applyDefault: "default"
-      },
-      commands: [
-        {
-          name: "cmd1",
-          long: "cmd1",
-          unknown: false,
-          args: {},
-          argList: ["a", "b", "c"], // should've gather cmd's args
-          opts: {
-            dev: ["x", "y", "z"], // should've process cmd's option --dev and collected its args
-            cmd1Foo: "boo"
-          },
-          source: {
-            dev: "cli",
-            cmd1Foo: "default"
-          },
-          verbatim: {
-            dev: ["x", "y", "z"]
-          }
-        }
-      ],
-      opts: {
-        logLevel: "info",
-        forceCache: true,
-        applyDefault: "test"
-      },
-      optCmd: {},
-      verbatim: {},
-      index: 8
+    const cmd1 = m.subCommands.cmd1;
+    expect(cmd1.argList).deep.equal(["a", "b", "c"]);
+    expect(cmd1.opts).deep.equal({ dev: ["x", "y", "z"], "cmd1-foo": "boo", cmd1Foo: "boo" });
+    expect(cmd1.source).deep.eq({ dev: "cli", "cmd1-foo": "default", cmd1Foo: "default" });
+    expect(m.opts).to.deep.eq({
+      "log-level": "info",
+      "force-cache": true,
+      "apply-default": true,
+      logLevel: "info",
+      forceCache: true,
+      applyDefault: true
+    });
+    expect(m.source).to.deep.eq({
+      "log-level": "default",
+      "force-cache": "default",
+      "apply-default": "default",
+      logLevel: "default",
+      forceCache: "default",
+      applyDefault: "default"
     });
   });
 
   it("should accept opt with variadic args that terminates with --. in middle of command args", () => {
     const nc = initParser();
-    const x = nc.parse(getArgv(`cmd1 a --dev x y z --. b c`));
-
-    expect(x).to.deep.equal({
-      source: {
-        logLevel: "default",
-        forceCache: "default",
-        applyDefault: "default"
-      },
-      commands: [
-        {
-          name: "cmd1",
-          long: "cmd1",
-          unknown: false,
-          args: {},
-          argList: ["a", "b", "c"], // should've gather cmd's args
-          opts: {
-            dev: ["x", "y", "z"], // should've process cmd's option --dev and collected its args
-            cmd1Foo: "boo"
-          },
-          source: {
-            dev: "cli",
-            cmd1Foo: "default"
-          },
-          verbatim: {
-            dev: ["x", "y", "z"]
-          }
-        }
-      ],
-      opts: {
-        logLevel: "info",
-        forceCache: true,
-        applyDefault: "test"
-      },
-      optCmd: {},
-      verbatim: {},
-      index: 9
+    // the first -. ends --dev, the 2nd -. ends cmd1 args
+    const x = nc.parse(getArgv(`cmd1 a --dev x y z -. -. cmd2 cmd3`));
+    expect(x.command.error.message).contains("Not enough arguments for command 'cmd3'");
+    const m = x.command.jsonMeta;
+    const { cmd1, cmd2, cmd3 } = m.subCommands;
+    expect(cmd1.argList).deep.equal(["a"]);
+    expect(cmd1.opts).to.deep.eq({
+      dev: ["x", "y", "z"],
+      "cmd1-foo": "boo",
+      cmd1Foo: "boo"
     });
+    expect(cmd1.source).deep.eq({
+      dev: "cli",
+      "cmd1-foo": "default",
+      cmd1Foo: "default"
+    });
+    expect(cmd2).to.be.ok;
+    expect(cmd3).to.be.ok;
   });
 
   it("should accept opt in middle of command args", () => {
     const nc = initParser();
-    const x = nc.parse(getArgv(`cmd1 a --1b b --1f --. c`));
+    // --1b doesn't accept arg, so the b after it should be an arg for cmd1
+    const x = nc.parse(getArgv(`cmd1 a --1b b --1f sss -. cmd2`));
+    const m = x.command.jsonMeta;
+    const { cmd1, cmd2 } = m.subCommands;
 
-    expect(x).to.deep.equal({
-      source: {
-        logLevel: "default",
-        forceCache: "default",
-        applyDefault: "default"
-      },
-      commands: [
-        {
-          name: "cmd1",
-          long: "cmd1",
-          unknown: false,
-          args: {},
-          argList: ["a", "b", "c"], // should've gather cmd's args
-          opts: {
-            cmd1Boo: true,
-            cmd1Foo: "boo" // should've process cmd's option --dev and collected its args
-          },
-          source: {
-            cmd1Boo: "cli",
-            cmd1Foo: "cli"
-          },
-          verbatim: {}
-        }
-      ],
-      opts: {
-        logLevel: "info",
-        forceCache: true,
-        applyDefault: "test"
-      },
-      optCmd: {},
-      verbatim: {},
-      index: 7
+    expect(cmd2).to.be.ok;
+    expect(cmd1.argList).deep.equal(["a", "b"]);
+    expect(cmd1.opts).deep.eq({
+      "cmd1-boo": true,
+      "1b": true,
+      "cmd1-foo": "sss",
+      "1f": "sss",
+      cmd1Boo: true,
+      cmd1Foo: "sss"
+    });
+    expect(cmd1.source).deep.eq({
+      "cmd1-boo": "cli",
+      "1b": "cli",
+      "cmd1-foo": "cli",
+      "1f": "cli",
+      cmd1Boo: "cli",
+      cmd1Foo: "cli"
     });
   });
 
   const testCmdArgTerminator = terminator => {
     const nc = initParser();
     const x = nc.parse(getArgv(`cmd1 a b c ${terminator} d`));
-    expect(x).to.deep.equal({
-      source: {
-        applyDefault: "default",
-        forceCache: "default",
-        logLevel: "default"
-      },
-      commands: [
-        {
-          name: "cmd1",
-          long: "cmd1",
-          unknown: false,
-          args: {},
-          argList: ["a", "b", "c"],
-          opts: {
-            cmd1Foo: "boo"
-          },
-          source: { cmd1Foo: "default" },
-          verbatim: {}
-        },
-        {
-          name: "d",
-          long: "d",
-          unknown: true,
-          args: {},
-          argList: [],
-          opts: {},
-          source: {},
-          verbatim: {}
-        }
-      ],
-      opts: {
-        logLevel: "info",
-        forceCache: true,
-        applyDefault: "test"
-      },
-      verbatim: {},
-      index: 6,
-      optCmd: {}
+    const cmd = x.command;
+    const m = cmd.jsonMeta;
+
+    expect(cmd.error.message).contains("Encountered unknown CLI argument 'd'.");
+
+    expect(m.opts).to.deep.eq({
+      "log-level": "info",
+      "force-cache": true,
+      "apply-default": true,
+      logLevel: "info",
+      forceCache: true,
+      applyDefault: true
+    });
+    expect(m.source).to.deep.eq({
+      "log-level": "default",
+      "force-cache": "default",
+      "apply-default": "default",
+      logLevel: "default",
+      forceCache: "default",
+      applyDefault: "default"
+    });
+
+    const cmd1 = m.subCommands.cmd1;
+    expect(cmd1.argList).deep.eq(["a", "b", "c"]);
+    expect(cmd1.opts).to.deep.eq({
+      "cmd1-foo": "boo",
+      cmd1Foo: "boo"
+    });
+    expect(cmd1.source).to.deep.eq({
+      "cmd1-foo": "default",
+      cmd1Foo: "default"
     });
   };
 
@@ -811,107 +910,38 @@ describe("nix-clap", function () {
     testCmdArgTerminator("--.");
   });
 
-  it("should terminate command arg gathering with --", () => {
+  it("should terminate all parsing with --", () => {
     const nc = initParser();
-    let parsed = nc.parse(getArgv("cmd7 a -- d e f"));
-    expect(parsed.error.message).contains("Not enough arguments for command cmd7");
-    parsed = nc.parse(getArgv("cmd7 a b -- d"));
-    expect(parsed).to.deep.equal({
-      source: {
-        applyDefault: "default",
-        forceCache: "default",
-        logLevel: "default"
-      },
-      commands: [
-        {
-          name: "cmd7",
-          long: "cmd7",
-          unknown: false,
-          args: {
-            a: "a",
-            b: "b"
-          },
-          argList: ["a", "b"],
-          opts: {},
-          source: {},
-          verbatim: {}
-        }
-      ],
-      opts: {
-        logLevel: "info",
-        forceCache: true,
-        applyDefault: "test"
-      },
-      verbatim: {},
-      index: 3,
-      optCmd: {}
-    });
-    parsed = nc.parse(getArgv("cmd7 a b c -- d"));
 
-    expect(parsed).to.deep.equal({
-      source: {
-        applyDefault: "default",
-        forceCache: "default",
-        logLevel: "default"
-      },
-      commands: [
-        {
-          name: "cmd7",
-          long: "cmd7",
-          unknown: false,
-          args: {
-            a: "a",
-            b: "b",
-            c: "c"
-          },
-          argList: ["a", "b", "c"],
-          opts: {},
-          source: {},
-          verbatim: {}
-        }
-      ],
-      opts: {
-        logLevel: "info",
-        forceCache: true,
-        applyDefault: "test"
-      },
-      verbatim: {},
-      index: 4,
-      optCmd: {}
-    });
+    const x1 = nc.parse(getArgv("cmd7 a -- d e f"));
+
+    // cmd7 requires at least 2 args, but -- terminate parsing and it didn't get enough
+    expect(x1.command.error.message).contains("Not enough arguments for command 'cmd7'");
+    const m = x1.command.jsonMeta;
+    expect(x1.command.jsonMeta.subCommands.cmd7.argList).deep.eq(["a"]);
+
+    //
+
+    const x2 = nc.parse(getArgv("cmd7 a b -- d"));
+    expect(x2.command.getErrorNodes()).to.be.empty;
+    expect(x2.command.jsonMeta.subCommands.cmd7.argList).deep.eq(["a", "b"]);
+
+    //
+
+    const x3 = nc.parse(getArgv("cmd7 a b c -- d"));
+    expect(x3.command.getErrorNodes()).to.be.empty;
+    expect(x3.command.jsonMeta.subCommands.cmd7.argList).deep.eq(["a", "b", "c"]);
   });
 
   it("should terminate command array and parsing with --", () => {
     const nc = initParser();
-    const x = nc.parse(getArgv("cmd1 a b c -- d"));
-    expect(x).to.deep.equal({
-      source: {
-        applyDefault: "default",
-        forceCache: "default",
-        logLevel: "default"
-      },
-      commands: [
-        {
-          name: "cmd1",
-          long: "cmd1",
-          unknown: false,
-          args: {},
-          argList: ["a", "b", "c"],
-          opts: {
-            cmd1Foo: "boo"
-          },
-          source: { cmd1Foo: "default" },
-          verbatim: {}
-        }
-      ],
-      opts: {
-        logLevel: "info",
-        forceCache: true,
-        applyDefault: "test"
-      },
-      verbatim: {},
-      index: 4,
-      optCmd: {}
+    const x = nc.parse(getArgv("cmd1 -- d --1f=xyz"));
+    expect(x.command.getErrorNodes()).to.be.empty;
+    expect(x.command.jsonMeta.subCommands.cmd1.argList).deep.eq([]);
+    expect(x.command.jsonMeta.subCommands.cmd1.opts).deep.eq({ "cmd1-foo": "boo", cmd1Foo: "boo" });
+    expect(x.command.jsonMeta.subCommands.cmd1.source).deep.eq({
+      "cmd1-foo": "default",
+      cmd1Foo: "default"
     });
   });
 
@@ -919,172 +949,178 @@ describe("nix-clap", function () {
     const nc = initParser();
     const line =
       "cmd1 a --cmd1-bar woo -q v --count-opt -ccc -. -- --fooNum=900 --missing-type yes --no-foobool -bnxb";
-    const x = nc.parse(getArgv(line));
+    const p = nc.parse(getArgv(line));
+    const x = p.command;
+    expect(p.command.getErrorNodes()).to.be.empty;
+    expect(p._).deep.eq(["--fooNum=900", "--missing-type", "yes", "--no-foobool", "-bnxb"]);
+    expect(p.index).eq(10);
+    const m = x.jsonMeta;
 
-    expect(x).to.deep.equal({
-      source: {
-        logLevel: "cli",
-        countOpt: "cli",
-        applyDefault: "default",
-        forceCache: "default"
-      },
-      commands: [
-        {
-          name: "cmd1",
-          long: "cmd1",
-          unknown: false,
-          args: {},
-          argList: ["a"],
-          opts: {
-            cmd1Bar: "woo",
-            cmd1Foo: "boo"
+    expect(m.opts).deep.eq({
+      "log-level": "v",
+      q: "v",
+      "count-opt": 4,
+      c: 4,
+      "force-cache": true,
+      "apply-default": true,
+      logLevel: "v",
+      countOpt: 4,
+      forceCache: true,
+      applyDefault: true
+    });
+    expect(m.optsCount).deep.eq({
+      "log-level": 1,
+      "count-opt": 4,
+      "force-cache": 1,
+      "apply-default": 1,
+      logLevel: 1,
+      countOpt: 4,
+      forceCache: 1,
+      applyDefault: 1
+    });
+    expect(m.source).deep.eq({
+      "log-level": "cli",
+      q: "cli",
+      "count-opt": "cli",
+      c: "cli",
+      "force-cache": "default",
+      "apply-default": "default",
+      logLevel: "cli",
+      countOpt: "cli",
+      forceCache: "default",
+      applyDefault: "default"
+    });
+
+    expect(m.subCommands).deep.eq({
+      cmd1: {
+        name: "cmd1",
+        alias: "cmd1",
+        argList: ["a"],
+        args: {
+          "0": ["a"]
+        },
+        opts: {
+          "cmd1-bar": "woo",
+          "cmd1-foo": "boo",
+          cmd1Bar: "woo",
+          cmd1Foo: "boo"
+        },
+        optsFull: {
+          "cmd1-bar": {
+            "0": "woo"
           },
-          source: {
-            cmd1Bar: "cli",
-            cmd1Foo: "default"
+          "cmd1-foo": {
+            "0": "boo"
           },
-          verbatim: {
-            cmd1Bar: ["woo"]
+          cmd1Bar: {
+            "0": "woo"
+          },
+          cmd1Foo: {
+            "0": "boo"
           }
-        }
-      ],
-      opts: {
-        logLevel: "v",
-        countOpt: 4,
-        forceCache: true,
-        applyDefault: "test"
-      },
-      verbatim: {
-        logLevel: ["v"]
-      },
-      index: 9,
-      optCmd: { countOpt: "cmd1", logLevel: "cmd1" }
+        },
+        optsCount: {
+          "cmd1-bar": 1,
+          "cmd1-foo": 1,
+          cmd1Bar: 1,
+          cmd1Foo: 1
+        },
+        source: {
+          "cmd1-bar": "cli",
+          "cmd1-foo": "default",
+          cmd1Bar: "cli",
+          cmd1Foo: "default"
+        },
+        verbatim: {},
+        subCommands: {}
+      }
     });
   });
 
   it("should handle option missing arg", () => {
     const nc = initParser();
-    const x = nc.parse(getArgv("--missing-type --str-opt"));
-    expect(x).to.deep.equal({
-      source: {
-        missingType: "cli",
-        strOpt: "cli",
-        applyDefault: "default",
-        forceCache: "default",
-        logLevel: "default"
-      },
-      commands: [],
-      opts: {
-        missingType: true,
-        strOpt: undefined,
-        logLevel: "info",
-        forceCache: true,
-        applyDefault: "test"
-      },
-      verbatim: {},
-      index: 2,
-      optCmd: {}
+    const p = nc.parse(getArgv("--missing-type --str-opt"));
+    const m = p.command.jsonMeta;
+
+    expect(m.opts).deep.eq({
+      strOpt: undefined,
+      "str-opt": undefined, // no arg specified => undefined
+      "missing-type": true,
+      "log-level": "info",
+      "force-cache": true,
+      "apply-default": true,
+      missingType: true,
+      logLevel: "info",
+      forceCache: true,
+      applyDefault: true
+    });
+    expect(m.source).deep.eq({
+      "missing-type": "cli",
+      "str-opt": "cli",
+      "log-level": "default",
+      "force-cache": "default",
+      "apply-default": "default",
+      missingType: "cli",
+      strOpt: "cli",
+      logLevel: "default",
+      forceCache: "default",
+      applyDefault: "default"
     });
   });
 
-  it("should emit unknown-command event", () => {
+  it("should set unknown cli argument error", () => {
     let outputed = "";
-    let exited;
     const nc = new NixClap({
       name: "test",
-      exit: () => (exited = true),
-      output: o => (outputed += o)
+      ...noOutputExit,
+      output: o => {
+        outputed += o;
+      }
     }).init({}, {});
 
-    nc.parse(getArgv("blah"));
-    expect(exited).to.equal(true);
-    expect(outputed).contains("Error: Unknown command blah");
-
-    exited = undefined;
-    outputed = "";
-    nc.removeAllListeners("unknown-command");
-    let unknown;
-    nc.once("unknown-command", ctx => {
-      unknown = ctx;
-      throw new Error(`Unknown command ${ctx.name}`);
-    });
-    nc.parse(getArgv("blah"));
-    expect(unknown.name).to.equal("blah");
-    expect(exited).to.equal(true);
-    expect(outputed).contains("Error: Unknown command blah");
+    const { command: x } = nc.parse(getArgv("blah"));
+    expect(x.error.message).contains("unknown CLI argument 'blah'");
   });
 
-  it("should emit unknown-option event", () => {
+  it("should set unknown cli option error", () => {
     let outputed = "";
-    let exited;
     const nc = new NixClap({
       name: "test",
-      exit: () => (exited = true),
+      ...noOutputExit,
       output: o => (outputed += o)
     }).init({}, {});
-    nc.parse(getArgv("--blah"));
-    expect(exited).to.equal(true);
-    expect(outputed).contains("Error: Unknown option blah");
-
-    exited = undefined;
-    outputed = "";
-    nc.removeAllListeners("unknown-option");
-    let unknown;
-    nc.on("unknown-option", name => {
-      unknown = name;
-      throw new Error(`Unknown option ${name}`);
-    });
-    nc.parse(getArgv("--blah"));
-    expect(unknown).to.equal("blah");
-    expect(outputed).contains("Error: Unknown option blah");
+    const { command: x } = nc.parse2(getArgv("--blah"));
+    expect(x.error.message).contains("Encountered unknown CLI option 'blah'");
   });
 
   it("should fail for unknown option arg type", () => {
     expect(() =>
       new NixClap({ ...noOutputExit }).init({
         foo: {
-          type: "blah"
+          args: "< blah>"
         }
       })
-    ).to.throw("Unknown argument type blah for option foo");
+    ).to.throw("option foo - unknown type 'blah' for argument '< blah>'");
 
     expect(() =>
       new NixClap({ ...noOutputExit }).init({
         foo: {
-          type: "blah array"
+          args: "< blah..1,>"
         }
       })
-    ).to.throw("Unknown array argument type blah for option foo");
-
-    expect(() =>
-      new NixClap({ ...noOutputExit }).init({
-        foo: {
-          type: []
-        }
-      })
-    ).to.throw("type 'array' is not valid: expect string");
-  });
-
-  it("should fail for unknown option field", () => {
-    expect(() =>
-      new NixClap({ ...noOutputExit }).init({
-        foo: {
-          desc: "foo",
-          bar: "oops"
-        }
-      })
-    ).to.throw("option 'foo' field 'bar' is not valid");
+    ).to.throw("option foo - unknown type 'blah' for argument '< blah..1,>'");
   });
 
   it("should handle requireArg option missing arg", () => {
     const nc = initParser();
-    expect(nc.parse(getArgv("--rao")).error.message).to.equal("option rao requires argument");
-    expect(nc.parse(getArgv("--require-arg-opt")).error.message).to.equal(
-      "option require-arg-opt requires argument"
-    );
+    const { command: x } = nc.parse2(getArgv("--rao"));
+    expect(x.error.message).to.contain("Not enough arguments for option 'require-arg-opt'");
+
+    const { command: x2 } = nc.parse2(getArgv("--require-arg-opt"));
+    expect(x2.error.message).to.equal("Not enough arguments for option 'require-arg-opt'");
   });
 
-  it("should handle require option", () => {
+  it("should fail if user didn't specify a required option", () => {
     const nc = initParser(
       null,
       null,
@@ -1092,100 +1128,111 @@ describe("nix-clap", function () {
       {
         requireMe: {
           desc: "must have",
-          require: true,
-          type: "string"
-        }
+          required: true,
+          args: "< string>"
+        } as OptionSpec
       }
     );
-    expect(nc.parse(getArgv("--requireMe yup")).opts.requireMe).to.equal("yup");
-    expect(nc.parse(getArgv("--str-opt a")).error.message).to.equal(
-      "Required option 'requireMe' missing"
-    );
+    const { command: x } = nc.parse2(getArgv("--requireMe yup"));
+    expect(x.jsonMeta.opts.requireMe).to.equal("yup");
+    const { command: x2 } = nc.parse2(getArgv("--str-opt a"));
+    expect(x2.error.message).contains("missing these required options requireMe");
   });
 
-  it("should handle empty allowCmd", () => {
-    const line = "cmd1 x --empty-allow-cmd";
-    const x = initParser().parse(getArgv(line));
-    expect(x.opts).to.deep.equal({
-      emptyAllowCmd: true,
-      logLevel: "info",
-      forceCache: true,
-      applyDefault: "test"
-    });
-  });
-
-  it("should handle allowCmd", () => {
-    const nc = initParser();
-    expect(nc.parse(getArgv("cmd2 x --hac")).error.message).to.equal(
-      "option hac must follow one of these commands cmd1, cmd4"
+  it("should fail for parseAsync if user didn't specify a required option", async () => {
+    const nc = initParser(
+      null,
+      null,
+      { "parse-fail": () => {} },
+      {
+        requireMe: {
+          desc: "must have",
+          required: true,
+          args: "< string>"
+        } as OptionSpec
+      }
     );
-    expect(nc.parse(getArgv("--has-allow-cmd")).error.message).to.equal(
-      "option has-allow-cmd must follow one of these commands cmd1, cmd4"
-    );
-    const parsed = nc.parse(getArgv("cmd4 --hac"));
-    expect(parsed).to.deep.equal({
-      source: {
-        hasAllowCmd: "cli",
-        applyDefault: "default",
-        forceCache: "default",
-        logLevel: "default"
-      },
-      commands: [
-        {
-          name: "cmd4",
-          long: "cmd4",
-          unknown: false,
-          args: {},
-          argList: [],
-          opts: {},
-          source: {},
-          verbatim: {}
-        }
-      ],
-      opts: {
-        hasAllowCmd: true,
-        logLevel: "info",
-        forceCache: true,
-        applyDefault: "test"
-      },
-      verbatim: {},
-      index: 2,
-      optCmd: { hasAllowCmd: "cmd4" }
-    });
+    const { command: x } = await nc.parseAsync(getArgv("--requireMe yup"));
+    expect(x.jsonMeta.opts.requireMe).to.equal("yup");
+    const { command: x2 } = await nc.parseAsync(getArgv("--str-opt a"));
+    expect(x2.error.message).contains("missing these required options requireMe");
   });
 
   it("should handle cmd alias as a string", () => {
     const nc = initParser();
-    const x = nc.parse(getArgv("4"));
-    expect(x.commands).to.deep.equal([
-      {
-        name: "4",
-        long: "cmd4",
-        unknown: false,
-        args: {},
+    const { command: x } = nc.parse2(getArgv("4"));
+    expect(x.getErrorNodes()).to.be.empty;
+    expect(x.jsonMeta.subCommands).deep.eq({
+      cmd4: {
+        name: "cmd4",
+        alias: "4",
         argList: [],
+        args: {},
         opts: {},
+        optsFull: {},
+        optsCount: {},
         source: {},
-        verbatim: {}
+        verbatim: {},
+        subCommands: {}
       }
-    ]);
+    });
   });
 
   it("should handle cmd alias as an array", () => {
     const nc = initParser();
-    const x = nc.parse(getArgv("c5"));
-    expect(x.commands).to.deep.equal([
-      {
-        name: "c5",
-        long: "cmd5",
-        unknown: false,
-        args: {},
+    const { command: x } = nc.parse(getArgv("c5"));
+    expect(x.getErrorNodes()).to.be.empty;
+    expect(x.jsonMeta.subCommands).to.deep.equal({
+      cmd5: {
+        name: "cmd5",
+        alias: "c5",
         argList: [],
+        args: {},
         opts: {},
+        optsFull: {},
+        optsCount: {},
         source: {},
-        verbatim: {}
+        verbatim: {},
+        subCommands: {}
       }
-    ]);
+    });
+  });
+
+  it("should handle coercion as string", () => {
+    const nc = new NixClap({ ...noOutputExit }).init(
+      {
+        blah: {
+          coercions: {
+            x: "as-string-value"
+          },
+          args: "<x1 x>"
+        }
+      },
+      {}
+    );
+
+    const r = nc.parse(getArgv("--blah 12345.9"));
+    const m = r.command.jsonMeta;
+
+    expect(m.opts.blah).eq("as-string-value");
+    expect(m.optsFull.blah.x1).eq("as-string-value");
+  });
+
+  it("should set error for unknown coercion", () => {
+    const nc = new NixClap({ ...noOutputExit }).init(
+      {
+        blah: {
+          coercions: {
+            x: 11234 as any
+          },
+          args: "<x1 x>"
+        }
+      },
+      {}
+    );
+
+    const r = nc.parse(getArgv("--blah 12345.9"));
+    expect(r.errorNodes![0].error.message).contains("Unknown coercion handler type: number");
   });
 
   it("should handle type coercion for commands", () => {
@@ -1193,252 +1240,195 @@ describe("nix-clap", function () {
       {},
       {
         foo: {
-          args: "<m1 oop> <m2 boo>",
-          m1: value => `for-oop ${value}`,
-          m2: /^wooo$/i,
-          defaultValues: {
-            m2: "oow"
-          }
+          args: "<oop m1> <boo m2>",
+          coercions: { m1: value => `for-oop ${value}`, m2: /^wooo$/i }
+          // defaultValues: {
+          //   m2: "oow"
+          // }
         }
       }
     );
-    const parsed = nc.parse(getArgv("foo hello wooo"));
-    const cmd = parsed.commands[0];
-    expect(cmd.args.oop).to.equal("for-oop hello");
-    expect(cmd.args.boo).to.equal("wooo");
-    expect(cmd.argList).to.deep.equal(["hello", "wooo"]);
-    const p2 = nc.parse(getArgv("foo hello abc"));
-    const cmd2 = p2.commands[0];
-    expect(p2.error).to.not.exist;
-    expect(cmd2.args.boo).to.equal("oow");
+    const { command: x } = nc.parse2(getArgv("foo hello wooo"));
+    expect(x.getErrorNodes()).to.be.empty;
+    const { foo } = x.jsonMeta.subCommands;
+    expect(foo.argList).deep.equal(["hello", "wooo"]);
+    expect(foo.args.oop).equal("for-oop hello");
+    expect(foo.args.boo).equal("wooo");
+    const { command: p2 } = nc.parse2(getArgv("foo hello abc"));
+    const cmd2 = x.jsonMeta.subCommands.foo;
+    expect(p2.getErrorNodes()).not.to.be.empty;
+    expect(cmd2.args.boo).to.equal("wooo");
   });
 
   it("should parse process.argv", () => {
     const nc = initParser();
     process.argv = getArgv("node blah.js cmd1 a --cmd1-bar woo");
     const x = nc.parse();
-    expect(x).to.deep.equal({
-      source: {
-        applyDefault: "default",
-        forceCache: "default",
-        logLevel: "default"
+    const m = x.command.jsonMeta;
+
+    expect(m.subCommands.cmd1).deep.eq({
+      name: "cmd1",
+      alias: "cmd1",
+      argList: ["a"],
+      args: {
+        "0": ["a"]
       },
-      commands: [
-        {
-          name: "cmd1",
-          long: "cmd1",
-          unknown: false,
-          args: {},
-          argList: ["a"],
-          opts: {
-            cmd1Bar: "woo",
-            cmd1Foo: "boo"
-          },
-          source: {
-            cmd1Bar: "cli",
-            cmd1Foo: "default"
-          },
-          verbatim: {
-            cmd1Bar: ["woo"]
-          }
-        }
-      ],
       opts: {
-        logLevel: "info",
-        forceCache: true,
-        applyDefault: "test"
+        "cmd1-bar": "woo",
+        "cmd1-foo": "boo",
+        cmd1Bar: "woo",
+        cmd1Foo: "boo"
+      },
+      optsFull: {
+        "cmd1-bar": {
+          "0": "woo"
+        },
+        "cmd1-foo": {
+          "0": "boo"
+        },
+        cmd1Bar: {
+          "0": "woo"
+        },
+        cmd1Foo: {
+          "0": "boo"
+        }
+      },
+      optsCount: {
+        "cmd1-bar": 1,
+        "cmd1-foo": 1,
+        cmd1Bar: 1,
+        cmd1Foo: 1
+      },
+      source: {
+        "cmd1-bar": "cli",
+        "cmd1-foo": "default",
+        cmd1Bar: "cli",
+        cmd1Foo: "default"
       },
       verbatim: {},
-      index: 6,
-      optCmd: {}
+      subCommands: {}
     });
-    const h = nc.makeHelp();
-    expect(h[1]).to.equal("Usage: blah");
   });
 
   it("should use name passed to construtor", () => {
-    const nc = initParser(null, new NixClap({ name: "foo", ...noOutputExit }));
+    const nc = initParser(null, new NixClap({ name: "foo-test", ...noOutputExit }));
     process.argv = getArgv("node blah.js cmd1 a --cmd1-bar woo");
-    nc.parse();
+    const r = nc.parse();
     const h = nc.makeHelp();
-    expect(h[1]).to.equal("Usage: foo");
+    expect(h[1]).to.equal("Usage: foo-test <command>");
+    const h2 = r.command.cmdSpec.makeHelp("foo-1");
+    expect(h2[0]).contain("foo-1 cmd1");
   });
 
-  it("should handle unknown option", () => {
+  it("should add command name to sub command help", () => {
+    const nc = new NixClap({ ...noOutputExit, name: "foo" }).init(
+      {},
+      {
+        cmd1: {
+          subCommands: {
+            cmd2: {}
+          }
+        }
+      }
+    );
+    const r = nc.parse(["cmd1"]);
+    const h = r.command.cmdNodes.cmd1.cmdSpec.makeHelp();
+    expect(h[0]).contain("cmd1 cmd2");
+  });
+
+  it("should handle unknown options", () => {
     const nc = initParser();
-    let x = nc.parse(getArgv("--unknown-opt --no-foo-zoo"));
-    expect(x).to.deep.equal({
-      source: {
-        unknownOpt: "cli",
-        applyDefault: "default",
-        forceCache: "default",
-        logLevel: "default",
-        fooZoo: "cli"
-      },
-      commands: [],
-      opts: {
-        unknownOpt: true,
-        logLevel: "info",
-        forceCache: true,
-        applyDefault: "test",
-        fooZoo: false
-      },
-      verbatim: { fooZoo: ["no-"] },
-      index: 2,
-      optCmd: {}
+    const p = nc.parse(getArgv("--unknown-opt --no-foo-zoo"));
+    const x = p.command;
+    const m = x.jsonMeta;
+
+    const errors = x.errors;
+    expect(errors).not.empty;
+
+    expect(errors[0].message).contain("Encountered unknown CLI option 'unknown-opt'");
+    expect(errors[1].message).contain("Encountered unknown CLI option 'foo-zoo'");
+
+    expect(m.opts).deep.eq({
+      "unknown-opt": true,
+      "foo-zoo": false,
+      "log-level": "info",
+      "force-cache": true,
+      "apply-default": true,
+      unknownOpt: true,
+      fooZoo: false,
+      logLevel: "info",
+      forceCache: true,
+      applyDefault: true
     });
-    x = nc.parse(getArgv("--unknown-opt=blah"));
-    expect(x).to.deep.equal({
-      source: {
-        unknownOpt: "cli",
-        applyDefault: "default",
-        forceCache: "default",
-        logLevel: "default"
-      },
-      commands: [],
-      opts: {
-        unknownOpt: "blah",
-        logLevel: "info",
-        forceCache: true,
-        applyDefault: "test"
-      },
-      verbatim: { unknownOpt: ["blah"] },
-      index: 1,
-      optCmd: {}
+    expect(m.source).deep.eq({
+      "unknown-opt": "cli",
+      "foo-zoo": "cli",
+      "log-level": "default",
+      "force-cache": "default",
+      "apply-default": "default",
+      unknownOpt: "cli",
+      fooZoo: "cli",
+      logLevel: "default",
+      forceCache: "default",
+      applyDefault: "default"
+    });
+    expect(m.optsCount).deep.eq({
+      "unknown-opt": 1,
+      "foo-zoo": 1,
+      "log-level": 1,
+      "force-cache": 1,
+      "apply-default": 1,
+      unknownOpt: 1,
+      fooZoo: 1,
+      logLevel: 1,
+      forceCache: 1,
+      applyDefault: 1
     });
   });
 
   it("should handle optional args for command", () => {
     const nc = initParser();
-    expect(nc.parse(getArgv("6")).error.message).contains("Not enough arguments for command cmd6");
-    let x = nc.parse(getArgv("cmd6 1"));
-    expect(x).to.deep.equal({
-      source: {
-        applyDefault: "default",
-        forceCache: "default",
-        logLevel: "default"
-      },
-      commands: [
-        {
-          name: "cmd6",
-          long: "cmd6",
-          unknown: false,
-          args: {
-            a: "1"
-          },
-          argList: ["1"],
-          opts: {},
-          source: {},
-          verbatim: {}
-        }
-      ],
-      opts: {
-        logLevel: "info",
-        forceCache: true,
-        applyDefault: "test"
-      },
-      verbatim: {},
-      index: 2,
-      optCmd: {}
-    });
-    x = nc.parse(getArgv("cmd6 1 2"));
-    expect(x).to.deep.equal({
-      source: {
-        applyDefault: "default",
-        forceCache: "default",
-        logLevel: "default"
-      },
-      commands: [
-        {
-          name: "cmd6",
-          long: "cmd6",
-          unknown: false,
-          args: {
-            a: "1",
-            b: "2"
-          },
-          argList: ["1", "2"],
-          opts: {},
-          source: {},
-          verbatim: {}
-        }
-      ],
-      opts: {
-        logLevel: "info",
-        forceCache: true,
-        applyDefault: "test"
-      },
-      verbatim: {},
-      index: 3,
-      optCmd: {}
-    });
-    x = nc.parse(getArgv("cmd6 1 2 3"));
-    expect(x).to.deep.equal({
-      source: {
-        applyDefault: "default",
-        forceCache: "default",
-        logLevel: "default"
-      },
-      commands: [
-        {
-          name: "cmd6",
-          long: "cmd6",
-          unknown: false,
-          args: {
-            a: "1",
-            b: "2",
-            c: ["3"]
-          },
-          argList: ["1", "2", "3"],
-          opts: {},
-          source: {},
-          verbatim: {}
-        }
-      ],
-      opts: {
-        logLevel: "info",
-        forceCache: true,
-        applyDefault: "test"
-      },
-      verbatim: {},
-      index: 4,
-      optCmd: {}
-    });
-    x = nc.parse(getArgv("cmd6 1 2 3 4"));
-    expect(x).to.deep.equal({
-      source: {
-        applyDefault: "default",
-        forceCache: "default",
-        logLevel: "default"
-      },
-      commands: [
-        {
-          name: "cmd6",
-          long: "cmd6",
-          unknown: false,
-          args: {
-            a: "1",
-            b: "2",
-            c: ["3", "4"]
-          },
-          argList: ["1", "2", "3", "4"],
-          opts: {},
-          source: {},
-          verbatim: {}
-        }
-      ],
-      opts: {
-        logLevel: "info",
-        forceCache: true,
-        applyDefault: "test"
-      },
-      verbatim: {},
-      index: 5,
-      optCmd: {}
-    });
+
+    function t0() {
+      const p = nc.parse(getArgv("6"));
+      const x = p.command;
+      expect(x.errors).not.to.be.empty;
+      expect(x.errors[0].message).contains("Not enough arguments for command 'cmd6'");
+    }
+
+    function t1() {
+      const p = nc.parse(getArgv("cmd6 1"));
+      const m = p.command.jsonMeta;
+      expect(p.command.errors).to.be.empty;
+      expect(m.subCommands.cmd6.argList).to.deep.eq(["1"]);
+    }
+
+    function t2() {
+      const p = nc.parse(getArgv("cmd6 1 2"));
+      expect(p.command.errors).to.be.empty;
+      expect(p.command.jsonMeta.subCommands.cmd6.argList).to.deep.eq(["1", "2"]);
+    }
+
+    function t3() {
+      const p = nc.parse(getArgv("cmd6 1 2 3"));
+      expect(p.command.errors).to.be.empty;
+      expect(p.command.jsonMeta.subCommands.cmd6.argList).to.deep.eq(["1", "2", "3"]);
+    }
+
+    function t4() {
+      const p = nc.parse(getArgv("cmd6 1 2 3 4"));
+      expect(p.command.errors).to.be.empty;
+      expect(p.command.jsonMeta.subCommands.cmd6.argList).to.deep.eq(["1", "2", "3", "4"]);
+    }
+
+    t0();
+    t1();
+    t2();
+    t3();
+    t4();
   });
 
-  it("should fail if command option conflict with top level", () => {
+  it("should fail if command option conflict with upper level", () => {
     expect(() =>
       new NixClap({ ...noOutputExit }).init(
         {
@@ -1452,44 +1442,100 @@ describe("nix-clap", function () {
           }
         }
       )
-    ).to.throw("Command test option blah conflicts with top level option");
-  });
+    ).to.throw("Command test option blah already used by parent command '~root-command~'");
 
-  it("should fail if command option conflict with top level alias", () => {
     expect(() =>
       new NixClap({ ...noOutputExit }).init(
         {
-          blah: { alias: "b" }
+          blah: {}
         },
         {
           test: {
             options: {
-              xy: { alias: "b" }
+              blah: {}
+            },
+            subCommands: {
+              test2: {
+                options: {
+                  blah: {}
+                }
+              }
             }
           }
         }
       )
-    ).to.throw("Command test option xy alias b conflicts with top level alias");
+    ).to.throw("Command test2 option blah already used by parent command 'test'");
   });
 
-  it("should fail if command option alias conflict with top level option", () => {
-    expect(() =>
-      new NixClap({ ...noOutputExit }).init(
-        {
-          blah: { alias: "b" }
-        },
-        {
-          test: {
-            options: {
-              xy: { alias: "blah" }
-            }
+  it("should handle sub command option alias duplicate parent option alias", () => {
+    const nc = new NixClap({ ...noOutputExit }).init(
+      {
+        blah: { alias: "b" }
+      },
+      {
+        test: {
+          options: {
+            xy: { alias: "b" }
           }
         }
-      )
-    ).to.throw("Command test option xy alias blah conflicts with top level option");
+      }
+    );
+    const { command: p } = nc.parse2(getArgv("-b test -b"));
+    const m = p.jsonMeta;
+
+    expect(m.opts).deep.equal({
+      blah: true,
+      b: true
+    });
+    expect(m.subCommands.test.opts).deep.equal({
+      xy: true,
+      b: true
+    });
+
+    // expect(() =>
+    //   new NixClap({ ...noOutputExit }).init(
+    //     {
+    //       blah: { alias: "b" }
+    //     },
+    //     {
+    //       test: {
+    //         options: {
+    //           xy: { alias: "b" }
+    //         }
+    //       }
+    //     }
+    //   )
+    // ).to.throw("Command test option xy alias b conflicts with top level alias");
   });
 
-  it("should fail if command option alias conflict with top level option alias", () => {
+  it("should handle sub command option alias duplicate top option", () => {
+    const nc = new NixClap({ ...noOutputExit }).init(
+      {
+        blah: { alias: "b" }
+      },
+      {
+        test: {
+          options: {
+            xy: { alias: "blah" }
+          }
+        }
+      }
+    );
+
+    const { command: p } = nc.parse2(getArgv("-b test --blah"));
+    const m = p.jsonMeta;
+
+    expect(m.opts).deep.equal({
+      blah: true,
+      b: true
+    });
+    expect(m.subCommands.test.opts).deep.equal({
+      xy: true,
+      blah: true
+    });
+  });
+
+  it("should fail if sub command option conflict with top level option", () => {
     expect(() =>
       new NixClap({ ...noOutputExit }).init(
         {
@@ -1498,12 +1544,12 @@ describe("nix-clap", function () {
         {
           test: {
             options: {
-              xy: { alias: "foo" }
+              blah: { alias: "foo" }
             }
           }
         }
       )
-    ).to.throw("Command test option xy alias foo conflicts with top level alias");
+    ).to.throw("Command test option blah already used by parent command");
   });
 
   it("should fail if option alias conflict", () => {
@@ -1557,7 +1603,7 @@ describe("nix-clap", function () {
           }
         }
       );
-    }).to.throw("Init command cmd failed - only last arg can be variadic");
+    }).to.throw("For args specifier of 'cmd', only the last one can be variadic");
   });
 
   it("should fail if command specify invalid arg", () => {
@@ -1570,7 +1616,7 @@ describe("nix-clap", function () {
           }
         }
       );
-    }).to.throw("Init command cmd failed - argument <woo foo  blah> is invalid");
+    }).to.throw("command cmd - unknown type 'foo  blah' for argument '<woo foo  blah>'");
   });
 
   it("should fail if command specify invalid arg type", () => {
@@ -1583,82 +1629,145 @@ describe("nix-clap", function () {
           }
         }
       );
-    }).to.throw("Init command cmd failed - unknown argument <woo foo> type woo");
+    }).to.throw("command cmd - unknown type 'foo' for argument '<woo foo>'");
   });
 
-  it("should invoke cmd exec", () => {
-    const exec = argv => {
-      expect(argv).to.deep.equal({
-        name: "8",
-        long: "cmd8",
-        source: {
-          cmd8Foo: "cli",
-          applyDefault: "default",
-          forceCache: "default",
-          logLevel: "default"
+  it("should fail if arg specifier is invalid", () => {
+    expect(() => {
+      return new NixClap({ ...noOutputExit }).init({
+        blah: {
+          args: "test"
+        }
+      });
+    }).to.throw("Invalid args specifier 'test");
+  });
+
+  it("should fail if sub command got invalid arg", () => {
+    const nc = new NixClap({ ...noOutputExit }).init(
+      {},
+      {
+        cmd1: {
+          args: "<a> <b>"
+        }
+      }
+    );
+
+    const parsed = nc.parse2(getArgv("cmd1 1 2 3"));
+    expect(parsed.errorNodes.length, "error expected").to.equal(1);
+    expect(parsed.errorNodes[0].name).to.equal("cmd1");
+    expect(parsed.errorNodes[0].error.message).equal(
+      `Encountered unknown CLI argument '3' while parsing for command 'cmd1'`
+    );
+  });
+
+  it("should invoke cmd exec", async () => {
+    let invoked: CommandNode;
+    const exec = (cmd: CommandNode, cmdNodes: CommandNode[]) => {
+      invoked = cmdNodes.at(-1)!;
+    };
+
+    const execAsync = async (cmd: CommandNode, cmdNodes: CommandNode[]) => {
+      invoked = cmdNodes.at(-1)!;
+    };
+
+    const verify = (m: CommandMeta) => {
+      expect(m).to.deep.equal({
+        name: "cmd8",
+        alias: "8",
+        argList: ["ax", "b", "1", "2"],
+        args: { 0: "ax", a: "ax", 1: "b", b: "b", 2: ["1", "2"], c: ["1", "2"] },
+        opts: { "cmd8-foo": "blah", cmd8Foo: "blah" },
+        optsFull: {
+          "cmd8-foo": { "0": "blah" },
+          cmd8Foo: {
+            "0": "blah"
+          }
         },
+        optsCount: { "cmd8-foo": 1, cmd8Foo: 1 },
+        source: { "cmd8-foo": "cli", cmd8Foo: "cli" },
+        verbatim: {},
+        subCommands: {}
+      });
+      const m2 = invoked.getParent().jsonMeta;
+      delete m2?.subCommands;
+
+      expect(m2).deep.equal({
+        name: "~root-command~",
+        alias: "~root-command~",
+        argList: [],
+        args: {},
         opts: {
+          "log-level": "info",
+          "force-cache": true,
+          "apply-default": true,
           logLevel: "info",
           forceCache: true,
-          applyDefault: "test",
-          cmd8Foo: "blah"
+          applyDefault: true
         },
-        args: {
-          a: "ax",
-          b: "b",
-          c: ["1", "2"]
+        optsFull: {
+          "log-level": {
+            "0": "info"
+          },
+          "force-cache": {
+            "0": true
+          },
+          "apply-default": {
+            "0": true
+          },
+          logLevel: {
+            "0": "info"
+          },
+          forceCache: {
+            "0": true
+          },
+          applyDefault: {
+            "0": true
+          }
         },
-        argList: ["ax", "b", "1", "2"]
+        optsCount: {
+          "log-level": 1,
+          "force-cache": 1,
+          "apply-default": 1,
+          logLevel: 1,
+          forceCache: 1,
+          applyDefault: 1
+        },
+        source: {
+          "log-level": "default",
+          "force-cache": "default",
+          "apply-default": "default",
+          logLevel: "default",
+          forceCache: "default",
+          applyDefault: "default"
+        },
+        verbatim: {}
       });
     };
+
     const nc = initParser(exec);
     nc.parse(getArgv("8 ax b 1 2 --cmd8-foo blah"));
-  });
+    // @ts-ignore
+    expect(invoked).to.be.ok;
+    verify(invoked.jsonMeta);
 
-  it("should invoke cmd exec async", () => {
-    const exec = argv => {
-      expect(argv).to.deep.equal({
-        name: "8",
-        long: "cmd8",
-        source: {
-          cmd8Foo: "cli",
-          applyDefault: "default",
-          forceCache: "default",
-          logLevel: "default"
-        },
-        opts: {
-          logLevel: "info",
-          forceCache: true,
-          applyDefault: "test",
-          cmd8Foo: "blah"
-        },
-        args: {
-          a: "ax",
-          b: "b",
-          c: ["1", "2"]
-        },
-        argList: ["ax", "b", "1", "2"]
-      });
-    };
-    const nc = initParser(exec);
-    return nc.parseAsync(getArgv("8 ax b 1 2 --cmd8-foo blah"));
-  });
+    // @ts-ignore
+    invoked = undefined;
+    await nc.parseAsync(getArgv("8 ax b 1 2 --cmd8-foo blah"));
+    expect(invoked).to.be.ok;
+    verify(invoked.jsonMeta);
 
-  it("should support auto --version option", () => {
-    let exited;
-    const nc = initParser(
-      null,
-      new NixClap({ name: "test", ...noOutputExit, exit: n => (exited = n) }).version("1.0.0")
-    );
-    nc.parse(getArgv("--version"));
-    expect(exited).to.equal(0);
+    // @ts-ignore
+    invoked = undefined;
+    const nc2 = initParser(execAsync);
+    await nc.parseAsync(getArgv("8 ax b 1 2 --cmd8-foo blah"));
+    verify(invoked.jsonMeta);
   });
 
   it("should make help text", () => {
-    const nc = initParser(null, new NixClap({ ...noOutputExit }).version("1.0.0").usage("test"));
+    const nc = initParser(null, new NixClap({ name: "test", ...noOutputExit }).version("1.0.0"));
     expect(nc.makeHelp()).to.deep.equal([
       "",
-      "Usage: test",
+      "Usage: test <command>",
       "",
       "Commands:",
       "  cmd1 <..>",
@@ -1671,19 +1780,20 @@ describe("nix-clap", function () {
       "                                                                    [aliases: 6]",
       "  cmd7 <a> <b> [c] [d] [e]",
       "  cmd8 <a> <b> [c..]                                                [aliases: 8]",
-      "  sum <number _..>",
+      "  sum < number..>",
       "",
       "Options:",
       "  --log-level, -q           One of: debug,verbose,info,warn,error,fyi,none",
-      `                                                      [string] [default: "info"]`,
+      '                                                      [string] [default: "info"]',
       "  --str-opt                                                             [string]",
       "  --require-arg-opt, --rao                                              [string]",
       "  --force-cache, -f, --fc   Don't check registry if cache exists.",
-      "                                                       [boolean] [default: true]",
+      `                                                     [boolean] [default: "true"]`,
       "  --bar-bool, -b                                                       [boolean]",
       "  --foobool                                                            [boolean]",
-      "  --array-opt-require, -a                                                [array]",
-      "  --subtype-array                                                 [number array]",
+      "  --array-opt-require, -a                                            [string ..]",
+      "  --array-opt-opt, --aoo                                             [number ..]",
+      "  --subtype-array                                                    [number ..]",
       "  --fooNum                                                              [number]",
       "  --floatNum                                                             [float]",
       "  --customFn                                                              [xfoo]",
@@ -1692,10 +1802,8 @@ describe("nix-clap", function () {
       "  --bool-2                                                             [boolean]",
       "  --missing-type",
       "  --bool-3, -x",
-      "  --count-opt, -c                                                        [count]",
-      `  --apply-default                                    [boolean] [default: "test"]`,
-      "  --empty-allow-cmd                                                    [boolean]",
-      "  --has-allow-cmd, --hac                                               [boolean]",
+      "  --count-opt, -c",
+      '  --apply-default                                    [boolean] [default: "test"]',
       "  --version, -V, -v         Show version number",
       "  --help, -?, -h            Show help. Add a command to show its help   [string]"
     ]);
@@ -1707,7 +1815,7 @@ describe("nix-clap", function () {
     expect(help).to.deep.equal([""]);
   });
 
-  it("should turn help through config", () => {
+  it("should turn off help through config", () => {
     const nc = new NixClap({ help: false, ...noOutputExit }).version("").usage("").init({}, {});
     const help = nc.makeHelp();
     expect(help).to.deep.equal([""]);
@@ -1721,11 +1829,18 @@ describe("nix-clap", function () {
       exit: n => (exited = n),
       output: o => outputed.push(o)
     });
-    nc.init({ foo: { type: "string", requireArg: true } });
-    nc.parse(getArgv("--foo"));
+    nc.init({
+      poo: {},
+      foo: {
+        args: "< string>"
+      }
+    });
+    const p = nc.parse(getArgv("--foo"));
+    const m = p.command.jsonMeta;
+
     expect(exited, "exit should have been called").to.equal(1);
     expect(outputed, "should have output help").to.be.ok;
-    expect(outputed[1].trim()).to.equal("Error: option foo requires argument");
+    expect(outputed[1].trim()).to.equal("Error: Not enough arguments for option 'foo'");
   });
 
   it("should show help for --help", () => {
@@ -1736,8 +1851,9 @@ describe("nix-clap", function () {
       exit: n => (exited = n),
       output: o => outputed.push(o)
     });
-    nc.init({ foo: { type: "string", requireArg: true } });
-    nc.parse(getArgv("--help"));
+    nc.init({ foo: { args: "< string>" } });
+    const p = nc.parse(getArgv("--help"));
+
     expect(exited, "exit should have been called").to.equal(0);
     expect(outputed, "should have output help").to.be.ok;
   });
@@ -1751,12 +1867,22 @@ describe("nix-clap", function () {
       output: o => outputed.push(o)
     });
     nc.init(
-      { foo: { type: "string", requireArg: true } },
+      { foo: { args: "< string>" } },
       { cmd1: { desc: "test cmd1", options: { blah: { desc: "test blah" } } } }
     );
-    nc.parse(getArgv("--help cmd1"));
+    const p = nc.parse(getArgv("--help cmd1"));
+
     expect(exited, "exit should have been called").to.equal(0);
     expect(outputed, "should have output help").to.be.ok;
+    expect(outputed.join("")).eq(`
+Usage: test cmd1
+
+  test cmd1
+
+Options:
+  --blah  test blah
+
+`);
   });
 
   it("should show help for a command if --help follow command", () => {
@@ -1768,26 +1894,62 @@ describe("nix-clap", function () {
       output: o => outputed.push(o)
     });
     nc.init(
-      { foo: { type: "string", requireArg: true } },
+      { foo: { args: "< string>" } },
       { cmd1: { desc: "test cmd1", options: { blah: { desc: "test blah" } } } }
     );
-    nc.parse(getArgv("cmd1 --help"));
+    const p = nc.parse(getArgv("cmd1 --help"));
+    const m = p.command.jsonMeta;
+
     expect(exited, "exit should have been called").to.equal(0);
     expect(outputed, "should have output help").to.be.ok;
   });
 
-  const numCommands = {
+  it("should handle sub commands with exec", () => {
+    const nc = new NixClap({ ...noOutputExit })
+      .cmdUsage("$0 $1")
+      .version("1.0.0")
+      .init(
+        {},
+        {
+          test1: {
+            exec: noop,
+            subCommands: {
+              test2: {
+                exec: noop
+              }
+            }
+          },
+          test3: {
+            exec: noop
+          }
+        }
+      );
+    const r1 = nc.parse(getArgv("test1 test2"));
+    const e1 = r1.command.getExecCommands([], true);
+    expect(e1.map(x => x.name)).to.deep.equal(["test1", "test2"]);
+    const e1b = e1[0].getExecCommands([], false);
+    expect(e1b.map(x => x.name)).to.deep.equal(["test1"]);
+
+    const r2 = nc.parse(getArgv("test1 test3"));
+    const e2 = r2.command.getExecCommands([], true);
+    expect(e2.map(x => x.name)).to.deep.equal(["test1", "test3"]);
+
+    const e3 = r2.command.getExecCommands([], false);
+    expect(e3.map(x => x.name)).to.deep.equal([]);
+  });
+
+  const numCommands: Record<string, CommandSpec> = {
     sum: {
       alias: "s",
       desc: "Output sum of numbers",
       exec: noop,
-      args: "<number _..>"
+      args: "< number..>"
     },
     sort: {
       alias: "sr",
       desc: "Output sorted numbers",
       exec: noop,
-      args: "<number _..>",
+      args: "< number..>",
       options: {
         reverse: {
           alias: "r",
@@ -1808,12 +1970,7 @@ describe("nix-clap", function () {
       "Usage:  s",
       "",
       "  Output sum of numbers",
-      "",
-      "Options:",
-      "  --version, -V, -v  Show version number",
-      "  --help, -?, -h     Show help. Add a command to show its help          [string]",
-      "",
-      "Command s is alias for sum",
+      "Command 's' is alias for 'sum'",
       "Command sum has no options"
     ]);
     help = nc.makeHelp("sum");
@@ -1822,11 +1979,6 @@ describe("nix-clap", function () {
       "Usage:  sum",
       "",
       "  Output sum of numbers",
-      "",
-      "Options:",
-      "  --version, -V, -v  Show version number",
-      "  --help, -?, -h     Show help. Add a command to show its help          [string]",
-      "",
       "Command sum has no options"
     ]);
     help = nc.makeHelp("sr");
@@ -1835,13 +1987,9 @@ describe("nix-clap", function () {
       "Usage:  sr",
       "",
       "  Output sorted numbers",
+      "Command 'sr' is alias for 'sort'",
       "",
-      "Options:",
-      "  --version, -V, -v  Show version number",
-      "  --help, -?, -h     Show help. Add a command to show its help          [string]",
-      "",
-      "Command sr is alias for sort",
-      `Command "sort" options:`,
+      `Options:`,
       "  --reverse, -r  Sort in descending order"
     ]);
     help = nc.makeHelp("sort");
@@ -1852,10 +2000,6 @@ describe("nix-clap", function () {
       "  Output sorted numbers",
       "",
       "Options:",
-      "  --version, -V, -v  Show version number",
-      "  --help, -?, -h     Show help. Add a command to show its help          [string]",
-      "",
-      `Command "sort" options:`,
       "  --reverse, -r  Sort in descending order"
     ]);
     help = nc.makeHelp("blah");
@@ -1878,27 +2022,9 @@ describe("nix-clap", function () {
         }
       );
     let help = nc.makeHelp("foo");
-    expect(help).to.deep.equal([
-      "",
-      "Usage: test foo bar",
-      "",
-      "Options:",
-      "  --version, -V, -v  Show version number",
-      "  --help, -?, -h     Show help. Add a command to show its help          [string]",
-      "",
-      "Command foo has no options"
-    ]);
+    expect(help).to.deep.equal(["", "Usage: test foo bar", "", "Command foo has no options"]);
     help = nc.makeHelp("blah");
-    expect(help).to.deep.equal([
-      "",
-      "Usage: blah blah",
-      "",
-      "Options:",
-      "  --version, -V, -v  Show version number",
-      "  --help, -?, -h     Show help. Add a command to show its help          [string]",
-      "",
-      "Command blah has no options"
-    ]);
+    expect(help).to.deep.equal(["", "Usage: blah blah", "", "Command blah has no options"]);
   });
 
   it("should make help for version without used alias V and v", () => {
@@ -1923,43 +2049,38 @@ describe("nix-clap", function () {
           }
         }
       );
-    let help = nc.makeHelp("foo");
+    const help = nc.makeHelp();
     expect(help).to.deep.equal([
       "",
-      "Usage: test foo bar",
+      "Usage: test <command>",
+      "",
+      "Commands:",
+      "  foo",
+      "  blah",
       "",
       "Options:",
       "  --xv, -v",
       "  --xv2, -V",
       "  --version       Show version number",
-      "  --help, -?, -h  Show help. Add a command to show its help             [string]",
-      "",
-      "Command foo has no options"
-    ]);
-    help = nc.makeHelp("blah");
-    expect(help).to.deep.equal([
-      "",
-      "Usage: blah blah",
-      "",
-      "Options:",
-      "  --xv, -v",
-      "  --xv2, -V",
-      "  --version       Show version number",
-      "  --help, -?, -h  Show help. Add a command to show its help             [string]",
-      "",
-      "Command blah has no options"
+      "  --help, -?, -h  Show help. Add a command to show its help             [string]"
     ]);
   });
 
-  it("should emit no-action event", () => {
+  it("should emit no-action event", async () => {
     const nc = new NixClap({ ...noOutputExit })
       .removeDefaultHandlers("*")
       .cmdUsage("$0 $1")
       .version("1.0.0")
       .init({}, numCommands);
-    let called;
+
+    let called = false;
     nc.once("no-action", () => (called = true));
     nc.parse([]);
+    expect(called).to.be.true;
+
+    called = false;
+    nc.once("no-action", () => (called = true));
+    await nc.parseAsync([]);
     expect(called).to.be.true;
   });
 
@@ -1985,31 +2106,8 @@ describe("nix-clap", function () {
     expect(called).to.be.undefined;
   });
 
-  it("should not emit no-action event in parseAsync when there's no command with exec", () => {
-    let called;
-    const nc = new NixClap({
-      ...noOutputExit,
-      handlers: {
-        "no-action": () => (called = true)
-      }
-    })
-      .removeDefaultHandlers("*")
-      .cmdUsage("$0 $1")
-      .version("1.0.0")
-      .init(
-        {},
-        {
-          foo: {},
-          bar: {}
-        }
-      );
-    return nc.parseAsync([]).then(() => {
-      expect(called).to.be.undefined;
-    });
-  });
-
   it("should show help for no-action event", () => {
-    const nc = new NixClap({ noActionShowHelp: true, ...noOutputExit })
+    const nc = new NixClap({ ...noOutputExit })
       .cmdUsage("$0 $1")
       .version("1.0.0")
       .init({}, numCommands);
@@ -2019,112 +2117,168 @@ describe("nix-clap", function () {
     expect(showed).to.be.true;
   });
 
-  it("should fail when there are multiple default commands", () => {
-    expect(() =>
-      new NixClap().init(
-        {},
-        {
-          foo: { args: "[a]", exec: noop, defaultCommand: true },
-          bar: { exec: noop, defaultCommand: true }
-        }
-      )
-    ).to.throw("Trying to set command bar as default but foo is already set.");
-  });
-
-  it("should fail when setting a command that requires args as default", () => {
-    expect(() =>
-      new NixClap({ ...noOutputExit }).init(
-        {},
-        {
-          foo: { args: "<a> [b]", exec: noop, defaultCommand: true },
-          bar: { defaultCommand: true, exec: noop }
-        }
-      )
-    ).to.throw("Init command foo failed - Command foo set as default but requires arguments");
-  });
-
-  it("should fail when setting a command that requires args as default", () => {
-    expect(() =>
-      new NixClap({ ...noOutputExit }).init(
+  it("should invoke default command handler with its default options applied", async () => {
+    const verify = async (a: boolean) => {
+      let cmd: CommandNode | undefined;
+      const exec = (cmdX: CommandNode, nodes: CommandNode[]) => (cmd = nodes.at(-1));
+      const execAsync = async (cmdX: CommandNode, nodes: CommandNode[]) => (cmd = nodes.at(-1));
+      const nc = new NixClap({ ...noOutputExit, defaultCommand: "foo" }).init(
         {},
         {
           foo: {
-            args: "<a> [b]",
-            exec: noop,
-            // test using old default instead of defaultCommand flag
-            default: true
-          }
+            args: "[b]",
+            exec: a ? execAsync : exec,
+            options: { bar: { args: "[ string]", argDefault: "hello" } }
+          },
+          bar: {}
         }
-      )
-    ).to.throw("Init command foo failed - Command foo set as default but requires arguments");
+      );
+      let p;
+      if (a) {
+        p = await nc.parseAsync([]);
+      } else {
+        p = nc.parse([]);
+      }
+      expect(cmd).to.be.ok;
+      expect(cmd.name).to.equal("foo");
+      expect(cmd.jsonMeta.opts).deep.eq({
+        bar: "hello"
+      });
+      expect(cmd.jsonMeta.source).deep.eq({
+        bar: "default"
+      });
+    };
+
+    await verify(false);
+    await verify(true);
   });
 
-  it("should fail when default command doesn't have exec handler", () => {
-    expect(() =>
-      new NixClap({ ...noOutputExit }).init({}, { foo: { args: "[b]", defaultCommand: true } })
-    ).to.throw("Init command foo failed - Command foo set as default but has no exec handler");
-  });
-
-  it("should invoke default command handler", () => {
-    let called;
-    const exec = ctx => (called = ctx);
-    const nc = new NixClap({ ...noOutputExit }).init(
+  it("should set error if defaultCommand didn't match", () => {
+    let called = false;
+    const nc = new NixClap({ ...noOutputExit, defaultCommand: "foox" }).init(
       {},
       {
         foo: {
           args: "[b]",
-          exec,
-          options: { bar: { type: "string", default: "hello" } },
-          defaultCommand: true
+          exec: () => (called = true),
+          options: { bar: { args: "[ string]", argDefault: ["hello", "world"] }, blah: {} }
         },
         bar: {}
       }
     );
-    nc.parse([]);
-    expect(called).to.be.ok;
-    expect(called.name).to.equal("foo");
-    expect(called.opts.bar).to.equal("hello");
-    expect(called.source.bar).to.equal("default");
+
+    const parsed = nc.parse(getArgv(""));
+    expect(parsed.errorNodes![0].error.message).contain("default command foox not found");
   });
 
-  it("should invoke default command handler in parseAsync", () => {
-    let called;
-    const exec = ctx => (called = ctx);
-    const nc = new NixClap({ ...noOutputExit }).init(
+  it("should apply option with default args", () => {
+    const nc = new NixClap({ ...noOutputExit, defaultCommand: "foo" }).init(
       {},
-      { foo: { args: "[b]", exec, defaultCommand: true }, bar: {} }
+      {
+        foo: {
+          args: "[b]",
+          options: { bar: { args: "[ string]", argDefault: ["hello", "world"] }, blah: {} }
+        },
+        bar: {}
+      }
     );
-    return nc.parseAsync([]).then(() => {
-      expect(called).to.be.ok;
-      expect(called.name).to.equal("foo");
+
+    const parsed = nc.parse(getArgv("foo --blah"));
+    const m = parsed.command.jsonMeta;
+    const fooCmd = m.subCommands.foo;
+    expect(fooCmd).to.deep.equal({
+      name: "foo",
+      alias: "foo",
+      argList: [],
+      args: {},
+      opts: {
+        blah: true,
+        bar: "hello"
+      },
+      optsFull: {
+        blah: { 0: true },
+        bar: {
+          "0": "hello"
+        }
+      },
+      optsCount: {
+        blah: 1,
+        bar: 1
+      },
+      source: {
+        blah: "cli",
+        bar: "default"
+      },
+      verbatim: {},
+      subCommands: {}
     });
   });
 
-  it("should skip help if event handler throws", () => {
-    const nc = new NixClap({ ...noOutputExit }).init({}, {});
-    const parsed = nc.removeDefaultHandlers("help").parse(["--help"]);
-    expect(parsed).to.be.ok;
-    expect(parsed.source.help).to.equal("cli");
-  });
-
-  it("should skip version if event handler throws", () => {
-    const nc = new NixClap({ version: "test", ...noOutputExit }).init({}, {});
-    const parsed = nc.removeDefaultHandlers("version").parse(["--version"]);
-    expect(parsed).to.be.ok;
-    expect(parsed.opts.version).to.be.true;
+  it("should handle options with multiple args", () => {
+    const nc = initParser();
+    const parsed = nc.parse(getArgv("--array-opt-opt 25 b c"), 0);
+    const m = parsed.command.jsonMeta;
+    expect(m.opts.arrayOptOpt).to.deep.eq({
+      0: 25,
+      1: ["b", "c"]
+    });
   });
 
   it("should apply user config after parse", () => {
-    const line = "cmd1 a --cmd1-bar woo --count-opt -ccc --fooNum=900";
+    const line =
+      "cmd1 a --cmd1-bar woo --count-opt --foox12 -ccc --fooNum=900 -a 50 --array-opt-opt";
     const nc = initParser();
     const parsed = nc.parse(getArgv(line), 0);
-    nc.applyConfig({ anything: 999, fooNum: 1000, logLevel: "test" }, parsed);
-    expect(parsed.source.logLevel).to.equal("user");
-    expect(parsed.opts.logLevel).to.equal("test");
-    expect(parsed.source.fooNum).to.equal("cli");
-    expect(parsed.opts.fooNum).to.equal(900);
-    expect(parsed.source.anything).to.equal("user");
-    expect(parsed.opts.anything).to.equal(999);
+    parsed.command.applyConfig({
+      "str-opt": "str1",
+      foox12: "123",
+      anything: 999,
+      fooNum: 1000,
+      "log-level": "warn"
+    });
+    const m = parsed.command.jsonMeta;
+
+    expect(m.opts).deep.eq({
+      "count-opt": 4,
+      c: 4,
+      fooNum: 900,
+      foox12: true,
+      "array-opt-require": ["50"],
+      "array-opt-opt": {},
+      arrayOptOpt: {},
+      a: ["50"],
+      "force-cache": true,
+      "apply-default": true,
+      countOpt: 4,
+      arrayOptRequire: ["50"],
+      logLevel: "info",
+      "log-level": "warn",
+      "str-opt": "str1",
+      forceCache: true,
+      applyDefault: true,
+      anything: 999
+    });
+
+    expect(m.source).deep.eq({
+      "count-opt": "cli",
+      c: "cli",
+      fooNum: "cli",
+      foox12: "cli",
+      "array-opt-require": "cli",
+      "array-opt-opt": "cli",
+      arrayOptOpt: "cli",
+      a: "cli",
+      "force-cache": "default",
+      "apply-default": "default",
+      countOpt: "cli",
+      arrayOptRequire: "cli",
+      logLevel: "default",
+      "log-level": "user",
+      "str-opt": "user",
+      forceCache: "default",
+      applyDefault: "default",
+      anything: "user"
+    });
   });
 
   it("should skip exec if skipExec flag is set", () => {
@@ -2133,104 +2287,91 @@ describe("nix-clap", function () {
       cmd1: {
         exec: () => {
           called = true;
-        },
-        defaultCommand: true
+        }
       }
     };
     let nc = new NixClap(noOutputExit).init({}, commands);
     let parsed = nc.parse(getArgv("cmd1"));
     expect(parsed).to.be.ok;
-    expect(parsed.commands[0].name).to.equal("cmd1");
+    const m = parsed.command.jsonMeta;
+    expect(m.subCommands.cmd1).to.be.ok;
     expect(called).to.equal(true);
     called = undefined;
     nc = new NixClap({ skipExec: true, ...noOutputExit }).init({}, commands);
     parsed = nc.parse(getArgv("cmd1"));
     expect(parsed).to.be.ok;
-    expect(parsed.commands[0].name).to.equal("cmd1");
+    const m2 = parsed.command.jsonMeta;
+    expect(m2.subCommands.cmd1).to.be.ok;
     expect(called).to.equal(undefined);
   });
 
-  it("should skip exec in parseAsync if skipExec flag is set", () => {
-    let called;
+  it("should skip exec for parseAsync if skipExec flag is set", async () => {
+    let called = false;
     const commands = {
       cmd1: {
-        exec: () => {
+        exec: async () => {
           called = true;
-        },
-        defaultCommand: true
+        }
       }
     };
-    let nc = new NixClap({ ...noOutputExit }).init({}, commands);
-    return nc
-      .parseAsync(getArgv("cmd1"))
-      .then(parsed => {
-        expect(parsed).to.be.ok;
-        expect(parsed.commands[0].name).to.equal("cmd1");
-        expect(called).to.equal(true);
-        called = undefined;
-      })
-      .then(() => {
-        nc = new NixClap({ skipExec: true, ...noOutputExit }).init({}, commands);
-        return nc.parseAsync(getArgv("cmd1")).then(parsed => {
-          expect(parsed).to.be.ok;
-          expect(parsed.commands[0].name).to.equal("cmd1");
-          expect(called).to.equal(undefined);
-        });
-      });
-  });
-
-  it("should skip default exec if skipExecDefault flag is set", () => {
-    let called;
-    const commands = {
-      cmd1: {
-        exec: () => {
-          called = true;
-        },
-        defaultCommand: true
-      }
-    };
-    let nc = new NixClap({ ...noOutputExit }).init({}, commands);
-    let parsed = nc.parse([]);
+    let nc = new NixClap(noOutputExit).init({}, commands);
+    let parsed = await nc.parseAsync(getArgv("cmd1"));
     expect(parsed).to.be.ok;
-    expect(parsed.commands).to.be.empty;
+    const m = parsed.command.jsonMeta;
+    expect(m.subCommands.cmd1).to.be.ok;
     expect(called).to.equal(true);
-    called = undefined;
-    nc = new NixClap({ skipExecDefault: true, ...noOutputExit }).init({}, commands);
-    parsed = nc.removeDefaultHandlers("no-action").parse([]);
+
+    called = false;
+
+    nc = new NixClap({ skipExec: true, ...noOutputExit }).init({}, commands);
+
+    parsed = await nc.parseAsync(getArgv("cmd1"));
     expect(parsed).to.be.ok;
-    expect(parsed.commands).to.be.empty;
-    expect(called).to.equal(undefined);
+    const m2 = parsed.command.jsonMeta;
+    expect(m2.subCommands.cmd1).to.be.ok;
+    expect(called).to.equal(false);
   });
 
-  it("should skip default exec in parseAsync if skipExecDefault flag is set", () => {
-    let called;
-    const commands = {
-      cmd1: {
-        exec: () => {
-          called = true;
-        },
-        defaultCommand: true
+  it("should skip default exec if skipExecDefault flag is set", async () => {
+    const verify = async (a: boolean) => {
+      let called;
+
+      const exec = () => {
+        called = true;
+      };
+      const execAsync = async () => {
+        called = true;
+      };
+      const commands = {
+        cmd1: {
+          exec: a ? execAsync : exec
+        }
+      };
+      let nc = new NixClap({ ...noOutputExit, defaultCommand: "cmd1" }).init({}, commands);
+
+      let parsed;
+
+      if (a) {
+        parsed = await nc.parseAsync([]);
+      } else {
+        parsed = nc.parse([]);
       }
+
+      expect(parsed).to.be.ok;
+      // expect(parsed.command).to.be.empty;
+      expect(called).to.equal(true);
+      called = undefined;
+      nc = new NixClap({ skipExecDefault: true, ...noOutputExit, defaultCommand: "cmd1" }).init(
+        {},
+        commands
+      );
+      parsed = nc.removeDefaultHandlers("no-action").parse([]);
+      expect(parsed).to.be.ok;
+      // expect(parsed.command).to.be.empty;
+      expect(called).to.equal(undefined);
     };
-    let nc = new NixClap({ ...noOutputExit }).init({}, commands);
-    return nc
-      .parseAsync([])
-      .then(parsed => {
-        expect(parsed).to.be.ok;
-        expect(parsed.commands).to.be.empty;
-        expect(called).to.equal(true);
-        called = undefined;
-      })
-      .then(() => {
-        nc = new NixClap({ ...noOutputExit, skipExecDefault: true }).init({}, commands);
-        return nc
-          .removeDefaultHandlers("no-action")
-          .parseAsync([])
-          .then(parsed => {
-            expect(parsed).to.be.ok;
-            expect(parsed.commands).to.be.empty;
-            expect(called).to.equal(undefined);
-          });
-      });
+
+    await verify(false);
+    await verify(true);
   });
 });

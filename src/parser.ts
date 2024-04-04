@@ -1,415 +1,218 @@
+/* eslint-disable no-use-before-define */
 /* eslint-disable one-var,no-magic-numbers,max-params,complexity,max-statements */
 
-import assert from "assert";
-import { CMD, OPTIONS, TARGET } from "./symbols";
-import { camelCase, toBoolean } from "./xtil";
-
-const PARSING = 1;
-const GATHERING_OPT_PARAMS = 2;
-const PARSING_CMD = 3;
+// import { Command } from "./command";
+import { rootCommandName } from "./base";
+import { ClapNode } from "./clap-node";
+import { NixClap } from "./nix-clap";
+import { ClapNodeGenerator } from "./node-generator";
+import { CommandNode } from "./command-node";
 
 /**
- * Parser
+ * Represents the result of parsing command-line arguments.
+ *
+ *
+ * @property {any} source - The source of the parsed arguments.
+ * @property {any[]} commands - An array of parsed commands.
+ * @property {any} opts - The parsed options.
+ * @property {any} optCmd - The parsed optional command.
+ * @property {any} verbatim - The verbatim arguments.
+ * @property {NixClap} nixClap - The NixClap instance used for parsing.
+ * @property {any} [_] - Remaining arguments that were not consumed due to the `--` terminating option.
+ * @property {any} [error] - Any error encountered during parsing.
+ * @property {number} [index] - The index at which parsing stopped.
+ */
+export type ParsedResult = {
+  source: any;
+  commands: any[];
+  opts: any;
+  optCmd: any;
+  verbatim: any;
+  nixClap: NixClap;
+  /**
+   * Remaining argv that were not consumed due to the `--` terminating option
+   */
+  _?: any;
+  error?: any;
+  index?: number;
+};
+
+/**
+ * The `Parser` class is responsible for parsing command-line arguments
+ * and building a command tree structure.
+ *
+ * @class
+ * @description
+ * This class provides functionality to parse command-line arguments into a structured
+ * representation of commands, options, and their values. It uses a tree-like structure
+ * to represent nested commands and their associated options.
+ *
+ * @remarks
+ * - The parser works with an instance of `NixClap` to handle the actual parsing logic.
+ * - It maintains a list of `ClapNode` objects to represent the parsed structure.
+ * - The parsing process is managed using a stack of `ClapNodeBuilder` instances.
+ * - Error handling is implemented to catch and store parsing errors within the relevant nodes.
+ *
+ * @example
+ * ```typescript
+ * const nixClap = new NixClap();
+ * const parser = new Parser(nixClap);
+ * const { command, index } = parser.parse(process.argv, 2);
+ * // Now `command` contains the root of the parsed command tree
+ * ```
  */
 export class Parser {
-  private _nc: any;
-  private _cliOptions: any;
-  private _commands: any;
-  private _states: any;
-  private _state: any;
-  private _optType: any;
-  private _optArgs: any;
-  private _cmdArgs: any;
-  private _parsed: any;
-  private _optCtx: any;
-  private _cmdCtx: any;
-  private _multiCommand: any;
-  private _argv: any;
+  /**
+   * An instance of the NixClap class used for parsing command-line arguments.
+   * This private member variable is utilized internally within the parser.
+   *
+   * @private
+   */
+  private _nc: NixClap;
+  /**
+   * An array of command-line arguments passed to the application.
+   * This is typically populated from the process.argv array.
+   *
+   * @private
+   */
+  private _argv: string[];
+  /**
+   * A private array of ClapNode objects that represents the list of nodes
+   * managed by the parser.
+   *
+   * @private
+   * @type {ClapNode[]}
+   */
+  private _nodeList: ClapNode[];
 
-  constructor(nc) {
+  /**
+   * Creates an instance of the parser.
+   *
+   * @param nc - An instance of NixClap.
+   */
+  constructor(nc: NixClap) {
     this._nc = nc;
-    this._cliOptions = nc.cliOptions;
-    this._commands = nc.commands;
-    this._states = [];
-    this._state = PARSING;
-    this._optType = undefined;
-    this._optArgs = undefined;
-    this._cmdArgs = undefined;
-    this._parsed = undefined;
-    this._optCtx = undefined;
-    this._cmdCtx = undefined;
-    this._multiCommand = true; // allow specifying multiple commands at the same time?
+    this._nodeList = [];
   }
 
-  getCmd(name) {
-    const ctx = this._commands.getContext(name);
-    // remember command context so any options that follow can be
-    // checked to apply against its private options
-    this._cmdCtx = ctx;
-    this._nc.emit("new-command", { context: ctx, parsed: this._parsed, nixClap: this._nc });
-    if (ctx.unknown) {
-      this._nc.emit("unknown-command", ctx);
+  /**
+   * A stack of `ClapNodeBuilder` instances used to build the structure of the parsed command-line arguments.
+   * This stack helps in managing nested command structures and ensures that the correct hierarchy is maintained.
+   */
+  private _builderStack: ClapNodeGenerator[];
+
+  /**
+   * Adds a node to the list of nodes. If the list is not empty, it sets the
+   * previous node's `_next` property to the current node and the current node's
+   * `_prev` property to the previous node.
+   *
+   * @param node - The node to be added to the list.
+   */
+  private _addNodeToList(node: ClapNode) {
+    if (this._nodeList.length > 0) {
+      const l = this._nodeList.at(-1);
+      node._prev = l;
+      l._next = node;
     }
-    this._parsed.commands.push(ctx);
-    if (ctx[CMD].args.length > 0) {
-      this._states.push(this._state);
-      this._state = PARSING_CMD;
-      this._cmdArgs = [];
-    }
+
+    this._nodeList.push(node);
   }
 
-  convertValue(type, value, spec, ctx) {
-    if (typeof value !== "string") return value;
+  /**
+   * Consumes the next argument and processes it using the current builder.
+   *
+   * If the argument is not an option (does not start with a "-"), it is processed as a non-option.
+   * Otherwise, it is processed as an option.
+   *
+   * Depending on the result of the processing, the builder stack is updated:
+   * - If the builder returns `null`, it is removed from the stack.
+   * - If the builder is not complete, it is pushed back onto the stack.
+   *
+   * @param arg - The argument to be consumed and processed.
+   */
+  private _consumeNext(arg: string) {
+    const builder = this._builderStack.at(-1);
 
-    if (type === "number") {
-      return parseInt(value, 10);
-    } else if (type === "float") {
-      return parseFloat(value);
-    } else if (!type || type === "boolean") {
-      return toBoolean(value);
-    } else if (spec && spec[type]) {
-      const customType = spec[type].constructor.name;
-      if (customType === "Function") {
-        try {
-          return spec[type](value);
-        } catch (e) {
-          this._nc.output(`Type '${type}' coercion function for '${ctx.long}' threw error.\n`);
-          this._nc.output(`${e.stack}\n`);
-          value = `${type} coercion function threw error`;
+    const rets = !(arg[0] === "-")
+      ? // not an option
+        builder.consumeNonOpt(arg)
+      : // an option
+        builder.consumeOpt(arg);
+
+    for (const _builder of rets) {
+      if (_builder === null) {
+        this._builderStack.pop();
+      } else {
+        this._addNodeToList(_builder.node);
+        if (!_builder.isComplete) {
+          this._builderStack.push(_builder);
         }
-      } else if (customType === "RegExp") {
-        const mx = value.match(spec[type]);
-        if (mx) return mx[0];
-
-        this._nc.emit("regex-unmatch", {
-          ctx,
-          spec,
-          type,
-          value,
-          target: ctx[TARGET] || ctx,
-          regex: spec[type]
-        });
-
-        // command => just return default value
-        if (ctx[CMD]) return spec.defaultValues ? spec.defaultValues[type] : undefined;
-
-        // option => set source and return default value
-        ctx[TARGET].source[ctx.ccLong] = spec.hasOwnProperty("default")
-          ? "cli-default"
-          : "cli-unmatch";
-        return spec.default;
-      } else {
-        return spec[type];
-      }
-    }
-
-    return value;
-  }
-
-  convertOptValueType(ctx, value, verbatim) {
-    const ccLong = ctx.ccLong;
-    const opt = ctx.opt;
-    const type = opt.type;
-
-    if (verbatim !== undefined) {
-      ctx[TARGET].verbatim[ccLong] = verbatim;
-    }
-
-    if (type === "count") {
-      value = (ctx[TARGET].opts[ccLong] || 0) + 1;
-    } else if (type === "array") {
-      if (opt.subtype) {
-        value = value.map(v => this.convertValue(opt.subtype, v, opt, ctx));
-      }
-    } else {
-      value = this.convertValue(type, value[0], opt, ctx);
-    }
-
-    ctx[TARGET].opts[ccLong] = value;
-  }
-
-  checkOptionAllowCmd(ctx) {
-    const opt = ctx.opt;
-    if (!opt.allowCmd || opt.allowCmd.length < 1) return;
-    const valid = this._cmdCtx && opt.allowCmd.indexOf(this._cmdCtx.long) >= 0;
-    assert(
-      valid,
-      `option ${ctx.name} must follow one of these commands ${opt.allowCmd.join(", ")}`
-    );
-  }
-
-  findApplyOptions(options, target, name) {
-    const ctx = options.parse(name);
-    if (ctx) {
-      this.checkOptionAllowCmd(ctx);
-      ctx[TARGET] = target;
-      ctx[OPTIONS] = options;
-      this._optCtx = ctx;
-    }
-
-    return ctx;
-  }
-
-  setUnknownOption(name, value, verbatim) {
-    this._nc.emit("unknown-option", name);
-    const target = this._cmdCtx || this._parsed;
-    this._nc.emit("unknown-option-v2", { name, parsed: this._parsed, target, nixClap: this._nc });
-    const ccName = camelCase(name);
-    if (verbatim !== undefined) {
-      target.verbatim[ccName] = verbatim;
-    }
-    target.opts[ccName] = value !== undefined ? value[0] : true;
-    target.source[ccName] = "cli";
-  }
-
-  setOptValue(name, value, verbatim) {
-    const ctx =
-      // first check if option should be applied to a command
-      (this._cmdCtx && this.findApplyOptions(this._cmdCtx[CMD].options, this._cmdCtx, name)) ||
-      // then the top level
-      this.findApplyOptions(this._cliOptions, this._parsed, name);
-
-    if (!ctx) {
-      this.setUnknownOption(name, value, verbatim);
-      return;
-    }
-
-    const ccLong = ctx.ccLong;
-    const opt = ctx.opt;
-    ctx[TARGET].source[ccLong] = "cli";
-
-    if (ctx[TARGET].optCmd && this._cmdCtx) {
-      ctx[TARGET].optCmd[ccLong] = this._cmdCtx.name;
-    }
-
-    if (value !== undefined || opt.type === "count") {
-      this.convertOptValueType(ctx, value, verbatim);
-    } else {
-      this._states.push(this._state);
-      this._state = GATHERING_OPT_PARAMS;
-      this._optType = opt.type || "";
-      this._optArgs = [];
-    }
-  }
-
-  get applyOptions() {
-    if (this._optCtx) return this._optCtx[OPTIONS];
-    return this._cliOptions;
-  }
-
-  get applyTarget() {
-    if (this._optCtx) return this._optCtx[TARGET];
-    return this._parsed;
-  }
-
-  setInsideSingle(name) {
-    const singleOpts = name.split("");
-    if (singleOpts.length > 1) {
-      singleOpts
-        .slice(0, singleOpts.length - 1)
-        .forEach(x => this.applyOptions.setSingle(x, this.applyTarget));
-    }
-    return singleOpts[singleOpts.length - 1];
-  }
-
-  getOpt(arg) {
-    let name, value, verbatim;
-    if (arg.startsWith("--no-")) {
-      name = arg.substr(5);
-      value = [false];
-      verbatim = ["no-"];
-    } else {
-      const dashes = arg.startsWith("--") ? 2 : 1;
-      name = arg.substr(dashes);
-
-      const eqX = name.indexOf("=");
-      if (eqX > 0) {
-        value = [name.substr(eqX + 1)];
-        name = name.substr(0, eqX);
-      }
-
-      if (dashes === 1) {
-        name = this.setInsideSingle(name);
-      }
-      verbatim = value;
-    }
-
-    this.setOptValue(name, value, verbatim);
-  }
-
-  optEndGather() {
-    if (this._optArgs.length > 0) {
-      this.convertOptValueType(this._optCtx, this._optArgs, this._optArgs);
-    } else if (!this._optType || this._optType.indexOf("boolean") >= 0) {
-      this._optCtx[TARGET].opts[this._optCtx.ccLong] = true;
-    } else {
-      const ra = this._optCtx.opt.requireArg || this._optCtx.opt.requiresArg;
-      assert(!ra, `option ${this._optCtx.name} requires argument`);
-      // note: still leave source as "cli" since assigning default is due to
-      // user specifying the option on the command line
-      this._optCtx[TARGET].opts[this._optCtx.ccLong] = this._optCtx.opt.default;
-    }
-
-    this._optType = undefined;
-    this._optArgs = undefined;
-    this._state = this._states.pop();
-  }
-
-  cmdEndGatherArgs() {
-    const ctx = this._cmdCtx;
-    const cmd = ctx[CMD];
-    const args = cmd.args;
-    ctx.argList = this._cmdArgs;
-    assert(this._cmdArgs.length >= cmd.needArgs, `Not enough arguments for command ${cmd.name}`);
-
-    const setArg = (name, type, value) => {
-      if (!name) return;
-      if (type) {
-        ctx.args[name] = Array.isArray(value)
-          ? value.map(v => this.convertValue(type, v, cmd.spec, ctx))
-          : this.convertValue(type, value, cmd.spec, ctx);
-      } else {
-        ctx.args[name] = value;
-      }
-    };
-
-    for (let i = 0; i < args.length && i < ctx.argList.length; i++) {
-      setArg(args[i].name, args[i].type, ctx.argList[i]);
-    }
-
-    if (cmd.isVariadicArgs()) {
-      const lastIx = args.length - 1;
-      if (ctx.argList.length > lastIx) {
-        setArg(args[lastIx].name, args[lastIx].type, ctx.argList.slice(lastIx));
       }
     }
   }
 
-  cmdEndGather() {
-    this.cmdEndGatherArgs();
-    this._cmdArgs = undefined;
-    this._state = this._states.pop();
-  }
-
-  gatherOptParams(arg) {
-    const isOpt = arg.startsWith("-");
-    let endGather;
-    // if opt type is boolean, then only accept true/false as arg
-    if (this._optType === "boolean") {
-      const larg = arg.toLowerCase();
-      endGather = larg !== "true" && larg !== "false";
-    } else {
-      endGather = isOpt;
-    }
-
-    if (endGather) {
-      // another opt, end of gathering
-      this.optEndGather();
-      // allow -. or --. as terminator for variadic options arguments
-      if (arg !== "-." && arg !== "--.") {
-        if (isOpt) this.getOpt(arg);
-        else this.parseArg(arg);
-      }
-    } else {
-      // save
-      this._optArgs.push(arg);
-      // check if gathered everything
-      if (this._optType.indexOf("array") < 0) {
-        // if so, end gathering, resume parsing
-        this.optEndGather();
-      }
-    }
-  }
-
-  gatherCmdParams(arg) {
-    const cmd = this._cmdCtx[CMD];
-    this._cmdArgs.push(arg);
-    if (this._cmdArgs.length === cmd.expectArgs && !cmd.isVariadicArgs()) {
-      this.cmdEndGather();
-    }
-  }
-
-  parseArg(arg) {
-    const state = this._state;
-    if (state === GATHERING_OPT_PARAMS) {
-      return this.gatherOptParams(arg);
-    }
-
-    // terminate parsing for command in multi commands mode
-    if (this._multiCommand && (arg === "-." || arg === "--.") && state === PARSING_CMD) {
-      return this.cmdEndGather();
-    }
-
-    // an option
-    if (arg.startsWith("-")) {
-      return this.getOpt(arg);
-    }
-
-    if (state === PARSING_CMD) {
-      return this.gatherCmdParams(arg);
-    }
-
-    assert(state === PARSING, `bug: unknown parsing state ${state}`);
-
-    // a command
-    return this.getCmd(arg);
-  }
-
-  parseArgIndex(x) {
-    this.parseArg(this._argv[x]);
-  }
-
-  checkTerminator() {
-    const state = this._state;
-    if (state === GATHERING_OPT_PARAMS) {
-      this.optEndGather();
-    } else if (state === PARSING_CMD) {
-      this.cmdEndGather();
-    }
-  }
-
-  get _defaultParsedObjet() {
-    const parsed = {
-      source: {},
-      commands: [],
-      opts: {},
-      optCmd: {},
-      verbatim: {},
-      nixClap: this._nc
-    };
-    Object.defineProperty(parsed, "nixClap", { enumerable: false });
-    return parsed;
-  }
-
-  parse(argv, start, parsed) {
+  /**
+   * Parses the given command-line arguments starting from the specified index.
+   *
+   * This method processes the provided command-line arguments and builds a command tree structure.
+   * It handles both options and non-option arguments, and can work with nested command structures.
+   *
+   * @param {string[]} argv - The array of command-line arguments to parse.
+   * @param {number} start - The index in the argv array from which to start parsing.
+   * @param {CommandNode} [command] - An optional root command node to start parsing with.
+   *                                  If not provided, a new root CommandNode will be created.
+   *
+   * @returns {{ command: CommandNode; index: number }} An object containing:
+   *   - command: The root CommandNode of the parsed command tree.
+   *   - index: The index in the argv array at which parsing ended.
+   *
+   * @throws {Error} Catches and stores any errors encountered during parsing in the command node's errors array.
+   *
+   * @remarks
+   * - The method uses a stack of ClapNodeBuilder instances to manage the parsing process.
+   * - It handles the '--' terminator, which signals the end of options.
+   * - Any errors encountered during parsing are caught and stored in the relevant command node's errors array.
+   * - After processing all arguments, it completes any remaining builders in the stack.
+   */
+  parse(
+    argv: string[],
+    start: number,
+    command?: CommandNode
+  ): { command: CommandNode; index: number } {
     this._argv = argv;
-    this._parsed = parsed || this._defaultParsedObjet;
 
-    let index = start !== undefined ? start : 0;
+    const rootNode =
+      command || new CommandNode(rootCommandName, rootCommandName, this._nc._rootCommand);
+
+    this._addNodeToList(rootNode);
+
+    let _index = start;
+
+    this._builderStack = [new ClapNodeGenerator(rootNode)];
+
+    while (_index < argv.length) {
+      const arg = this._argv[_index];
+      _index++;
+      if (arg === "--") {
+        break;
+      }
+      try {
+        this._consumeNext(arg);
+      } catch (e) {
+        this._builderStack.at(-1).node.errors.push(e);
+      }
+    }
 
     try {
-      for (; index < argv.length; index++) {
-        if (argv[index] === "--") {
-          this.checkTerminator();
-          break;
-        } else {
-          this.parseArgIndex(index);
-        }
+      let builder = this._builderStack.at(-1);
+      while (builder) {
+        builder.complete();
+        builder = builder.parent;
       }
-
-      do {
-        if (this._state === GATHERING_OPT_PARAMS) {
-          this.optEndGather();
-        } else if (this._state === PARSING_CMD) {
-          this.cmdEndGather();
-        }
-      } while (this._states.length > 0);
     } catch (e) {
-      this._parsed.error = e;
+      rootNode.errors.push(e);
     }
 
-    this._parsed.index = index;
-
-    return this._parsed;
+    return { command: rootNode, index: _index };
   }
 }

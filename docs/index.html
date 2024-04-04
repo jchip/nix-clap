@@ -1,0 +1,635 @@
+<!DOCTYPE html><html class="default" lang="en"><head><meta charSet="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>nix-clap</title><meta name="description" content="Documentation for nix-clap"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="assets/style.css"/><link rel="stylesheet" href="assets/highlight.css"/><script defer src="assets/main.js"></script><script async src="assets/search.js" id="tsd-search-script"></script><script async src="assets/navigation.js" id="tsd-nav-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os"</script><header class="tsd-page-toolbar">
+<div class="tsd-toolbar-contents container">
+<div class="table-cell" id="tsd-search" data-base=".">
+<div class="field"><label for="tsd-search-field" class="tsd-widget tsd-toolbar-icon search no-caption"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><use href="#icon-search"></use></svg></label><input type="text" id="tsd-search-field" aria-label="Search"/></div>
+<div class="field">
+<div id="tsd-toolbar-links"></div></div>
+<ul class="results">
+<li class="state loading">Preparing search index...</li>
+<li class="state failure">The search index is not available</li></ul><a href="index.html" class="title">nix-clap</a></div>
+<div class="table-cell" id="tsd-widgets"><a href="#" class="tsd-widget tsd-toolbar-icon menu no-caption" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><use href="#icon-menu"></use></svg></a></div></div></header>
+<div class="container container-main">
+<div class="col-content">
+<div class="tsd-page-title">
+<h2>nix-clap</h2></div>
+<div class="tsd-panel tsd-typography"><p><a href="https://npmjs.org/package/nix-clap"><img src="https://badge.fury.io/js/nix-clap.svg" alt="NPM version"></a> <a href="https://github.com/jchip/nix-clap/actions/workflows/node.js.yml"><img src="https://github.com/jchip/nix-clap/actions/workflows/node.js.yml/badge.svg" alt="Build Status"></a>
+<a href="https://david-dm.org/jchip/nix-clap"><img src="https://david-dm.org/jchip/nix-clap/status.svg" alt="Dependency Status"></a> <a href="https://david-dm.org/jchip/nix-clap?type=dev"><img src="https://david-dm.org/jchip/nix-clap/dev-status.svg" alt="devDependency Status"></a>
+<a href="https://coveralls.io/github/jchip/nix-clap?branch=master"><img src="https://coveralls.io/repos/github/jchip/nix-clap/badge.svg?branch=master" alt="coverage"></a></p>
+<a id="md:nixclap" class="tsd-anchor"></a><h1><a href="#md:nixclap">NixClap</a></h1><p>Simple, lightweight, flexible, and comprehensive Un*x Command Line Argument Parsing for NodeJS.</p>
+<a id="md:features" class="tsd-anchor"></a><h1><a href="#md:features">Features</a></h1><ul>
+<li>Lightweight with minimal dependencies.</li>
+<li>Comprehensive and flexible parsing capabilities similar to conventional Un*x parsing.</li>
+<li>Flexible handling of options and commands that can take variadic params.</li>
+<li>A simple and straightforward JSON interface for specifying options and commands.</li>
+<li>Very informative result that tells you where each option came from.</li>
+<li><a href="https://webpack.js.org/">Webpack</a> friendly - allows bundling your cli into a single JS file with webpack.</li>
+</ul>
+<a id="md:examples" class="tsd-anchor"></a><h1><a href="#md:examples">Examples</a></h1><p>Options only:</p>
+<pre><code class="language-js"><span class="hl-0">const</span><span class="hl-1"> </span><span class="hl-2">NixClap</span><span class="hl-1"> = </span><span class="hl-3">require</span><span class="hl-1">(</span><span class="hl-4">&quot;nix-clap&quot;</span><span class="hl-1">);</span><br/><br/><span class="hl-0">const</span><span class="hl-1"> </span><span class="hl-2">options</span><span class="hl-1"> = {</span><br/><span class="hl-1">  </span><span class="hl-5">names:</span><span class="hl-1"> {</span><br/><span class="hl-1">    </span><span class="hl-5">desc:</span><span class="hl-1"> </span><span class="hl-4">&quot;specify names&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-5">alias:</span><span class="hl-1"> [</span><span class="hl-4">&quot;n&quot;</span><span class="hl-1">, </span><span class="hl-4">&quot;m&quot;</span><span class="hl-1">],</span><br/><span class="hl-1">    </span><span class="hl-5">type:</span><span class="hl-1"> </span><span class="hl-4">&quot;string array&quot;</span><br/><span class="hl-1">  }</span><br/><span class="hl-1">};</span><br/><br/><span class="hl-0">const</span><span class="hl-1"> </span><span class="hl-2">parsed</span><span class="hl-1"> = </span><span class="hl-0">new</span><span class="hl-1"> </span><span class="hl-3">NixClap</span><span class="hl-1">().</span><span class="hl-3">version</span><span class="hl-1">(</span><span class="hl-4">&quot;1.0.0&quot;</span><span class="hl-1">).</span><span class="hl-3">usage</span><span class="hl-1">(</span><span class="hl-4">&quot;$0 [options]&quot;</span><span class="hl-1">).</span><span class="hl-3">init</span><span class="hl-1">(</span><span class="hl-5">options</span><span class="hl-1">).</span><span class="hl-3">parse</span><span class="hl-1">();</span><br/><br/><span class="hl-5">console</span><span class="hl-1">.</span><span class="hl-3">log</span><span class="hl-1">(</span><span class="hl-4">&quot;names&quot;</span><span class="hl-1">, </span><span class="hl-5">parsed</span><span class="hl-1">.</span><span class="hl-5">opts</span><span class="hl-1">.</span><span class="hl-5">names</span><span class="hl-1">);</span>
+</code><button>Copy</button></pre>
+<p>With commands:</p>
+<pre><code class="language-js"><span class="hl-0">const</span><span class="hl-1"> </span><span class="hl-2">NixClap</span><span class="hl-1"> = </span><span class="hl-3">require</span><span class="hl-1">(</span><span class="hl-4">&quot;nix-clap&quot;</span><span class="hl-1">);</span><br/><br/><span class="hl-0">const</span><span class="hl-1"> </span><span class="hl-2">options</span><span class="hl-1"> = {</span><br/><span class="hl-1">  </span><span class="hl-5">verbose:</span><span class="hl-1"> {</span><br/><span class="hl-1">    </span><span class="hl-5">desc:</span><span class="hl-1"> </span><span class="hl-4">&quot;enable verbose mode&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-5">alias:</span><span class="hl-1"> </span><span class="hl-4">&quot;v&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-5">type:</span><span class="hl-1"> </span><span class="hl-4">&quot;boolean&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-5">default:</span><span class="hl-1"> </span><span class="hl-0">false</span><br/><span class="hl-1">  }</span><br/><span class="hl-1">};</span><br/><br/><span class="hl-0">const</span><span class="hl-1"> </span><span class="hl-2">commands</span><span class="hl-1"> = {</span><br/><span class="hl-1">  </span><span class="hl-5">compile:</span><span class="hl-1"> {</span><br/><span class="hl-1">    </span><span class="hl-5">desc:</span><span class="hl-1"> </span><span class="hl-4">&quot;run compile on the files&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-5">args:</span><span class="hl-1"> </span><span class="hl-4">&quot;&lt;string files...&gt;&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-3">exec</span><span class="hl-5">:</span><span class="hl-1"> </span><span class="hl-5">parsed</span><span class="hl-1"> </span><span class="hl-0">=&gt;</span><span class="hl-1"> {</span><br/><span class="hl-1">      </span><span class="hl-5">console</span><span class="hl-1">.</span><span class="hl-3">log</span><span class="hl-1">(</span><span class="hl-4">&quot;compile&quot;</span><span class="hl-1">, </span><span class="hl-5">parsed</span><span class="hl-1">.</span><span class="hl-5">args</span><span class="hl-1">.</span><span class="hl-5">files</span><span class="hl-1">, </span><span class="hl-4">&quot;verbose&quot;</span><span class="hl-1">, </span><span class="hl-5">parsed</span><span class="hl-1">.</span><span class="hl-5">opts</span><span class="hl-1">.</span><span class="hl-5">verbose</span><span class="hl-1">);</span><br/><span class="hl-1">    }</span><br/><span class="hl-1">  }</span><br/><span class="hl-1">};</span><br/><br/><span class="hl-0">const</span><span class="hl-1"> </span><span class="hl-2">parsed</span><span class="hl-1"> = </span><span class="hl-0">new</span><span class="hl-1"> </span><span class="hl-3">NixClap</span><span class="hl-1">()</span><br/><span class="hl-1">  .</span><span class="hl-3">version</span><span class="hl-1">(</span><span class="hl-4">&quot;1.0.0&quot;</span><span class="hl-1">)</span><br/><span class="hl-1">  .</span><span class="hl-3">usage</span><span class="hl-1">(</span><span class="hl-4">&quot;$0 [options] &lt;command&gt; [options]&quot;</span><span class="hl-1">)</span><br/><span class="hl-1">  .</span><span class="hl-3">init</span><span class="hl-1">(</span><span class="hl-5">options</span><span class="hl-1">, </span><span class="hl-5">commands</span><span class="hl-1">)</span><br/><span class="hl-1">  .</span><span class="hl-3">parse</span><span class="hl-1">();</span>
+</code><button>Copy</button></pre>
+<blockquote>
+<p><code>version</code>, <code>help</code>, and <code>usage</code> must be called before <code>init</code></p>
+</blockquote>
+<p>Usage:</p>
+<pre><code class="language-bash"><span class="hl-3">$</span><span class="hl-1"> </span><span class="hl-4">my-prog</span><span class="hl-1"> </span><span class="hl-4">compile</span><span class="hl-1"> </span><span class="hl-0">--verbose</span><span class="hl-1"> </span><span class="hl-4">file1.jsx</span><span class="hl-1"> </span><span class="hl-4">file2.jsx</span><span class="hl-1"> </span><span class="hl-4">file3.jsx</span>
+</code><button>Copy</button></pre>
+<a id="md:more-examples" class="tsd-anchor"></a><h2><a href="#md:more-examples">More Examples</a></h2><p>See <a href="./examples">examples</a> folder for more working samples.</p>
+<a id="md:parsing-capabilities" class="tsd-anchor"></a><h1><a href="#md:parsing-capabilities">Parsing Capabilities</a></h1><a id="md:options" class="tsd-anchor"></a><h2><a href="#md:options">Options</a></h2><p>Example: <code>prog -xazvf=hello --foo-option hello bar -. --enable-blah</code></p>
+<ul>
+<li>Support <code>-</code> single char options or <code>--</code> long form options.</li>
+<li>Options can have aliases.</li>
+<li>Both option forms can have argument specified with <code>=</code> or space.<ul>
+<li>ie: long form <code>--foo-option=bar</code> or <code>--foo-option bar</code></li>
+<li>ie: short form <code>-f=bar</code> or <code>-f bar</code></li>
+</ul>
+</li>
+<li>Both option forms can have variadic array args.<ul>
+<li>ie: <code>--foo-option hello bar</code> or <code>-f hello bar</code></li>
+<li>array args can have an optional type</li>
+</ul>
+</li>
+<li><code>-</code> options can be compounded, like <code>-xazvf</code>.<ul>
+<li>Last char can have args, like <code>-xazvf=hello</code> or <code>-xazvf hello</code>.</li>
+<li>Other chars are treated as <code>boolean</code> options automatically.</li>
+</ul>
+</li>
+<li>Variadic array args are terminated by any other options such as <code>-x</code> or <code>--xyz</code>, or explicitly with <code>-.</code> or <code>--.</code><ul>
+<li>ie: <code>cmd1 arg1 arg2 --some-array abc def ghi -. cmd2 arg1 arg2</code>.</li>
+</ul>
+</li>
+<li>Allow arbitrary unknown options but with arguments specified through <code>=</code> only.<ul>
+<li>Since it&#39;s ambiguous whether to take a non-option arg following an unknown option as an argument or a command.</li>
+</ul>
+</li>
+<li>Counting number of option occurrences.</li>
+<li>Boolean option can be negated with <code>--no-</code> prefix.</li>
+<li>Allow custom value type coercions with a function or RegExp.</li>
+</ul>
+<a id="md:commands" class="tsd-anchor"></a><h2><a href="#md:commands">Commands</a></h2><p>Example: <code>prog add 1 2 3 4</code></p>
+<ul>
+<li>Commands can have optional or required arguments.<ul>
+<li>Each argument type defaults to <code>string</code>, but can have an optional type</li>
+</ul>
+</li>
+<li>Commands can have aliases.</li>
+<li>Possible to specify multiple commands.</li>
+<li>Commands can have variadic array arguments.</li>
+<li>Variadic array args are terminated by any other options such as <code>-x</code> or <code>--xyz</code>, or explicitly with <code>-.</code> or <code>--.</code><ul>
+<li>ie: <code>prog order pizza soda -. pickup</code> (specifies two commands: <code>order</code> and <code>pickup</code>)</li>
+</ul>
+</li>
+<li>Command can have its own options that are binded to it only.</li>
+<li>Top level options can be binded to specific commands only.</li>
+<li>Unbind top level options can be specified before or after commands.</li>
+<li>Allow arbitrary unknown commands that do not have arguments.</li>
+<li>Allow multiple custom value type coercions for each command.</li>
+</ul>
+<a id="md:multiple-commands" class="tsd-anchor"></a><h3><a href="#md:multiple-commands">Multiple Commands</a></h3><p>Example: <code>prog add 1 2 3 4 -. mult 4 5 6 7 8</code></p>
+<blockquote>
+<p>First Command: <code>add</code> with four numbers input
+Second Command: <code>mult</code> with five numbers input</p>
+</blockquote>
+<ul>
+<li>Since there are multiple commands with variadic arguments, the <code>-.</code> in the middle terminates the <code>add</code> command.</li>
+</ul>
+<a id="md:sub-commands" class="tsd-anchor"></a><h3><a href="#md:sub-commands">Sub Commands</a></h3><p>Example: <code>prog calc add 1 2 3 4 -. mult 4 5 6 7</code></p>
+<blockquote>
+<p>Main command: <code>calc</code>
+Sub Command: <code>add</code> that can take variadic number of numbers
+Sub Command: <code>mult</code> that can take variadic number of numbers</p>
+</blockquote>
+<ul>
+<li>Since there are multiple sub commands, the <code>-.</code> in the middle terminates the <code>add</code> sub command.</li>
+</ul>
+<a id="md:terminating-and-resuming" class="tsd-anchor"></a><h2><a href="#md:terminating-and-resuming">Terminating and Resuming</a></h2><ul>
+<li><code>--</code> terminates parsing, with remaining args returned in <code>parsed._</code>.</li>
+<li>Parsing can be resumed after it&#39;s terminated.</li>
+<li><code>-.</code> or <code>--.</code> can terminate variadic params for commands and options.</li>
+</ul>
+<a id="md:install" class="tsd-anchor"></a><h1><a href="#md:install">Install</a></h1><pre><code class="language-bash"><span class="hl-3">npm</span><span class="hl-1"> </span><span class="hl-4">i</span><span class="hl-1"> </span><span class="hl-4">nix-clap</span><span class="hl-1"> </span><span class="hl-0">--save</span>
+</code><button>Copy</button></pre>
+<a id="md:interface" class="tsd-anchor"></a><h1><a href="#md:interface">Interface</a></h1><p>This module exposes a class with a few methods.</p>
+<p>See <a href="#apis">APIs</a> for more details.</p>
+<a id="md:options-spec" class="tsd-anchor"></a><h2><a href="#md:options-spec"><code>options spec</code></a></h2><pre><code class="language-js"><span class="hl-0">const</span><span class="hl-1"> </span><span class="hl-2">options</span><span class="hl-1"> = {</span><br/><span class="hl-1">  </span><span class="hl-4">&quot;some-option&quot;</span><span class="hl-5">:</span><span class="hl-1"> {</span><br/><span class="hl-1">    </span><span class="hl-5">alias:</span><span class="hl-1"> [</span><span class="hl-4">&quot;s&quot;</span><span class="hl-1">, </span><span class="hl-4">&quot;so&quot;</span><span class="hl-1">],</span><br/><span class="hl-1">    </span><span class="hl-5">desc:</span><span class="hl-1"> </span><span class="hl-4">&quot;description&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-5">args:</span><span class="hl-1"> </span><span class="hl-4">&quot;[number cans] [enum] [boolean diet] [string..]&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-5">default:</span><span class="hl-1"> [</span><span class="hl-6">6</span><span class="hl-1">, </span><span class="hl-4">&quot;coke&quot;</span><span class="hl-1">, </span><span class="hl-0">true</span><span class="hl-1">, </span><span class="hl-4">&quot;foo&quot;</span><span class="hl-1">],</span><br/><span class="hl-1">    </span><span class="hl-5">custom:</span><span class="hl-1"> {</span><br/><span class="hl-1">      </span><span class="hl-5">enum:</span><span class="hl-7"> /</span><span class="hl-8">^</span><span class="hl-9">(</span><span class="hl-7">coke</span><span class="hl-8">|</span><span class="hl-7">pepsi</span><span class="hl-9">)</span><span class="hl-8">$</span><span class="hl-7">/</span><br/><span class="hl-1">    },</span><br/><span class="hl-1">    </span><span class="hl-5">customDefault:</span><span class="hl-1"> {</span><br/><span class="hl-1">      </span><span class="hl-5">enum:</span><span class="hl-1"> </span><span class="hl-4">&quot;coke&quot;</span><br/><span class="hl-1">    },</span><br/><span class="hl-1">    </span><span class="hl-5">allowCmd:</span><span class="hl-1"> [</span><span class="hl-4">&quot;cmd1&quot;</span><span class="hl-1">, </span><span class="hl-4">&quot;cmd2&quot;</span><span class="hl-1">]</span><br/><span class="hl-1">  },</span><br/><span class="hl-1">  </span><span class="hl-4">&quot;another-option&quot;</span><span class="hl-5">:</span><span class="hl-1"> {}</span><br/><span class="hl-1">};</span>
+</code><button>Copy</button></pre>
+<p>Where:</p>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>alias</code></td>
+<td>Specify aliases for the option, as a single string or an array of strings.</td>
+</tr>
+<tr>
+<td><code>type</code></td>
+<td>Type of argument for the option, one of: <code>string</code>, <code>number</code>, <code>float</code>, <code>boolean</code>, <code>array</code>, <code>count</code>, or <a href="#value-coercion">coercion</a></td>
+</tr>
+<tr>
+<td></td>
+<td><code>array</code> can set type of elements as one of <code>string</code>, <code>number</code>, <code>float</code>, <code>boolean</code> like this: <code>number array</code> or <code>float array</code></td>
+</tr>
+<tr>
+<td><code>desc</code></td>
+<td>Description for the option - a string or a function that returns string.</td>
+</tr>
+<tr>
+<td><code>default</code></td>
+<td>default values to use <em>when all args are optional</em>.</td>
+</tr>
+<tr>
+<td><code>require</code></td>
+<td><code>true</code>/<code>false</code> whether this option must be specified.</td>
+</tr>
+<tr>
+<td><code>requireArg</code></td>
+<td><code>true</code>/<code>false</code> whether argument for the option is required.</td>
+</tr>
+<tr>
+<td><code>allowCmd</code></td>
+<td>list of command names this option is allow to follow only.</td>
+</tr>
+<tr>
+<td><code>args</code></td>
+<td>- Arguments for the option. <code>&lt;type name&gt;</code> means it&#39;s required and <code>[type name]</code> optional.</td>
+</tr>
+<tr>
+<td><code>custom</code></td>
+<td>- specify <a href="#value-coercion">value coercion</a> for custom types.</td>
+</tr>
+<tr>
+<td><code>customDefault</code></td>
+<td>- default values to use for each <a href="#value-coercion">value coercion</a> if user specified something but the coercion returns <code>undefined</code>.</td>
+</tr>
+<tr>
+<td></td>
+<td>* Coercion returning <code>undefined</code> will cause failure if no default is specified.</td>
+</tr>
+</tbody></table>
+<a id="md:commands-spec" class="tsd-anchor"></a><h2><a href="#md:commands-spec"><code>commands spec</code></a></h2><p>Command spec share some properties that are the same as <a href="#options-spec">option spec</a>.</p>
+<p>Command doesn&#39;t support the following:</p>
+<ul>
+<li>no <code>allowCmd</code> property.</li>
+<li>args can&#39;t have <code>count</code> type.</li>
+</ul>
+<p>Command supports a few more properties: <code>usage</code>, <code>exec</code>, and <code>options</code>.</p>
+<pre><code class="language-js"><span class="hl-0">const</span><span class="hl-1"> </span><span class="hl-2">commands</span><span class="hl-1"> = {</span><br/><span class="hl-1">  </span><span class="hl-5">cmd1:</span><span class="hl-1"> {</span><br/><span class="hl-1">    </span><span class="hl-5">alias:</span><span class="hl-1"> [</span><span class="hl-4">&quot;c&quot;</span><span class="hl-1">],</span><br/><span class="hl-1">    </span><span class="hl-5">desc:</span><span class="hl-1"> </span><span class="hl-4">&quot;description&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-5">args:</span><span class="hl-1"> </span><span class="hl-4">&quot;[number cans] [enum] [boolean diet] [string..]&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-5">default:</span><span class="hl-1"> [</span><span class="hl-6">6</span><span class="hl-1">, </span><span class="hl-4">&quot;coke&quot;</span><span class="hl-1">, </span><span class="hl-0">true</span><span class="hl-1">, </span><span class="hl-4">&quot;foo&quot;</span><span class="hl-1">],</span><br/><span class="hl-1">    </span><span class="hl-5">custom:</span><span class="hl-1"> {</span><br/><span class="hl-1">      </span><span class="hl-5">enum:</span><span class="hl-7"> /</span><span class="hl-8">^</span><span class="hl-9">(</span><span class="hl-7">coke</span><span class="hl-8">|</span><span class="hl-7">pepsi</span><span class="hl-9">)</span><span class="hl-8">$</span><span class="hl-7">/</span><br/><span class="hl-1">    },</span><br/><span class="hl-1">    </span><span class="hl-5">customDefault:</span><span class="hl-1"> {</span><br/><span class="hl-1">      </span><span class="hl-5">enum:</span><span class="hl-1"> </span><span class="hl-4">&quot;coke&quot;</span><br/><span class="hl-1">    },</span><br/><span class="hl-1">    </span><span class="hl-5">usage:</span><span class="hl-1"> </span><span class="hl-4">&quot;$0 $1&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-3">exec</span><span class="hl-5">:</span><span class="hl-1"> </span><span class="hl-5">argv</span><span class="hl-1"> </span><span class="hl-0">=&gt;</span><span class="hl-1"> {},</span><br/><span class="hl-1">    </span><span class="hl-5">options:</span><span class="hl-1"> {}</span><br/><span class="hl-1">  },</span><br/><span class="hl-1">  </span><span class="hl-5">cmd2:</span><span class="hl-1"> {}</span><br/><span class="hl-1">};</span>
+</code><button>Copy</button></pre>
+<p>Where:</p>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>alias</code></td>
+<td>Specify aliases for the command, as a single string or an array of strings.</td>
+</tr>
+<tr>
+<td><code>args</code></td>
+<td>Specify arguments for the command. <code>&lt;&gt;</code> means it&#39;s required and <code>[]</code> optional. See <a href="#rules-for-command-args">rules</a> for more info.</td>
+</tr>
+<tr>
+<td><code>usage</code></td>
+<td>usage message when help for the command is invoked - a string or a function that returns a string.</td>
+</tr>
+<tr>
+<td></td>
+<td><code>$0</code> will be replaced with program name and <code>$1</code> with command name.</td>
+</tr>
+<tr>
+<td><code>desc</code></td>
+<td>Description for the command - can be a string or a function that returns a string.</td>
+</tr>
+<tr>
+<td><code>exec</code></td>
+<td>The callback handler for the command - see <a href="#command-exec-handler">here</a> for more details.</td>
+</tr>
+<tr>
+<td><code>defaultCommand</code></td>
+<td>If <code>true</code>, set the command as default, which is invoked when no command was given in command line.</td>
+</tr>
+<tr>
+<td></td>
+<td>- Only one command can be default.</td>
+</tr>
+<tr>
+<td></td>
+<td>- Default command cannot have required args and must have the <code>exec</code> handler</td>
+</tr>
+<tr>
+<td><code>defaultValues</code></td>
+<td>- If set, specify the default values for value coercions, with a default value for each custom type name.</td>
+</tr>
+<tr>
+<td><code>options</code></td>
+<td>List of options arguments private to the command. Follows the same spec as <a href="#options-spec">top level options</a></td>
+</tr>
+</tbody></table>
+<a id="md:rules-for-command-args" class="tsd-anchor"></a><h3><a href="#md:rules-for-command-args">Rules for Command <code>args</code></a></h3><p>Rules for when specifying <code>args</code> for the command:</p>
+<ul>
+<li>all required args must be before optional args</li>
+<li>last one can specify variadic args with <code>..</code>, like <code>&lt;names..&gt;</code> or <code>[names..]</code></li>
+<li>If you just want to get the list of args without naming it, you can specify with <code>&lt;..&gt;</code> or <code>[..]</code></li>
+<li>named args can have an optional type like <code>&lt;number value&gt;</code> or <code>[number values..]</code><ul>
+<li>supported types are <code>number</code>, <code>float</code>, <code>string</code>, <code>boolean</code>, or <a href="#value-coercion">coercion</a></li>
+</ul>
+</li>
+</ul>
+<a id="md:value-coercion" class="tsd-anchor"></a><h2><a href="#md:value-coercion">Value Coercion</a></h2><p>If none of the predefined types work for you, you can specify your own as a function or a RegExp, or any value.</p>
+<p>You use any valid identifier for the value type, and then you define a field with the same name in your spec that can be:</p>
+<ul>
+<li><code>function</code> - will be called with the value to convert</li>
+<li><code>RegExp</code> - will be used to match the value. <code>undefined</code> is returned if it didn&#39;t match.</li>
+<li>Anything else - will be used as the converted value.</li>
+</ul>
+<p>For example:</p>
+<pre><code class="language-js"><span class="hl-0">const</span><span class="hl-1"> </span><span class="hl-2">options</span><span class="hl-1"> = {</span><br/><span class="hl-1">  </span><span class="hl-5">customFn:</span><span class="hl-1"> {</span><br/><span class="hl-1">    </span><span class="hl-5">type:</span><span class="hl-1"> </span><span class="hl-4">&quot;fnval&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-3">fnval</span><span class="hl-5">:</span><span class="hl-1"> </span><span class="hl-5">value</span><span class="hl-1"> </span><span class="hl-0">=&gt;</span><span class="hl-1"> {</span><br/><span class="hl-1">      </span><span class="hl-10">return</span><span class="hl-1"> </span><span class="hl-5">value</span><span class="hl-1">.</span><span class="hl-3">substr</span><span class="hl-1">(</span><span class="hl-6">0</span><span class="hl-1">, </span><span class="hl-6">1</span><span class="hl-1">);</span><br/><span class="hl-1">    }</span><br/><span class="hl-1">  },</span><br/><span class="hl-1">  </span><span class="hl-5">customRegex:</span><span class="hl-1"> {</span><br/><span class="hl-1">    </span><span class="hl-5">type:</span><span class="hl-1"> </span><span class="hl-4">&quot;rx&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-5">rx:</span><span class="hl-7"> /</span><span class="hl-8">^</span><span class="hl-7">test</span><span class="hl-8">$</span><span class="hl-7">/</span><span class="hl-0">i</span><br/><span class="hl-1">  },</span><br/><span class="hl-1">  </span><span class="hl-5">customAny:</span><span class="hl-1"> {</span><br/><span class="hl-1">    </span><span class="hl-5">type:</span><span class="hl-1"> </span><span class="hl-4">&quot;foo&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-5">foo:</span><span class="hl-1"> </span><span class="hl-4">&quot;bar&quot;</span><br/><span class="hl-1">  }</span><br/><span class="hl-1">};</span><br/><br/><span class="hl-0">const</span><span class="hl-1"> </span><span class="hl-2">commands</span><span class="hl-1"> = {</span><br/><span class="hl-1">  </span><span class="hl-5">foo:</span><span class="hl-1"> {</span><br/><span class="hl-1">    </span><span class="hl-5">args:</span><span class="hl-1"> </span><span class="hl-4">&quot;&lt;type1 value1&gt; &lt;type2 value2&gt;&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-3">type1</span><span class="hl-5">:</span><span class="hl-1"> </span><span class="hl-5">value</span><span class="hl-1"> </span><span class="hl-0">=&gt;</span><span class="hl-1"> </span><span class="hl-4">`test-</span><span class="hl-0">${</span><span class="hl-5">value</span><span class="hl-0">}</span><span class="hl-4">`</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-5">type2:</span><span class="hl-7"> /</span><span class="hl-8">^</span><span class="hl-7">test</span><span class="hl-8">$</span><span class="hl-7">/</span><span class="hl-0">i</span><br/><span class="hl-1">  }</span><br/><span class="hl-1">};</span>
+</code><button>Copy</button></pre>
+<a id="md:parse-result" class="tsd-anchor"></a><h2><a href="#md:parse-result">Parse Result</a></h2><p>Use the method <a href="#parseargv-start-parsed"><code>parse</code></a> to parse command line arguments. It will return a parse result object.</p>
+<pre><code class="language-js"><span class="hl-1">{</span><br/><span class="hl-1">  </span><span class="hl-11">source</span><span class="hl-1">: {},</span><br/><span class="hl-1">  </span><span class="hl-11">opts</span><span class="hl-1">: {},</span><br/><span class="hl-1">  </span><span class="hl-11">verbatim</span><span class="hl-1">: {},</span><br/><span class="hl-1">  </span><span class="hl-11">commands</span><span class="hl-1">: [],</span><br/><span class="hl-1">  </span><span class="hl-11">index</span><span class="hl-1">: </span><span class="hl-6">5</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-5">error</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-11">_</span><span class="hl-1">: [],</span><br/><span class="hl-1">  </span><span class="hl-11">argv</span><span class="hl-1">: []</span><br/><span class="hl-1">}</span>
+</code><button>Copy</button></pre>
+<p>Where:</p>
+<ul>
+<li><code>index</code> - the index in <code>argv</code> parse stopped</li>
+<li><code>error</code> - If parse failed and your <code>parse-fail</code> event handler throws, then this will contain the parse error. See <a href="#skip-default-event-behaviors">skip default event behaviors</a> for more details.</li>
+<li><code>source</code>, <code>opts</code>, <code>verbatim</code> - objects containing info for the options. See <a href="#parse-result-source-and-opts-objects">details here</a></li>
+<li><code>commands</code> - array of parsed command objects. See <a href="#parse-result-commands-object"><code>commands</code></a> for more details.</li>
+<li><code>argv</code> - original array of argv</li>
+<li><code>_</code> - remaining args in the <code>argv</code> array in case parsing was terminated by <code>--</code>.</li>
+</ul>
+<p>If any command with <a href="#command-exec-handler"><code>exec</code> handlers</a> were specified, then <code>parse</code> will invoke them before returning the parse result object.</p>
+<a id="md:parse-result-source-and-opts-objects" class="tsd-anchor"></a><h3><a href="#md:parse-result-source-and-opts-objects">Parse Result <code>source</code> and <code>opts</code> objects</a></h3><ul>
+<li><p><code>opts</code> - contains actual value for each option</p>
+</li>
+<li><p><code>source</code> - contains info about where the option value came from</p>
+<ul>
+<li><code>cli</code> - option specified by user in the command line</li>
+</ul>
+<ul>
+<li><code>cli-default</code> - User specified a value that didn&#39;t match RegExp and fallback to default.</li>
+<li><code>cli-unmatch</code> - User specified a value that didn&#39;t match RegExp and there&#39;s no default to fallback to.</li>
+<li><code>default</code> - default value in your <a href="#options-spec">options spec</a></li>
+<li><code>user</code> - values you applied by calling the <a href="#applyconfigconfig-parsed-src"><code>applyConfig</code></a> method</li>
+</ul>
+</li>
+<li><p><code>verbatim</code> - contains original unprocessed value as given by the user in the command line</p>
+<ul>
+<li>This is an array of values if there was actual values from the user</li>
+<li>If there&#39;s no explicit value (ie. boolean or counting options), then this doesn&#39;t contain a field for the option.</li>
+<li>If it&#39;s a boolean but the user specified with <code>--no-</code> prefix, then this contains a field with the value <code>[&quot;no-&quot;]</code></li>
+</ul>
+</li>
+</ul>
+<p>For example, with the following conditions:</p>
+<ol>
+<li>User specified <code>--foo-bar=test</code> in the command line</li>
+<li>You have an option <code>fooDefault</code> with default value <code>bar</code></li>
+<li>You called <code>applyConfig</code> with <code>applyConfig({fooConfig: 1, fooBar: &quot;oops&quot;}, parsed)</code></li>
+</ol>
+<p>You would get the following in the parse result object:</p>
+<pre><code class="language-js"><span class="hl-1">{</span><br/><span class="hl-1">  </span><span class="hl-11">source</span><span class="hl-1">: {</span><br/><span class="hl-1">    </span><span class="hl-11">fooBar</span><span class="hl-1">: </span><span class="hl-4">&quot;cli&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-11">fooDefault</span><span class="hl-1">: </span><span class="hl-4">&quot;default&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-11">fooConfig</span><span class="hl-1">: </span><span class="hl-4">&quot;user&quot;</span><br/><span class="hl-1">  },</span><br/><span class="hl-1">  </span><span class="hl-11">opts</span><span class="hl-1">: {</span><br/><span class="hl-1">    </span><span class="hl-11">fooBar</span><span class="hl-1">: </span><span class="hl-4">&quot;test&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-11">fooDefault</span><span class="hl-1">: </span><span class="hl-4">&quot;bar&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-11">fooConfig</span><span class="hl-1">: </span><span class="hl-6">1</span><br/><span class="hl-1">  },</span><br/><span class="hl-1">  </span><span class="hl-11">verbatim</span><span class="hl-1">: {</span><br/><span class="hl-1">    </span><span class="hl-11">fooBar</span><span class="hl-1">: [</span><span class="hl-4">&quot;test&quot;</span><span class="hl-1">]</span><br/><span class="hl-1">  }</span><br/><span class="hl-1">}</span>
+</code><button>Copy</button></pre>
+<blockquote>
+<p>Note that the value <code>oops</code> for <code>fooBar</code> passed to <code>applyConfig</code> is not used since user&#39;s specified value is used.</p>
+</blockquote>
+<a id="md:parse-result-commands-object" class="tsd-anchor"></a><h3><a href="#md:parse-result-commands-object">Parse Result <code>commands</code> object</a></h3><p>The <code>commands</code> object is an array of parsed commands:</p>
+<pre><code class="language-js"><span class="hl-1">{</span><br/><span class="hl-1">  </span><span class="hl-11">commands</span><span class="hl-1">: [</span><br/><span class="hl-1">    {</span><br/><span class="hl-1">      </span><span class="hl-5">name:</span><span class="hl-1"> </span><span class="hl-4">&quot;cmdName&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">      </span><span class="hl-5">long:</span><span class="hl-1"> </span><span class="hl-4">&quot;cmdName&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">      </span><span class="hl-5">unknown:</span><span class="hl-1"> </span><span class="hl-0">false</span><span class="hl-1">,</span><br/><span class="hl-1">      </span><span class="hl-5">args:</span><span class="hl-1"> {</span><br/><span class="hl-1">        </span><span class="hl-5">foo:</span><span class="hl-1"> </span><span class="hl-4">&quot;bar&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">        </span><span class="hl-5">variadic:</span><span class="hl-1"> [</span><span class="hl-4">&quot;a&quot;</span><span class="hl-1">, </span><span class="hl-4">&quot;b&quot;</span><span class="hl-1">]</span><br/><span class="hl-1">      },</span><br/><span class="hl-1">      </span><span class="hl-5">argList:</span><span class="hl-1"> [</span><span class="hl-4">&quot;bar&quot;</span><span class="hl-1">, </span><span class="hl-4">&quot;a&quot;</span><span class="hl-1">, </span><span class="hl-4">&quot;b&quot;</span><span class="hl-1">],</span><br/><span class="hl-1">      </span><span class="hl-5">opts:</span><span class="hl-1"> {},</span><br/><span class="hl-1">      </span><span class="hl-5">source:</span><span class="hl-1"> {},</span><br/><span class="hl-1">      </span><span class="hl-5">verbatim:</span><span class="hl-1"> {}</span><br/><span class="hl-1">    }</span><br/><span class="hl-1">  ];</span><br/><span class="hl-1">}</span>
+</code><button>Copy</button></pre>
+<ul>
+<li><code>name</code> is the name of the command used by the user in the command line that could be an alias</li>
+<li><code>long</code> is the original form of the command name (not the alias)</li>
+<li><code>unknown</code> - <code>true</code> if the command is not known</li>
+<li><code>args</code> - the processed named arguments</li>
+<li><code>argList</code> - list of all the arguments in unprocessed string form</li>
+<li><code>opts</code>, <code>source</code>, <code>verbatim</code> - info for the options private to the command</li>
+</ul>
+<a id="md:command-exec-handler" class="tsd-anchor"></a><h3><a href="#md:command-exec-handler">Command <code>exec</code> handler</a></h3><p>If the command has an <code>exec</code> handler, then it will be called with two arguments:</p>
+<pre><code class="language-js"><span class="hl-3">exec</span><span class="hl-1">(</span><span class="hl-5">result</span><span class="hl-1">, </span><span class="hl-5">parsed</span><span class="hl-1">);</span>
+</code><button>Copy</button></pre>
+<ul>
+<li>First one is the object for the command</li>
+<li>Second one is the overall parsed object</li>
+</ul>
+<p>Info about the command object:</p>
+<pre><code class="language-js"><span class="hl-1">{</span><br/><span class="hl-1">  </span><span class="hl-11">name</span><span class="hl-1">: </span><span class="hl-4">&quot;cmdName&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-11">long</span><span class="hl-1">: </span><span class="hl-4">&quot;cmdName&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-11">args</span><span class="hl-1">: {</span><br/><span class="hl-1">    </span><span class="hl-11">foo</span><span class="hl-1">: </span><span class="hl-4">&quot;bar&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-11">variadic</span><span class="hl-1">: [ </span><span class="hl-4">&quot;a&quot;</span><span class="hl-1">, </span><span class="hl-4">&quot;b&quot;</span><span class="hl-1"> ]</span><br/><span class="hl-1">  },</span><br/><span class="hl-1">  </span><span class="hl-11">argList</span><span class="hl-1">: [ </span><span class="hl-4">&quot;bar&quot;</span><span class="hl-1">, </span><span class="hl-4">&quot;a&quot;</span><span class="hl-1">, </span><span class="hl-4">&quot;b&quot;</span><span class="hl-1"> ],</span><br/><span class="hl-1">  </span><span class="hl-11">opts</span><span class="hl-1">: {},</span><br/><span class="hl-1">  </span><span class="hl-11">source</span><span class="hl-1">: {},</span><br/><span class="hl-1">  </span><span class="hl-11">verbatim</span><span class="hl-1">: {}</span><br/><span class="hl-1">}</span>
+</code><button>Copy</button></pre>
+<p>Where <code>opts</code> and <code>source</code> contain both the command&#39;s private options and top level options.</p>
+<blockquote>
+<p>You can turn this off with the <code>skipExec</code> config flag passed to <a href="#constructorconfig"><code>NixClap</code> constructor</a></p>
+</blockquote>
+<a id="md:events" class="tsd-anchor"></a><h2><a href="#md:events">Events</a></h2><p><code>NixClap</code> emits these events:</p>
+<ul>
+<li><code>help</code> - when <code>--help</code> is invoked, emitted with the parse result object.</li>
+<li><code>pre-help</code> - before output for <code>--help</code></li>
+<li><code>post-help</code> - after output for <code>--help</code></li>
+<li><code>help</code> - when <code>--help</code> is invoked, emitted with the parse result object.</li>
+<li><code>version</code> - when <code>--version</code> is invoked, emitted with the parse result object.</li>
+<li><code>parsed</code> - when all parsing is done but before command <code>exec</code> are invoked, emitted with <code>{ nixClap, parsed }</code> where <code>nixClap</code> is the NixClap instance.</li>
+<li><code>parse-fail</code> - when parse failed, emitted with parse result object, which has <code>error</code> field.</li>
+<li><code>unknown-option</code> - when an unknown option is found, emitted with option name</li>
+<li><code>unknown-command</code> - when an unknown command is found, emitted with command context, which has <code>name</code> field.</li>
+<li><code>no-action</code> - when you have commands with <code>exec</code> and user specified no command that triggered an <code>exec</code> call.</li>
+</ul>
+<ul>
+<li><code>regex-unmatch</code> - when you have <a href="#value-coercion">value coercion</a> using a RegExp but the user specified a value that didn&#39;t match the RegEx.<ul>
+<li>You typically should:<ul>
+<li>Install your own handler to throw to abort parsing.</li>
+<li>Remove default handler to not print any warning.</li>
+<li>Install your own handler to print your own warning.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li><code>exit</code> - When program is expected to terminate, emit with exit code.</li>
+</ul>
+<a id="md:default-event-handlers" class="tsd-anchor"></a><h3><a href="#md:default-event-handlers">Default Event Handlers</a></h3><p>NixClap has default handlers for these events:</p>
+<ul>
+<li><code>help</code> - Output help and emit <code>exit</code></li>
+<li><code>version</code> - If <code>version</code> has been set, then output version and emit <code>exit</code>.</li>
+<li><code>parse-fail</code> - Output help and error message, and emit <code>exit</code>.</li>
+<li><code>unknown-option</code> - Throws Error <code>Unknown option ${name}</code></li>
+<li><code>unknown-command</code> - Throws Error <code>Unkown command ${ctx.name}</code></li>
+<li><code>no-action</code> - Output help with error <code>No command given</code> and emit <code>exit</code></li>
+</ul>
+<ul>
+<li><code>regex-unmatch</code> - Output a message to let user know that value didn&#39;t match and default will be used.</li>
+</ul>
+<ul>
+<li><code>exit</code> - calls <code>process.exit(code)</code></li>
+</ul>
+<a id="md:skip-default-event-behaviors" class="tsd-anchor"></a><h4><a href="#md:skip-default-event-behaviors">Skip Default Event Behaviors</a></h4><p>You can remove the default event handlers with one of these approaches:</p>
+<ul>
+<li>With the <a href="#removedefaulthandlers"><code>removeDefaultHandlers</code></a> method.</li>
+<li>By passing in <code>handlers</code> object in the <code>config</code> for the constructor.</li>
+</ul>
+<p>For example, using <code>removeDefaultHandlers</code>:</p>
+<pre><code class="language-js"><span class="hl-0">const</span><span class="hl-1"> </span><span class="hl-2">nc</span><span class="hl-1"> = </span><span class="hl-0">new</span><span class="hl-1"> </span><span class="hl-3">NixClap</span><span class="hl-1">().</span><span class="hl-3">init</span><span class="hl-1">(</span><span class="hl-5">options</span><span class="hl-1">, </span><span class="hl-5">commands</span><span class="hl-1">);</span><br/><span class="hl-0">const</span><span class="hl-1"> </span><span class="hl-2">parsed</span><span class="hl-1"> = </span><span class="hl-5">nc</span><span class="hl-1">.</span><span class="hl-3">removeDefaultHandlers</span><span class="hl-1">(</span><span class="hl-4">&quot;parse-fail&quot;</span><span class="hl-1">).</span><span class="hl-3">parse</span><span class="hl-1">();</span><br/><span class="hl-10">if</span><span class="hl-1"> (</span><span class="hl-5">parsed</span><span class="hl-1">.</span><span class="hl-5">error</span><span class="hl-1">) {</span><br/><span class="hl-1">  </span><span class="hl-12">// handle the parse error here</span><br/><span class="hl-1">}</span>
+</code><button>Copy</button></pre>
+<p>Using constructor config.</p>
+<pre><code class="language-js"><span class="hl-0">const</span><span class="hl-1"> </span><span class="hl-2">parsed</span><span class="hl-1"> = </span><span class="hl-0">new</span><span class="hl-1"> </span><span class="hl-3">NixClap</span><span class="hl-1">({ </span><span class="hl-5">handlers:</span><span class="hl-1"> { </span><span class="hl-4">&quot;parse-fail&quot;</span><span class="hl-5">:</span><span class="hl-1"> </span><span class="hl-0">false</span><span class="hl-1"> } }).</span><span class="hl-3">parse</span><span class="hl-1">();</span><br/><span class="hl-10">if</span><span class="hl-1"> (</span><span class="hl-5">parsed</span><span class="hl-1">.</span><span class="hl-5">error</span><span class="hl-1">) {</span><br/><span class="hl-1">  </span><span class="hl-12">// handle the parse error here</span><br/><span class="hl-1">}</span>
+</code><button>Copy</button></pre>
+<a id="md:apis" class="tsd-anchor"></a><h2><a href="#md:apis">APIs</a></h2><p>These are methods <code>NixClap</code> class supports.</p>
+<ul>
+<li><a href="#nixclap">NixClap</a></li>
+<li><a href="#features">Features</a></li>
+<li><a href="#examples">Examples</a><ul>
+<li><a href="#more-examples">More Examples</a></li>
+</ul>
+</li>
+<li><a href="#parsing-capabilities">Parsing Capabilities</a><ul>
+<li><a href="#options">Options</a></li>
+<li><a href="#commands">Commands</a><ul>
+<li><a href="#multiple-commands">Multiple Commands</a></li>
+<li><a href="#sub-commands">Sub Commands</a></li>
+</ul>
+</li>
+<li><a href="#terminating-and-resuming">Terminating and Resuming</a></li>
+</ul>
+</li>
+<li><a href="#install">Install</a></li>
+<li><a href="#interface">Interface</a><ul>
+<li><a href="#options-spec"><code>options spec</code></a></li>
+<li><a href="#commands-spec"><code>commands spec</code></a><ul>
+<li><a href="#rules-for-command-args">Rules for Command <code>args</code></a></li>
+</ul>
+</li>
+<li><a href="#value-coercion">Value Coercion</a></li>
+<li><a href="#parse-result">Parse Result</a><ul>
+<li><a href="#parse-result-source-and-opts-objects">Parse Result <code>source</code> and <code>opts</code> objects</a></li>
+<li><a href="#parse-result-commands-object">Parse Result <code>commands</code> object</a></li>
+<li><a href="#command-exec-handler">Command <code>exec</code> handler</a></li>
+</ul>
+</li>
+<li><a href="#events">Events</a><ul>
+<li><a href="#default-event-handlers">Default Event Handlers</a><ul>
+<li><a href="#skip-default-event-behaviors">Skip Default Event Behaviors</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#apis">APIs</a><ul>
+<li><a href="#constructorconfig"><code>constructor(config)</code></a></li>
+<li><a href="#versionv"><code>version(v)</code></a></li>
+<li><a href="#helpsetting"><code>help(setting)</code></a></li>
+<li><a href="#usagemsg-cmdusagemsg"><code>usage(msg)</code>, <code>cmdUsage(msg)</code></a></li>
+<li><a href="#initoptions-commands"><code>init(options, commands)</code></a></li>
+<li><a href="#defaultcommandname"><code>defaultCommand(name)</code></a></li>
+<li><a href="#parseargv-start-parsed"><code>parse(argv, start, parsed)</code></a></li>
+<li><a href="#parseasyncargv-start-parsed"><code>parseAsync(argv, start, parsed)</code></a></li>
+<li><a href="#showhelperr-cmdname"><code>showHelp(err, cmdName)</code></a></li>
+<li><a href="#removedefaulthandlers"><code>removeDefaultHandlers()</code></a></li>
+<li><a href="#applyconfigconfig-parsed-src"><code>applyConfig(config, parsed, src)</code></a></li>
+<li><a href="#runexecparsed-skipdefault"><code>runExec(parsed, skipDefault)</code></a></li>
+<li><a href="#runexecasyncparsed-skipdefault"><code>runExecAsync(parsed, skipDefault)</code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#others">Others</a></li>
+</ul>
+<a id="md:constructorconfig" class="tsd-anchor"></a><h3><a href="#md:constructorconfig"><code>constructor(config)</code></a></h3><p><code>config</code> is object with:</p>
+<ul>
+<li><code>name</code> - set the program name. Will auto detect from <code>process.argv</code> if not specified.</li>
+<li><code>version</code> - set the program version. Can also set with <a href="#versionv"><code>version</code></a> method.</li>
+<li><code>help</code> - custom help option setting. Can also set with <a href="#helpsetting"><code>help</code></a> method.</li>
+<li><code>usage</code> - usage message. Can also set with <a href="#usagemsg-cmdusagemsg"><code>usage</code></a> method.</li>
+<li><code>cmdUsage</code> - generic usage message for commands. Can also set with <a href="#usagemsg-cmdusagemsg"><code>cmdUsage</code></a> method.</li>
+<li><code>skipExec</code> - If true, will not call command <code>exec</code> handlers after parse.</li>
+<li><code>skipExecDefault</code> - if true, will not call default command <code>exec</code> handler after parse.<ul>
+<li>In case you need to do something before invoking the <code>exec</code> handlers, you can set these flags and call the <a href="#runexecparsed-skipdefault"><code>runExec(parsed, skipDefault)</code></a> method yourself.</li>
+</ul>
+</li>
+<li><code>output</code> - callback for printing to console. Should take string as param. Default to calling <code>process.stdout.write</code></li>
+<li><code>handlers</code> - custom event handlers.</li>
+</ul>
+<p>The <code>handlers</code> object can specify a function for each of the <a href="#events">events</a> or set it to <code>false</code> to turn off the default handler.</p>
+<p>For example, this config will replace handler for <code>parse-fail</code> and turn off the default <code>unknown-option</code> handler.</p>
+<pre><code class="language-js"><span class="hl-0">const</span><span class="hl-1"> </span><span class="hl-2">nc</span><span class="hl-1"> = </span><span class="hl-0">new</span><span class="hl-1"> </span><span class="hl-3">NixClap</span><span class="hl-1">({</span><br/><span class="hl-1">  </span><span class="hl-5">handlers:</span><span class="hl-1"> {</span><br/><span class="hl-1">    </span><span class="hl-4">&quot;parse-fail&quot;</span><span class="hl-5">:</span><span class="hl-1"> (</span><span class="hl-5">parsed</span><span class="hl-1">) </span><span class="hl-0">=&gt;</span><span class="hl-1"> { ... },</span><br/><span class="hl-1">    </span><span class="hl-4">&quot;unknown-option&quot;</span><span class="hl-5">:</span><span class="hl-1"> </span><span class="hl-0">false</span><br/><span class="hl-1">  }</span><br/><span class="hl-1">});</span>
+</code><button>Copy</button></pre>
+<a id="md:versionv" class="tsd-anchor"></a><h3><a href="#md:versionv"><code>version(v)</code></a></h3><p>Set program version with a string. ie: <code>1.0.0</code></p>
+<p>Return: The <code>NixClap</code> instance itself.</p>
+<blockquote>
+<p>Must be called before the <a href="#initoptions-commands"><code>init</code></a> method.</p>
+</blockquote>
+<a id="md:helpsetting" class="tsd-anchor"></a><h3><a href="#md:helpsetting"><code>help(setting)</code></a></h3><p>Set a custom option setting for invoking help. Default is:</p>
+<p>Return: The <code>NixClap</code> instance itself.</p>
+<pre><code class="language-js"><span class="hl-1">{</span><br/><span class="hl-1">  </span><span class="hl-11">alias</span><span class="hl-1">: </span><span class="hl-4">&quot;h&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-11">desc</span><span class="hl-1">: </span><span class="hl-4">&quot;Show help&quot;</span><br/><span class="hl-1">}</span>
+</code><button>Copy</button></pre>
+<p>Option name is always <code>help</code>. Call <code>help(false)</code> to turn off the default <code>--help</code> option.</p>
+<blockquote>
+<p>Must be called before the <a href="#initoptions-commands"><code>init</code></a> method.</p>
+</blockquote>
+<a id="md:usagemsg-cmdusagemsg" class="tsd-anchor"></a><h3><a href="#md:usagemsg-cmdusagemsg"><code>usage(msg)</code>, <code>cmdUsage(msg)</code></a></h3><p>Set usage message for the program or command, which can be override by individual command&#39;s own usage.</p>
+<p><code>msg</code> format is any string. <code>$0</code> will be replaced with program name and <code>$1</code> with command name.</p>
+<p>Return: The <code>NixClap</code> instance itself.</p>
+<blockquote>
+<p>Must be called before the <a href="#initoptions-commands"><code>init</code></a> method.</p>
+</blockquote>
+<a id="md:initoptions-commands" class="tsd-anchor"></a><h3><a href="#md:initoptions-commands"><code>init(options, commands)</code></a></h3><p>Initialize your options and commands</p>
+<p>Return: The <code>NixClap</code> instance itself.</p>
+<a id="md:defaultcommandname" class="tsd-anchor"></a><h3><a href="#md:defaultcommandname"><code>defaultCommand(name)</code></a></h3><p>Set the default command which is invoked when no command was given in command line.</p>
+<ul>
+<li>Only one command can be default.</li>
+<li>Default command cannot have required args and must have the <code>exec</code> handler</li>
+</ul>
+<a id="md:parseargv-start-parsed" class="tsd-anchor"></a><h3><a href="#md:parseargv-start-parsed"><code>parse(argv, start, parsed)</code></a></h3><p>Parse command line. Call without any params to parse <code>process.argv</code>.</p>
+<p>Return: The parse result object.</p>
+<ul>
+<li><code>argv</code> - array of CLI args. Defaults to <code>process.argv</code>.</li>
+<li><code>start</code> - index for argv from where to start parsing</li>
+<li><code>parsed</code> - previous result from <code>parse</code>. If passed, then parsing will add new data to it.</li>
+</ul>
+<a id="md:parseasyncargv-start-parsed" class="tsd-anchor"></a><h3><a href="#md:parseasyncargv-start-parsed"><code>parseAsync(argv, start, parsed)</code></a></h3><p>async version of <a href="#parseargv-start-parsed">parse</a>.</p>
+<ul>
+<li>It will use <a href="#runexecasyncparsed-skipdefault">runExecAsync</a> to invoke command <code>exec</code> handlers serially.</li>
+<li>The command handler can return a Promise, which will be awaited.</li>
+</ul>
+<p>Return: A promise the resolve with the parse result object.</p>
+<a id="md:showhelperr-cmdname" class="tsd-anchor"></a><h3><a href="#md:showhelperr-cmdname"><code>showHelp(err, cmdName)</code></a></h3><p>Show help message and then emit <code>exit</code>.</p>
+<ul>
+<li><code>err</code> - if valid, then <code>err.message</code> will be printed after help message and exit with code <code>1</code>.</li>
+<li><code>cmdName</code> - if valid, then will print help for the specific command.</li>
+</ul>
+<a id="md:removedefaulthandlers" class="tsd-anchor"></a><h3><a href="#md:removedefaulthandlers"><code>removeDefaultHandlers()</code></a></h3><p>Remove NixClap&#39;s default handlers for the list of <a href="#events">event names</a>.</p>
+<p>If you&#39;ve replaced the handler through specifying <code>handlers</code> in <code>config</code> for the constructor, then this will not remove your handler.</p>
+<p>Return: The <code>NixClap</code> instance itself.</p>
+<ul>
+<li>You can pass in <code>&quot;*&quot;</code> to remove all default handlers.</li>
+<li>You can pass in the event names you want to remove.</li>
+</ul>
+<p>ie:</p>
+<pre><code class="language-js"><span class="hl-5">nc</span><span class="hl-1">.</span><span class="hl-3">removeDefaultHandlers</span><span class="hl-1">(</span><span class="hl-4">&quot;parse-fail&quot;</span><span class="hl-1">, </span><span class="hl-4">&quot;unknown-option&quot;</span><span class="hl-1">, </span><span class="hl-4">&quot;unknown-command&quot;</span><span class="hl-1">);</span>
+</code><button>Copy</button></pre>
+<a id="md:applyconfigconfig-parsed-src" class="tsd-anchor"></a><h3><a href="#md:applyconfigconfig-parsed-src"><code>applyConfig(config, parsed, src)</code></a></h3><p>Allow you to apply extra config to the parsed object, overriding any <code>opts</code> with <code>source</code> not start with <code>cli</code>.</p>
+<p>For example, you can allow user to specify options in their <code>package.json</code> file, and apply those after the command line is parsed.</p>
+<ul>
+<li><code>config</code> - Config object containing user options config</li>
+<li><code>parsed</code> - The parse result object from NixClap.</li>
+<li><code>src</code> - String, source to set if override. Default to <code>user</code></li>
+</ul>
+<p>Example on applying user config from <code>package.json</code>:</p>
+<pre><code class="language-js"><span class="hl-0">const</span><span class="hl-1"> </span><span class="hl-2">pkg</span><span class="hl-1"> = </span><span class="hl-3">require</span><span class="hl-1">(</span><span class="hl-5">path</span><span class="hl-1">.</span><span class="hl-3">resolve</span><span class="hl-1">(</span><span class="hl-4">&quot;package.json&quot;</span><span class="hl-1">));</span><br/><span class="hl-0">const</span><span class="hl-1"> </span><span class="hl-2">parsed</span><span class="hl-1"> = </span><span class="hl-5">nc</span><span class="hl-1">.</span><span class="hl-3">parse</span><span class="hl-1">();</span><br/><span class="hl-5">nc</span><span class="hl-1">.</span><span class="hl-3">applyConfig</span><span class="hl-1">(</span><span class="hl-5">pkg</span><span class="hl-1">.</span><span class="hl-5">cliConfig</span><span class="hl-1">, </span><span class="hl-5">parsed</span><span class="hl-1">);</span>
+</code><button>Copy</button></pre>
+<a id="md:runexecparsed-skipdefault" class="tsd-anchor"></a><h3><a href="#md:runexecparsed-skipdefault"><code>runExec(parsed, skipDefault)</code></a></h3><p>Go through the commands in parsed and call their <code>exec</code> handler.</p>
+<blockquote>
+<p>The <a href="#parseargv-start-parsed"><code>parse</code></a> method will call this at the end unless <code>skipExec</code> flag is set.</p>
+</blockquote>
+<p>Return: The number of commands with <code>exec</code> was invoked.</p>
+<ul>
+<li><code>parsed</code> - The parse result object.</li>
+<li><code>skipDefault</code> - <code>boolean</code>, if <code>true</code> then do not invoke default command&#39;s <code>exec</code> handler when no command with <code>exec</code> handler was given.</li>
+</ul>
+<a id="md:runexecasyncparsed-skipdefault" class="tsd-anchor"></a><h3><a href="#md:runexecasyncparsed-skipdefault"><code>runExecAsync(parsed, skipDefault)</code></a></h3><p>async version of <a href="#runexecparsed-skipdefault">runExec</a></p>
+<p>Return: A promise that resolve with the number of commands with <code>exec</code> invoked.</p>
+<a id="md:others" class="tsd-anchor"></a><h1><a href="#md:others">Others</a></h1><ul>
+<li><a href="https://github.com/nodeca/argparse">argparse</a></li>
+<li><a href="https://github.com/yargs/yargs">yargs</a></li>
+<li><a href="https://github.com/tj/commander.js">commander</a></li>
+<li><a href="https://www.npmjs.com/package/optimist">optimist</a></li>
+<li><a href="https://github.com/lahmatiy/clap">clap</a></li>
+<li><a href="https://github.com/litert/clap.js">clap.js</a></li>
+</ul>
+</div></div>
+<div class="col-sidebar">
+<div class="page-menu">
+<div class="tsd-navigation settings">
+<details class="tsd-index-accordion"><summary class="tsd-accordion-summary">
+<h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><use href="#icon-chevronDown"></use></svg>Settings</h3></summary>
+<div class="tsd-accordion-details">
+<div class="tsd-filter-visibility">
+<h4 class="uppercase">Member Visibility</h4><form>
+<ul id="tsd-filter-options">
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-private" name="private"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Private</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></form></div>
+<div class="tsd-theme-toggle">
+<h4 class="uppercase">Theme</h4><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div>
+<details open class="tsd-index-accordion tsd-page-navigation"><summary class="tsd-accordion-summary">
+<h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><use href="#icon-chevronDown"></use></svg>On This Page</h3></summary>
+<div class="tsd-accordion-details">
+<ul>
+<li>
+<ul>
+<li><a href="#md:nixclap"><span>Nix<wbr/>Clap</span></a></li>
+<li><a href="#md:features"><span>Features</span></a></li>
+<li><a href="#md:examples"><span>Examples</span></a></li>
+<li>
+<ul>
+<li><a href="#md:more-examples"><span>More <wbr/>Examples</span></a></li></ul></li>
+<li><a href="#md:parsing-capabilities"><span>Parsing <wbr/>Capabilities</span></a></li>
+<li>
+<ul>
+<li><a href="#md:options"><span>Options</span></a></li>
+<li><a href="#md:commands"><span>Commands</span></a></li>
+<li>
+<ul>
+<li><a href="#md:multiple-commands"><span>Multiple <wbr/>Commands</span></a></li>
+<li><a href="#md:sub-commands"><span>Sub <wbr/>Commands</span></a></li></ul></li>
+<li><a href="#md:terminating-and-resuming"><span>Terminating and <wbr/>Resuming</span></a></li></ul></li>
+<li><a href="#md:install"><span>Install</span></a></li>
+<li><a href="#md:interface"><span>Interface</span></a></li>
+<li>
+<ul>
+<li><a href="#md:options-spec"><span>options spec</span></a></li>
+<li><a href="#md:commands-spec"><span>commands spec</span></a></li>
+<li>
+<ul>
+<li><a href="#md:rules-for-command-args"><span>Rules for <wbr/>Command args</span></a></li></ul></li>
+<li><a href="#md:value-coercion"><span>Value <wbr/>Coercion</span></a></li>
+<li><a href="#md:parse-result"><span>Parse <wbr/>Result</span></a></li>
+<li>
+<ul>
+<li><a href="#md:parse-result-source-and-opts-objects"><span>Parse <wbr/>Result source and opts objects</span></a></li>
+<li><a href="#md:parse-result-commands-object"><span>Parse <wbr/>Result commands object</span></a></li>
+<li><a href="#md:command-exec-handler"><span>Command exec handler</span></a></li></ul></li>
+<li><a href="#md:events"><span>Events</span></a></li>
+<li>
+<ul>
+<li><a href="#md:default-event-handlers"><span>Default <wbr/>Event <wbr/>Handlers</span></a></li>
+<li>
+<ul>
+<li><a href="#md:skip-default-event-behaviors"><span>Skip <wbr/>Default <wbr/>Event <wbr/>Behaviors</span></a></li></ul></li></ul></li>
+<li><a href="#md:apis"><span>APIs</span></a></li>
+<li>
+<ul>
+<li><a href="#md:constructorconfig"><span>constructor(config)</span></a></li>
+<li><a href="#md:versionv"><span>version(v)</span></a></li>
+<li><a href="#md:helpsetting"><span>help(setting)</span></a></li>
+<li><a href="#md:usagemsg-cmdusagemsg"><span>usage(msg), cmd<wbr/>Usage(msg)</span></a></li>
+<li><a href="#md:initoptions-commands"><span>init(options, commands)</span></a></li>
+<li><a href="#md:defaultcommandname"><span>default<wbr/>Command(name)</span></a></li>
+<li><a href="#md:parseargv-start-parsed"><span>parse(argv, start, parsed)</span></a></li>
+<li><a href="#md:parseasyncargv-start-parsed"><span>parse<wbr/>Async(argv, start, parsed)</span></a></li>
+<li><a href="#md:showhelperr-cmdname"><span>show<wbr/>Help(err, cmd<wbr/>Name)</span></a></li>
+<li><a href="#md:removedefaulthandlers"><span>remove<wbr/>Default<wbr/>Handlers()</span></a></li>
+<li><a href="#md:applyconfigconfig-parsed-src"><span>apply<wbr/>Config(config, parsed, src)</span></a></li>
+<li><a href="#md:runexecparsed-skipdefault"><span>run<wbr/>Exec(parsed, skip<wbr/>Default)</span></a></li>
+<li><a href="#md:runexecasyncparsed-skipdefault"><span>run<wbr/>Exec<wbr/>Async(parsed, skip<wbr/>Default)</span></a></li></ul></li></ul></li>
+<li><a href="#md:others"><span>Others</span></a></li></ul></li></ul></div></details></div>
+<div class="site-menu">
+<nav class="tsd-navigation"><a href="modules.html" class="current"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-1"></use></svg><span>nix-clap</span></a>
+<ul class="tsd-small-nested-navigation" id="tsd-nav-container" data-base=".">
+<li><a href="classes/Command.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg>Command</a></li>
+<li><a href="classes/InvalidArgSpecifierError.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg>InvalidArgSpecifierError</a></li>
+<li><a href="classes/NixClap.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg>NixClap</a></li>
+<li><a href="classes/UnknownCliArgError.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg>UnknownCliArgError</a></li>
+<li><a href="classes/UnknownOptionError.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-128"></use></svg>UnknownOptionError</a></li>
+<li><a href="interfaces/OptionSpec.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-256"></use></svg>OptionSpec</a></li>
+<li><a href="types/CommandExecFunc.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-2097152"></use></svg>CommandExecFunc</a></li>
+<li><a href="types/CommandSpec.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-2097152"></use></svg>CommandSpec</a></li>
+<li><a href="types/NixClapConfig.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-2097152"></use></svg>NixClapConfig</a></li></ul></nav></div></div></div>
+<div class="tsd-generator">
+<p>Generated using <a href="https://typedoc.org/" rel="noopener" target="_blank">TypeDoc</a></p></div>
+<div class="overlay"></div><svg style="display: none"><g id="icon-1"><rect fill="var(--color-icon-background)" stroke="var(--color-ts-namespace)" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="6"></rect><path d="M9.33 16V7.24H10.77L13.446 14.74C13.43 14.54 13.41 14.296 13.386 14.008C13.37 13.712 13.354 13.404 13.338 13.084C13.33 12.756 13.326 12.448 13.326 12.16V7.24H14.37V16H12.93L10.266 8.5C10.282 8.692 10.298 8.936 10.314 9.232C10.33 9.52 10.342 9.828 10.35 10.156C10.366 10.476 10.374 10.784 10.374 11.08V16H9.33Z" fill="var(--color-text)"></path></g><g id="icon-2"><rect fill="var(--color-icon-background)" stroke="var(--color-ts-namespace)" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="6"></rect><path d="M9.33 16V7.24H10.77L13.446 14.74C13.43 14.54 13.41 14.296 13.386 14.008C13.37 13.712 13.354 13.404 13.338 13.084C13.33 12.756 13.326 12.448 13.326 12.16V7.24H14.37V16H12.93L10.266 8.5C10.282 8.692 10.298 8.936 10.314 9.232C10.33 9.52 10.342 9.828 10.35 10.156C10.366 10.476 10.374 10.784 10.374 11.08V16H9.33Z" fill="var(--color-text)"></path></g><g id="icon-4"><rect fill="var(--color-icon-background)" stroke="var(--color-ts-namespace)" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="6"></rect><path d="M9.33 16V7.24H10.77L13.446 14.74C13.43 14.54 13.41 14.296 13.386 14.008C13.37 13.712 13.354 13.404 13.338 13.084C13.33 12.756 13.326 12.448 13.326 12.16V7.24H14.37V16H12.93L10.266 8.5C10.282 8.692 10.298 8.936 10.314 9.232C10.33 9.52 10.342 9.828 10.35 10.156C10.366 10.476 10.374 10.784 10.374 11.08V16H9.33Z" fill="var(--color-text)"></path></g><g id="icon-8"><rect fill="var(--color-icon-background)" stroke="var(--color-ts-enum)" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="6"></rect><path d="M9.45 16V7.24H14.49V8.224H10.518V10.936H14.07V11.908H10.518V15.016H14.49V16H9.45Z" fill="var(--color-text)"></path></g><g id="icon-16"><rect fill="var(--color-icon-background)" stroke="#FF984D" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="12"></rect><path d="M9.354 16V7.24H12.174C12.99 7.24 13.638 7.476 14.118 7.948C14.606 8.412 14.85 9.036 14.85 9.82C14.85 10.604 14.606 11.232 14.118 11.704C13.638 12.168 12.99 12.4 12.174 12.4H10.434V16H9.354ZM10.434 11.428H12.174C12.646 11.428 13.022 11.284 13.302 10.996C13.59 10.7 13.734 10.308 13.734 9.82C13.734 9.324 13.59 8.932 13.302 8.644C13.022 8.356 12.646 8.212 12.174 8.212H10.434V11.428Z" fill="var(--color-text)"></path></g><g id="icon-32"><rect fill="var(--color-icon-background)" stroke="var(--color-ts-variable)" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="6"></rect><path d="M11.106 16L8.85 7.24H9.966L11.454 13.192C11.558 13.608 11.646 13.996 11.718 14.356C11.79 14.708 11.842 14.976 11.874 15.16C11.906 14.976 11.954 14.708 12.018 14.356C12.09 13.996 12.178 13.608 12.282 13.192L13.758 7.24H14.85L12.582 16H11.106Z" fill="var(--color-text)"></path></g><g id="icon-64"><rect fill="var(--color-icon-background)" stroke="var(--color-ts-function)" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="6"></rect><path d="M9.39 16V7.24H14.55V8.224H10.446V11.128H14.238V12.112H10.47V16H9.39Z" fill="var(--color-text)"></path></g><g id="icon-128"><rect fill="var(--color-icon-background)" stroke="var(--color-ts-class)" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="6"></rect><path d="M11.898 16.1201C11.098 16.1201 10.466 15.8961 10.002 15.4481C9.53803 15.0001 9.30603 14.3841 9.30603 13.6001V9.64012C9.30603 8.85612 9.53803 8.24012 10.002 7.79212C10.466 7.34412 11.098 7.12012 11.898 7.12012C12.682 7.12012 13.306 7.34812 13.77 7.80412C14.234 8.25212 14.466 8.86412 14.466 9.64012H13.386C13.386 9.14412 13.254 8.76412 12.99 8.50012C12.734 8.22812 12.37 8.09212 11.898 8.09212C11.426 8.09212 11.054 8.22412 10.782 8.48812C10.518 8.75212 10.386 9.13212 10.386 9.62812V13.6001C10.386 14.0961 10.518 14.4801 10.782 14.7521C11.054 15.0161 11.426 15.1481 11.898 15.1481C12.37 15.1481 12.734 15.0161 12.99 14.7521C13.254 14.4801 13.386 14.0961 13.386 13.6001H14.466C14.466 14.3761 14.234 14.9921 13.77 15.4481C13.306 15.8961 12.682 16.1201 11.898 16.1201Z" fill="var(--color-text)"></path></g><g id="icon-256"><rect fill="var(--color-icon-background)" stroke="var(--color-ts-interface)" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="6"></rect><path d="M9.51 16V15.016H11.298V8.224H9.51V7.24H14.19V8.224H12.402V15.016H14.19V16H9.51Z" fill="var(--color-text)"></path></g><g id="icon-512"><rect fill="var(--color-icon-background)" stroke="#4D7FFF" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="12"></rect><path d="M11.898 16.1201C11.098 16.1201 10.466 15.8961 10.002 15.4481C9.53803 15.0001 9.30603 14.3841 9.30603 13.6001V9.64012C9.30603 8.85612 9.53803 8.24012 10.002 7.79212C10.466 7.34412 11.098 7.12012 11.898 7.12012C12.682 7.12012 13.306 7.34812 13.77 7.80412C14.234 8.25212 14.466 8.86412 14.466 9.64012H13.386C13.386 9.14412 13.254 8.76412 12.99 8.50012C12.734 8.22812 12.37 8.09212 11.898 8.09212C11.426 8.09212 11.054 8.22412 10.782 8.48812C10.518 8.75212 10.386 9.13212 10.386 9.62812V13.6001C10.386 14.0961 10.518 14.4801 10.782 14.7521C11.054 15.0161 11.426 15.1481 11.898 15.1481C12.37 15.1481 12.734 15.0161 12.99 14.7521C13.254 14.4801 13.386 14.0961 13.386 13.6001H14.466C14.466 14.3761 14.234 14.9921 13.77 15.4481C13.306 15.8961 12.682 16.1201 11.898 16.1201Z" fill="var(--color-text)"></path></g><g id="icon-1024"><rect fill="var(--color-icon-background)" stroke="#FF984D" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="12"></rect><path d="M9.354 16V7.24H12.174C12.99 7.24 13.638 7.476 14.118 7.948C14.606 8.412 14.85 9.036 14.85 9.82C14.85 10.604 14.606 11.232 14.118 11.704C13.638 12.168 12.99 12.4 12.174 12.4H10.434V16H9.354ZM10.434 11.428H12.174C12.646 11.428 13.022 11.284 13.302 10.996C13.59 10.7 13.734 10.308 13.734 9.82C13.734 9.324 13.59 8.932 13.302 8.644C13.022 8.356 12.646 8.212 12.174 8.212H10.434V11.428Z" fill="var(--color-text)"></path></g><g id="icon-2048"><rect fill="var(--color-icon-background)" stroke="#FF4DB8" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="12"></rect><path d="M9.162 16V7.24H10.578L11.514 10.072C11.602 10.328 11.674 10.584 11.73 10.84C11.794 11.088 11.842 11.28 11.874 11.416C11.906 11.28 11.954 11.088 12.018 10.84C12.082 10.584 12.154 10.324 12.234 10.06L13.122 7.24H14.538V16H13.482V12.82C13.482 12.468 13.49 12.068 13.506 11.62C13.53 11.172 13.558 10.716 13.59 10.252C13.622 9.78 13.654 9.332 13.686 8.908C13.726 8.476 13.762 8.1 13.794 7.78L12.366 12.16H11.334L9.894 7.78C9.934 8.092 9.97 8.456 10.002 8.872C10.042 9.28 10.078 9.716 10.11 10.18C10.142 10.636 10.166 11.092 10.182 11.548C10.206 12.004 10.218 12.428 10.218 12.82V16H9.162Z" fill="var(--color-text)"></path></g><g id="icon-4096"><rect fill="var(--color-icon-background)" stroke="var(--color-ts-function)" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="6"></rect><path d="M9.39 16V7.24H14.55V8.224H10.446V11.128H14.238V12.112H10.47V16H9.39Z" fill="var(--color-text)"></path></g><g id="icon-8192"><rect fill="var(--color-icon-background)" stroke="#FF984D" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="12"></rect><path d="M9.354 16V7.24H12.174C12.99 7.24 13.638 7.476 14.118 7.948C14.606 8.412 14.85 9.036 14.85 9.82C14.85 10.604 14.606 11.232 14.118 11.704C13.638 12.168 12.99 12.4 12.174 12.4H10.434V16H9.354ZM10.434 11.428H12.174C12.646 11.428 13.022 11.284 13.302 10.996C13.59 10.7 13.734 10.308 13.734 9.82C13.734 9.324 13.59 8.932 13.302 8.644C13.022 8.356 12.646 8.212 12.174 8.212H10.434V11.428Z" fill="var(--color-text)"></path></g><g id="icon-16384"><rect fill="var(--color-icon-background)" stroke="#4D7FFF" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="12"></rect><path d="M11.898 16.1201C11.098 16.1201 10.466 15.8961 10.002 15.4481C9.53803 15.0001 9.30603 14.3841 9.30603 13.6001V9.64012C9.30603 8.85612 9.53803 8.24012 10.002 7.79212C10.466 7.34412 11.098 7.12012 11.898 7.12012C12.682 7.12012 13.306 7.34812 13.77 7.80412C14.234 8.25212 14.466 8.86412 14.466 9.64012H13.386C13.386 9.14412 13.254 8.76412 12.99 8.50012C12.734 8.22812 12.37 8.09212 11.898 8.09212C11.426 8.09212 11.054 8.22412 10.782 8.48812C10.518 8.75212 10.386 9.13212 10.386 9.62812V13.6001C10.386 14.0961 10.518 14.4801 10.782 14.7521C11.054 15.0161 11.426 15.1481 11.898 15.1481C12.37 15.1481 12.734 15.0161 12.99 14.7521C13.254 14.4801 13.386 14.0961 13.386 13.6001H14.466C14.466 14.3761 14.234 14.9921 13.77 15.4481C13.306 15.8961 12.682 16.1201 11.898 16.1201Z" fill="var(--color-text)"></path></g><g id="icon-32768"><rect fill="var(--color-icon-background)" stroke="#FF984D" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="12"></rect><path d="M9.354 16V7.24H12.174C12.99 7.24 13.638 7.476 14.118 7.948C14.606 8.412 14.85 9.036 14.85 9.82C14.85 10.604 14.606 11.232 14.118 11.704C13.638 12.168 12.99 12.4 12.174 12.4H10.434V16H9.354ZM10.434 11.428H12.174C12.646 11.428 13.022 11.284 13.302 10.996C13.59 10.7 13.734 10.308 13.734 9.82C13.734 9.324 13.59 8.932 13.302 8.644C13.022 8.356 12.646 8.212 12.174 8.212H10.434V11.428Z" fill="var(--color-text)"></path></g><g id="icon-65536"><rect fill="var(--color-icon-background)" stroke="var(--color-ts-type-alias)" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="6"></rect><path d="M11.31 16V8.224H8.91V7.24H14.79V8.224H12.39V16H11.31Z" fill="var(--color-text)"></path></g><g id="icon-131072"><rect fill="var(--color-icon-background)" stroke="var(--color-ts-type-alias)" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="6"></rect><path d="M11.31 16V8.224H8.91V7.24H14.79V8.224H12.39V16H11.31Z" fill="var(--color-text)"></path></g><g id="icon-262144"><rect fill="var(--color-icon-background)" stroke="#FF4D4D" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="12"></rect><path d="M8.85 16L11.13 7.24H12.582L14.85 16H13.758L13.182 13.672H10.53L9.954 16H8.85ZM10.746 12.76H12.954L12.282 10.06C12.154 9.548 12.054 9.12 11.982 8.776C11.91 8.432 11.866 8.208 11.85 8.104C11.834 8.208 11.79 8.432 11.718 8.776C11.646 9.12 11.546 9.544 11.418 10.048L10.746 12.76Z" fill="var(--color-text)"></path></g><g id="icon-524288"><rect fill="var(--color-icon-background)" stroke="#FF4D4D" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="12"></rect><path d="M8.85 16L11.13 7.24H12.582L14.85 16H13.758L13.182 13.672H10.53L9.954 16H8.85ZM10.746 12.76H12.954L12.282 10.06C12.154 9.548 12.054 9.12 11.982 8.776C11.91 8.432 11.866 8.208 11.85 8.104C11.834 8.208 11.79 8.432 11.718 8.776C11.646 9.12 11.546 9.544 11.418 10.048L10.746 12.76Z" fill="var(--color-text)"></path></g><g id="icon-1048576"><rect fill="var(--color-icon-background)" stroke="#FF4D4D" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="12"></rect><path d="M8.85 16L11.13 7.24H12.582L14.85 16H13.758L13.182 13.672H10.53L9.954 16H8.85ZM10.746 12.76H12.954L12.282 10.06C12.154 9.548 12.054 9.12 11.982 8.776C11.91 8.432 11.866 8.208 11.85 8.104C11.834 8.208 11.79 8.432 11.718 8.776C11.646 9.12 11.546 9.544 11.418 10.048L10.746 12.76Z" fill="var(--color-text)"></path></g><g id="icon-2097152"><rect fill="var(--color-icon-background)" stroke="var(--color-ts-type-alias)" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="6"></rect><path d="M11.31 16V8.224H8.91V7.24H14.79V8.224H12.39V16H11.31Z" fill="var(--color-text)"></path></g><g id="icon-4194304"><rect fill="var(--color-icon-background)" stroke="#FF4D82" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="12"></rect><path d="M10.354 17V8.24H13.066C13.586 8.24 14.042 8.348 14.434 8.564C14.826 8.772 15.13 9.064 15.346 9.44C15.562 9.816 15.67 10.256 15.67 10.76C15.67 11.352 15.514 11.86 15.202 12.284C14.898 12.708 14.482 13 13.954 13.16L15.79 17H14.518L12.838 13.28H11.434V17H10.354ZM11.434 12.308H13.066C13.514 12.308 13.874 12.168 14.146 11.888C14.418 11.6 14.554 11.224 14.554 10.76C14.554 10.288 14.418 9.912 14.146 9.632C13.874 9.352 13.514 9.212 13.066 9.212H11.434V12.308Z" fill="var(--color-text)"></path></g><g id="icon-chevronDown"><path d="M4.93896 8.531L12 15.591L19.061 8.531L16.939 6.409L12 11.349L7.06098 6.409L4.93896 8.531Z" fill="var(--color-text)"></path></g><g id="icon-chevronSmall"><path d="M1.5 5.50969L8 11.6609L14.5 5.50969L12.5466 3.66086L8 7.96494L3.45341 3.66086L1.5 5.50969Z" fill="var(--color-text)"></path></g><g id="icon-menu"><rect x="1" y="3" width="14" height="2" fill="var(--color-text)"></rect><rect x="1" y="7" width="14" height="2" fill="var(--color-text)"></rect><rect x="1" y="11" width="14" height="2" fill="var(--color-text)"></rect></g><g id="icon-search"><path d="M15.7824 13.833L12.6666 10.7177C12.5259 10.5771 12.3353 10.499 12.1353 10.499H11.6259C12.4884 9.39596 13.001 8.00859 13.001 6.49937C13.001 2.90909 10.0914 0 6.50048 0C2.90959 0 0 2.90909 0 6.49937C0 10.0896 2.90959 12.9987 6.50048 12.9987C8.00996 12.9987 9.39756 12.4863 10.5008 11.6239V12.1332C10.5008 12.3332 10.5789 12.5238 10.7195 12.6644L13.8354 15.7797C14.1292 16.0734 14.6042 16.0734 14.8948 15.7797L15.7793 14.8954C16.0731 14.6017 16.0731 14.1267 15.7824 13.833ZM6.50048 10.499C4.29094 10.499 2.50018 8.71165 2.50018 6.49937C2.50018 4.29021 4.28781 2.49976 6.50048 2.49976C8.71001 2.49976 10.5008 4.28708 10.5008 6.49937C10.5008 8.70852 8.71314 10.499 6.50048 10.499Z" fill="var(--color-text)"></path></g><g id="icon-anchor"><g stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5"></path><path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5"></path></g></g></svg></body></html>

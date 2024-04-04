@@ -1,8 +1,8 @@
 {
   "name": "nix-clap",
   "version": "1.3.13",
-  "description": "Simple, lightweight, flexible, and comprehensive Un*x Command Line Argument Parsing for NodeJS",
-  "main": "dist/nix-clap.js",
+  "description": "Simple, lightweight, flexible, and comprehensive Command Line Argument Parsing for node.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "test": "xrun xarc/test-only",
@@ -10,8 +10,18 @@
     "coveralls": "cat coverage/lcov.info | coveralls",
     "coverage": "xrun xarc/test-cov",
     "check": "xrun -n -x xarc/check coveralls",
-    "prepublishOnly": "xrun --serial [[build], xarc/check]",
-    "docs": "xrun xarc/docs"
+    "prepublishOnly": "xrun --serial [[build, docs], xarc/check]",
+    "docs": "xrun xarc/docs",
+    "prepack": "publish-util-prepack",
+    "postpack": "publish-util-postpack"
+  },
+  "publishUtil": {
+    "remove": [
+      "/scripts.*/"
+    ]
+  },
+  "publishConfig": {
+    "tag": "next"
   },
   "repository": {
     "type": "git",
@@ -40,7 +50,7 @@
   "author": "Joel Chen <joel123@gmail.com>",
   "license": "Apache-2.0",
   "dependencies": {
-    "strip-ansi": "^4.0.0",
+    "strip-ansi": ">= 4.0.0",
     "tslib": "^2.6.2"
   },
   "devDependencies": {
@@ -64,13 +74,18 @@
     "mocha": "^10.2.0",
     "nyc": "^15.1.0",
     "prettier": "^3.0.3",
+    "publish-util": "^2.1.0",
     "sinon": "^17.0.0",
     "sinon-chai": "^3.7.0",
     "source-map-support": "^0.5.21",
     "ts-node": "^10.9.1",
+    "typedoc": "^0.25.2",
     "typescript": "^5.2.2"
   },
   "nyc": {
+    "extends": [
+      "@istanbuljs/nyc-config-typescript"
+    ],
     "all": true,
     "reporter": [
       "lcov",
@@ -84,26 +99,34 @@
       "coverage",
       "dist",
       "docs",
-      "examples",
       "gulpfile.js",
       "test",
       "xrun*.js",
-      "xrun*.ts"
+      "xrun*.ts",
+      "examples",
+      "src/index.ts"
     ],
     "check-coverage": true,
     "statements": 100,
     "branches": 100,
     "functions": 100,
     "lines": 100,
-    "cache": true,
-    "extends": [
-      "@istanbuljs/nyc-config-typescript"
-    ]
+    "cache": false
   },
   "prettier": {
     "printWidth": 100,
     "arrowParens": "avoid",
     "trailingComma": "none"
+  },
+  "@xarc/module-dev": {
+    "features": [
+      "eslint",
+      "eslintTS",
+      "mocha",
+      "prettier",
+      "typedoc",
+      "typescript"
+    ]
   },
   "mocha": {
     "require": [
@@ -112,14 +135,5 @@
       "@xarc/module-dev/config/test/setup.js"
     ],
     "recursive": true
-  },
-  "@xarc/module-dev": {
-    "features": [
-      "eslint",
-      "eslintTS",
-      "mocha",
-      "prettier",
-      "typescript"
-    ]
   }
 }

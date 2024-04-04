@@ -105,7 +105,7 @@ Example: `prog -xazvf=hello --foo-option hello bar -. --enable-blah`
 
 ## Commands
 
-Example: `prog sum 1 2 3 4`
+Example: `prog add 1 2 3 4`
 
 - Commands can have optional or required arguments.
   - Each argument type defaults to `string`, but can have an optional type
@@ -119,6 +119,25 @@ Example: `prog sum 1 2 3 4`
 - Unbind top level options can be specified before or after commands.
 - Allow arbitrary unknown commands that do not have arguments.
 - Allow multiple custom value type coercions for each command.
+
+### Multiple Commands
+
+Example: `prog add 1 2 3 4 -. mult 4 5 6 7 8`
+
+> First Command: `add` with four numbers input
+> Second Command: `mult` with five numbers input
+
+- Since there are multiple commands with variadic arguments, the `-.` in the middle terminates the `add` command.
+
+### Sub Commands
+
+Example: `prog calc add 1 2 3 4 -. mult 4 5 6 7`
+
+> Main command: `calc`
+> Sub Command: `add` that can take variadic number of numbers
+> Sub Command: `mult` that can take variadic number of numbers
+
+- Since there are multiple sub commands, the `-.` in the middle terminates the `add` sub command.
 
 ## Terminating and Resuming
 
@@ -485,6 +504,8 @@ These are methods `NixClap` class supports.
 - [Parsing Capabilities](#parsing-capabilities)
   - [Options](#options)
   - [Commands](#commands)
+    - [Multiple Commands](#multiple-commands)
+    - [Sub Commands](#sub-commands)
   - [Terminating and Resuming](#terminating-and-resuming)
 - [Install](#install)
 - [Interface](#interface)
