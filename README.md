@@ -13,6 +13,8 @@ Simple, lightweight, flexible, and comprehensive Un\*x Command Line Argument Par
 - Flexible handling of options and commands that can take variadic params.
 - A simple and straightforward JSON interface for specifying options and commands.
 - Very informative result that tells you where each option came from.
+- Greedy mode for command arguments with -# flag to consume additional arguments.
+  (Note: '-#' is a command-line flag, not a shell comment. Only '#' by itself starts a comment in shell scripts.)
 - [Webpack] friendly - allows bundling your cli into a single JS file with webpack.
 
 # Examples
@@ -20,17 +22,18 @@ Simple, lightweight, flexible, and comprehensive Un\*x Command Line Argument Par
 Options only:
 
 ```js
-const NixClap = require("nix-clap");
+import { NixClap } from "nix-clap";
 
 const options = {
   names: {
     desc: "specify names",
     alias: ["n", "m"],
-    type: "string array"
+    args: "< string..1,Inf>"
   }
 };
 
-const parsed = new NixClap().version("1.0.0").usage("$0 [options]").init(options).parse();
+const nc = new NixClap().version("1.0.0").usage("$0 [options]").init(options);
+const parsed = nc.parse();
 
 console.log("names", parsed.opts.names);
 ```
@@ -38,32 +41,38 @@ console.log("names", parsed.opts.names);
 With commands:
 
 ```js
-const NixClap = require("nix-clap");
+import { NixClap } from "nix-clap";
 
 const options = {
   verbose: {
     desc: "enable verbose mode",
     alias: "v",
-    type: "boolean",
-    default: false
+    args: "< boolean>",
+    argDefault: "false"
   }
 };
 
 const commands = {
   compile: {
     desc: "run compile on the files",
-    args: "<string files...>",
+    args: "<files...>",
     exec: parsed => {
-      console.log("compile", parsed.args.files, "verbose", parsed.opts.verbose);
+      console.log(
+        "compile",
+        parsed.command.jsonMeta.subCommands.compile.args.files,
+        "verbose",
+        parsed.opts.verbose
+      );
     }
   }
 };
 
-const parsed = new NixClap()
+const nc = new NixClap()
   .version("1.0.0")
   .usage("$0 [options] <command> [options]")
-  .init(options, commands)
-  .parse();
+  .init(options, commands);
+
+const parsed = nc.parse();
 ```
 
 > `version`, `help`, and `usage` must be called before `init`
@@ -139,6 +148,22 @@ Example: `prog calc add 1 2 3 4 -. mult 4 5 6 7`
 
 - Since there are multiple sub commands, the `-.` in the middle terminates the `add` sub command.
 
+## Greedy Mode
+
+Commands can enter "greedy mode" using the `-#` flag, which allows them to consume additional arguments that would otherwise be treated as new commands.
+
+Example: `prog compile file1.js file2.js -# command other arguments`
+
+In this example, without the `-#` flag, "command" would be parsed as a new command. With `-#`, it's treated as another argument to the "compile" command.
+
+Greedy mode continues until a terminator token (`-.` or `--.`) is encountered:
+
+```bash
+$ prog compile file1.js -# some-command-name more-args -. actual-command
+```
+
+This is useful when your command might need to accept arguments that could be interpreted as command names.
+
 ## Terminating and Resuming
 
 - `--` terminates parsing, with remaining args returned in `parsed._`.
@@ -165,7 +190,7 @@ const options = {
     alias: ["s", "so"],
     desc: "description",
     args: "[number cans] [enum] [boolean diet] [string..]",
-    default: [6, "coke", true, "foo"],
+    argDefault: ["6", "coke", "true", "foo"],
     custom: {
       enum: /^(coke|pepsi)$/
     },
@@ -183,17 +208,16 @@ Where:
 | field           | description                                                                                                                          |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | `alias`         | Specify aliases for the option, as a single string or an array of strings.                                                           |
-| `type`          | Type of argument for the option, one of: `string`, `number`, `float`, `boolean`, `array`, `count`, or [coercion](#value-coercion)    |
-|                 | `array` can set type of elements as one of `string`, `number`, `float`, `boolean` like this: `number array` or `float array`         |
+| `args`          | Arguments for the option. `<type name>` means it's required and `[type name]` optional.                                              |
 | `desc`          | Description for the option - a string or a function that returns string.                                                             |
-| `default`       | default values to use _when all args are optional_.                                                                                  |
+| `argDefault`    | Default values to use _when all args are optional_.                                                                                  |
 | `require`       | `true`/`false` whether this option must be specified.                                                                                |
 | `requireArg`    | `true`/`false` whether argument for the option is required.                                                                          |
 | `allowCmd`      | list of command names this option is allow to follow only.                                                                           |
-| `args`          | - Arguments for the option. `<type name>` means it's required and `[type name]` optional.                                            |
 | `custom`        | - specify [value coercion](#value-coercion) for custom types.                                                                        |
 | `customDefault` | - default values to use for each [value coercion](#value-coercion) if user specified something but the coercion returns `undefined`. |
 |                 | \* Coercion returning `undefined` will cause failure if no default is specified.                                                     |
+| `counting`      | Maximum count value for counting options. Use `Infinity` for unlimited counting.                                                     |
 
 ## `commands spec`
 
@@ -212,7 +236,7 @@ const commands = {
     alias: ["c"],
     desc: "description",
     args: "[number cans] [enum] [boolean diet] [string..]",
-    default: [6, "coke", true, "foo"],
+    argDefault: ["6", "coke", "true", "foo"],
     custom: {
       enum: /^(coke|pepsi)$/
     },
@@ -298,10 +322,20 @@ Use the method [`parse`](#parseargv-start-parsed) to parse command line argument
 
 ```js
 {
-  source: {},
-  opts: {},
-  verbatim: {},
-  commands: [],
+  command: {
+    jsonMeta: {
+      name: "~root-command~",
+      alias: "~root-command~",
+      argList: [],
+      args: {},
+      opts: {},
+      optsFull: {},
+      optsCount: {},
+      source: {},
+      verbatim: {},
+      subCommands: {}
+    }
+  },
   index: 5,
   error,
   _: [],
@@ -311,121 +345,60 @@ Use the method [`parse`](#parseargv-start-parsed) to parse command line argument
 
 Where:
 
+- `command` - The parsed command object with a `jsonMeta` property containing detailed information
 - `index` - the index in `argv` parse stopped
 - `error` - If parse failed and your `parse-fail` event handler throws, then this will contain the parse error. See [skip default event behaviors](#skip-default-event-behaviors) for more details.
-- `source`, `opts`, `verbatim` - objects containing info for the options. See [details here](#parse-result-source-and-opts-objects)
-- `commands` - array of parsed command objects. See [`commands`](#parse-result-commands-object) for more details.
 - `argv` - original array of argv
 - `_` - remaining args in the `argv` array in case parsing was terminated by `--`.
 
 If any command with [`exec` handlers](#command-exec-handler) were specified, then `parse` will invoke them before returning the parse result object.
 
-### Parse Result `source` and `opts` objects
+### Parse Result Command Object
 
-- `opts` - contains actual value for each option
-- `source` - contains info about where the option value came from
-
-  - `cli` - option specified by user in the command line
-
-  * `cli-default` - User specified a value that didn't match RegExp and fallback to default.
-  * `cli-unmatch` - User specified a value that didn't match RegExp and there's no default to fallback to.
-  * `default` - default value in your [options spec](#options-spec)
-  * `user` - values you applied by calling the [`applyConfig`](#applyconfigconfig-parsed-src) method
-
-- `verbatim` - contains original unprocessed value as given by the user in the command line
-
-  - This is an array of values if there was actual values from the user
-  - If there's no explicit value (ie. boolean or counting options), then this doesn't contain a field for the option.
-  - If it's a boolean but the user specified with `--no-` prefix, then this contains a field with the value `["no-"]`
-
-For example, with the following conditions:
-
-1. User specified `--foo-bar=test` in the command line
-2. You have an option `fooDefault` with default value `bar`
-3. You called `applyConfig` with `applyConfig({fooConfig: 1, fooBar: "oops"}, parsed)`
-
-You would get the following in the parse result object:
+The command.jsonMeta object contains the following information:
 
 ```js
 {
-  source: {
-    fooBar: "cli",
-    fooDefault: "default",
-    fooConfig: "user"
-  },
-  opts: {
-    fooBar: "test",
-    fooDefault: "bar",
-    fooConfig: 1
-  },
-  verbatim: {
-    fooBar: ["test"]
-  }
+  name: "~root-command~",
+  alias: "~root-command~",
+  argList: [],
+  args: {},
+  opts: {}, // contains the actual values for each option
+  optsFull: {}, // contains the detailed values for each option, including array indices
+  optsCount: {}, // contains the count for counting options
+  source: {}, // contains info about where the option value came from
+  verbatim: {}, // contains original unprocessed value
+  subCommands: {} // contains parsed sub-commands
 }
 ```
 
-> Note that the value `oops` for `fooBar` passed to `applyConfig` is not used since user's specified value is used.
+The `source` field can have the following values:
 
-### Parse Result `commands` object
-
-The `commands` object is an array of parsed commands:
-
-```js
-{
-  commands: [
-    {
-      name: "cmdName",
-      long: "cmdName",
-      unknown: false,
-      args: {
-        foo: "bar",
-        variadic: ["a", "b"]
-      },
-      argList: ["bar", "a", "b"],
-      opts: {},
-      source: {},
-      verbatim: {}
-    }
-  ];
-}
-```
-
-- `name` is the name of the command used by the user in the command line that could be an alias
-- `long` is the original form of the command name (not the alias)
-- `unknown` - `true` if the command is not known
-- `args` - the processed named arguments
-- `argList` - list of all the arguments in unprocessed string form
-- `opts`, `source`, `verbatim` - info for the options private to the command
+- `cli` - option specified by user in the command line
+- `cli-default` - User specified a value that didn't match RegExp and fallback to default.
+- `cli-unmatch` - User specified a value that didn't match RegExp and there's no default to fallback to.
+- `default` - default value in your [options spec](#options-spec)
+- `user` - values you applied by calling the [`applyConfig`](#applyconfigconfig-parsed-src) method
 
 ### Command `exec` handler
 
-If the command has an `exec` handler, then it will be called with two arguments:
+If the command has an `exec` handler, then it will be called with one argument:
 
 ```js
-exec(result, parsed);
+exec(result);
 ```
 
-- First one is the object for the command
-- Second one is the overall parsed object
+- `result` is the parse result object, which includes the command information in `result.command.jsonMeta`
 
-Info about the command object:
+You can access command-specific arguments through the jsonMeta structure:
 
 ```js
-{
-  name: "cmdName",
-  long: "cmdName",
-  args: {
-    foo: "bar",
-    variadic: [ "a", "b" ]
-  },
-  argList: [ "bar", "a", "b" ],
-  opts: {},
-  source: {},
-  verbatim: {}
+exec(result) {
+  const commandArgs = result.command.jsonMeta.subCommands.myCommand.args;
+  const commandOptions = result.command.jsonMeta.subCommands.myCommand.opts;
+  // Process command...
 }
 ```
-
-Where `opts` and `source` contain both the command's private options and top level options.
 
 > You can turn this off with the `skipExec` config flag passed to [`NixClap` constructor](#constructorconfig)
 
@@ -436,20 +409,13 @@ Where `opts` and `source` contain both the command's private options and top lev
 - `help` - when `--help` is invoked, emitted with the parse result object.
 - `pre-help` - before output for `--help`
 - `post-help` - after output for `--help`
-- `help` - when `--help` is invoked, emitted with the parse result object.
 - `version` - when `--version` is invoked, emitted with the parse result object.
 - `parsed` - when all parsing is done but before command `exec` are invoked, emitted with `{ nixClap, parsed }` where `nixClap` is the NixClap instance.
 - `parse-fail` - when parse failed, emitted with parse result object, which has `error` field.
 - `unknown-option` - when an unknown option is found, emitted with option name
 - `unknown-command` - when an unknown command is found, emitted with command context, which has `name` field.
 - `no-action` - when you have commands with `exec` and user specified no command that triggered an `exec` call.
-
-* `regex-unmatch` - when you have [value coercion](#value-coercion) using a RegExp but the user specified a value that didn't match the RegEx.
-  - You typically should:
-    - Install your own handler to throw to abort parsing.
-    - Remove default handler to not print any warning.
-    - Install your own handler to print your own warning.
-
+- `regex-unmatch` - when you have [value coercion](#value-coercion) using a RegExp but the user specified a value that didn't match the RegEx.
 - `exit` - When program is expected to terminate, emit with exit code.
 
 ### Default Event Handlers
@@ -514,8 +480,7 @@ These are methods `NixClap` class supports.
     - [Rules for Command `args`](#rules-for-command-args)
   - [Value Coercion](#value-coercion)
   - [Parse Result](#parse-result)
-    - [Parse Result `source` and `opts` objects](#parse-result-source-and-opts-objects)
-    - [Parse Result `commands` object](#parse-result-commands-object)
+    - [Parse Result Command Object](#parse-result-command-object)
     - [Command `exec` handler](#command-exec-handler)
   - [Events](#events)
     - [Default Event Handlers](#default-event-handlers)
