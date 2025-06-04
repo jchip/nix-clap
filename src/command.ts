@@ -333,14 +333,14 @@ export class CommandMeta {
   unknown?: boolean;
 
   /**
-   * Arguments passed to the command.
+   * Formally specified and recognized arguments passed to the command.
    */
   args: any;
 
   /**
-   * List of arguments.
+   * List of all arguments passed to the command, even unknown ones.
    */
-  argList: any;
+  argList: string[];
 
   /**
    * Source of the command.

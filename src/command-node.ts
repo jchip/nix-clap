@@ -24,6 +24,12 @@ export class CommandNode extends ClapNode {
    */
   optNodes: Record<string, OptionNode>;
   optCount: Record<string, number>;
+  /**
+   * Command consumes all remaining arguments blindly
+   */
+  isGreedy: boolean;
+
+  _jsonMeta?: CommandMeta;
 
   constructor(name: string, alias: string, cmd?: Command) {
     super(name, alias);
@@ -31,6 +37,15 @@ export class CommandNode extends ClapNode {
     this.cmdNodes = {};
     this.optNodes = {};
     this.optCount = {};
+    this.isGreedy = false;
+  }
+
+  options() {
+    return this.jsonMeta.optsFull;
+  }
+
+  opts() {
+    return this.jsonMeta.opts;
   }
 
   getParent<T extends ClapNode = CommandNode>(): T {
@@ -251,6 +266,10 @@ export class CommandNode extends ClapNode {
   }
 
   get jsonMeta(): CommandMeta {
+    if (this._jsonMeta) {
+      return this._jsonMeta;
+    }
+
     const opts = {};
     const optsFull = {};
 
@@ -296,6 +315,7 @@ export class CommandNode extends ClapNode {
       subCommands
     };
 
+    this._jsonMeta = meta;
     return meta;
   }
 }

@@ -36,7 +36,9 @@ const sort: CommandExecFunc = cmd => {
   console.log("sort:", sorted);
 };
 
-new NixClap({})
+new NixClap({
+  allowUnknownCommand: true
+})
   .version("1.0.0")
   .usage("$0 <command> Num [Num ..]")
   .init(
@@ -101,6 +103,7 @@ new NixClap({})
             dividend = json.args.dividend;
             divisor = json.args.divisor;
           }
+          console.log(json.argList);
           console.log(`quotient of ${dividend}/${divisor}:`, dividend / divisor);
         },
         options: {

@@ -239,6 +239,10 @@ export class ClapNodeGenerator {
     // }
 
     if (this.cmdNode) {
+      if (this.cmdNode.isGreedy) {
+        this.node.addArg(arg);
+        return [];
+      }
       return this.consumeNonOptAsCommand(arg);
     } else {
       return this.consumeNonOptAsOption(arg);
@@ -336,6 +340,11 @@ export class ClapNodeGenerator {
    * ```
    */
   consumeOpt(opt: string): ClapNodeGenerator[] {
+    if (opt === "-#" && this.cmdNode) {
+      this.cmdNode.isGreedy = true;
+      return [];
+    }
+
     if (opt === "-." || opt === "--.") {
       if (this.optNode) {
         this.complete();

@@ -64,7 +64,7 @@ export function validParseInt(s: string, defaultN?: number): number {
  * @returns The result of the function if `x` is a function, otherwise the value of `x`.
  */
 export function cbOrVal<T = string>(x: unknown): T {
-  return typeof x === "function" ? x() : x;
+  return typeof x === "function" ? x() : x as T;
 }
 
 /**
