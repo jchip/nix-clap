@@ -194,7 +194,8 @@ describe("nix-clap explicit greedy mode with -#", function () {
 
     // Check that options are processed and arguments are consumed in greedy mode
     expectCommandInResult(meta, "required");
-    expect(meta.opts.option).to.equal("value");
+    expect(result.command.opts().option).to.equal("value");
+    expect(result.command.options().option).to.deep.equal({ "0": "value" });
     expect(meta.subCommands.required.argList).to.deep.equal(["arg1", "arg2", "extra1", "extra2"]);
   });
 

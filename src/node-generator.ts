@@ -340,7 +340,7 @@ export class ClapNodeGenerator {
    * ```
    */
   consumeOpt(opt: string): ClapNodeGenerator[] {
-    if (opt === "-#" && this.cmdNode) {
+    if (this.cmdNode && (opt === "-#" || opt === "--#")) {
       this.cmdNode.isGreedy = true;
       return [];
     }
