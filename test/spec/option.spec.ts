@@ -1,17 +1,16 @@
-import { expect } from "chai";
+import { expect, describe, it } from "vitest";
 import { Option, optUnknown } from "../../src/option";
 
-describe("option args", function () {
-  // this.timeout(300000);
+describe("option args", () => {
   it("should parse args and basic props", () => {
     const opt = new Option("test", {
       args: "<v1>",
       alias: "t",
       desc: "test option 1"
     });
-    expect(opt.name).equal("test");
+    expect(opt.name).toBe("test");
 
-    expect(opt.args).deep.equal([
+    expect(opt.args).toEqual([
       {
         required: true,
         name: "v1",
@@ -29,8 +28,8 @@ describe("option args", function () {
       alias: ["t"],
       desc: "test option 1"
     });
-    expect(opt.name).equal("test");
-    expect(opt.args).deep.equal([
+    expect(opt.name).toBe("test");
+    expect(opt.args).toEqual([
       {
         required: true,
         name: "v1",
@@ -74,7 +73,7 @@ describe("option args", function () {
           alias: ["t"],
           desc: "test option 1"
         })
-    ).to.throw("cannot follow optional arg");
+    ).toThrow("cannot follow optional arg");
   });
 
   it("should parse types from args", () => {
@@ -83,7 +82,7 @@ describe("option args", function () {
       alias: ["t"],
       desc: "test option 1"
     });
-    expect(opt.args).deep.eq([
+    expect(opt.args).toEqual([
       {
         required: true,
         name: "v1",
@@ -119,7 +118,7 @@ describe("option args", function () {
           alias: ["t"],
           desc: "test option 1"
         })
-    ).throw(`unknown type 'foo' for argument`);
+    ).toThrow(`unknown type 'foo' for argument`);
   });
 
   it("should parse variadic args", () => {
@@ -127,7 +126,7 @@ describe("option args", function () {
       args: "<..>",
       desc: "test option 1"
     });
-    expect(opt.args).deep.equal([
+    expect(opt.args).toEqual([
       {
         required: true,
         name: undefined,
@@ -142,7 +141,7 @@ describe("option args", function () {
       args: "<..1,>",
       desc: "test option 1"
     });
-    expect(opt2.args).deep.equal([
+    expect(opt2.args).toEqual([
       {
         required: true,
         name: undefined,
@@ -157,7 +156,7 @@ describe("option args", function () {
       args: "<..1,Inf>",
       desc: "test option 1"
     });
-    expect(opt3.args).deep.equal([
+    expect(opt3.args).toEqual([
       {
         required: true,
         name: undefined,
@@ -174,7 +173,7 @@ describe("option args", function () {
       args: "<> []",
       desc: "test option 1"
     });
-    expect(opt.args).deep.equal([
+    expect(opt.args).toEqual([
       {
         required: true,
         name: undefined,
@@ -203,7 +202,7 @@ describe("option args", function () {
         yfoo: () => "blah yfoo"
       }
     });
-    expect(opt.args).deep.equal([
+    expect(opt.args).toEqual([
       {
         required: true,
         name: undefined,

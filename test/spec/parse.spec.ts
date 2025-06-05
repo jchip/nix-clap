@@ -1,24 +1,22 @@
 /* eslint-disable quote-props */
 
 import { NixClap } from "../../src";
-import { expect } from "chai";
+import { expect, describe, it } from "vitest";
 import { OptionNode } from "../../src/option-node";
 import { CommandNode } from "../../src/command-node";
 
-describe("parser", function () {
-  this.timeout(300000);
-
+describe("parser", () => {
   function verifyNodeCommands(node: CommandNode, commands: string[]): void {
-    expect(node.cmdNodes).to.be.ok;
+    expect(node.cmdNodes).toBeDefined();
     for (const cmd of commands) {
-      expect(node.cmdNodes[cmd]).to.be.an.instanceOf(CommandNode);
+      expect(node.cmdNodes[cmd]).toBeInstanceOf(CommandNode);
     }
   }
 
   function verifyNodeOptions(node: CommandNode, options: string[]): void {
-    expect(node.optNodes).to.be.ok;
+    expect(node.optNodes).toBeDefined();
     for (const opt of options) {
-      expect(node.optNodes[opt], `node should have option ${opt}`).to.be.an.instanceOf(OptionNode);
+      expect(node.optNodes[opt], `node should have option ${opt}`).toBeInstanceOf(OptionNode);
     }
   }
 
@@ -27,19 +25,19 @@ describe("parser", function () {
       defaultCommand: "a"
     }).init();
     const { command: node } = nc.parse2(["foo", "--cat=1", "--dog", "2", "--fox"], 1);
-    expect(node.errors.map(x => x.message)).deep.eq([
+    expect(node.errors.map(x => x.message)).toEqual([
       "Encountered unknown CLI option 'cat'.",
       "Encountered unknown CLI option 'dog'.",
       "Encountered unknown CLI argument '2'.",
       "Encountered unknown CLI option 'fox'."
     ]);
     const m = node.jsonMeta;
-    expect(m.opts).deep.eq({
+    expect(m.opts).toEqual({
       cat: true,
       dog: true,
       fox: true
     });
-    expect(m.source).deep.eq({ cat: "cli", dog: "cli", fox: "cli" });
+    expect(m.source).toEqual({ cat: "cli", dog: "cli", fox: "cli" });
 
     verifyNodeOptions(node, ["cat", "dog", "fox"]);
   });
@@ -81,13 +79,14 @@ describe("parser", function () {
     verifyNodeCommands(node, ["abc"]);
     const abc = node.cmdNodes.abc;
     verifyNodeOptions(abc, ["t1", "t2"]);
-    expect(abc.optNodes.t1.argsList).deep.equal(["50"]);
+    expect(abc.optNodes.t1.argsList).toEqual(["50"]);
     verifyNodeCommands(abc, ["a1"]);
     const a1 = abc.cmdNodes.a1;
     verifyNodeOptions(a1, ["x1", "x2"]);
-    expect(a1.argsMap).contains.keys("v1", "v2");
-    expect(a1.argsMap.v1).deep.equal("90");
-    expect(a1.argsMap.v2).deep.equal("80");
+    expect(a1.argsMap).toHaveProperty("v1");
+    expect(a1.argsMap).toHaveProperty("v2");
+    expect(a1.argsMap.v1).toBe("90");
+    expect(a1.argsMap.v2).toBe("80");
   });
 
   it("should end gathering for variadic cmd args ", () => {
@@ -127,12 +126,12 @@ describe("parser", function () {
     verifyNodeCommands(node, ["abc"]);
     const abc = node.cmdNodes.abc;
     verifyNodeOptions(abc, ["t1", "t2"]);
-    expect(abc.optNodes.t1.argsList).deep.equal(["50"]);
-    expect(abc.optNodes.t2.argsList).deep.equal(["80"]);
+    expect(abc.optNodes.t1.argsList).toEqual(["50"]);
+    expect(abc.optNodes.t2.argsList).toEqual(["80"]);
     verifyNodeCommands(abc, ["a1"]);
     const a1 = abc.cmdNodes.a1;
     verifyNodeOptions(a1, ["x1", "x2"]);
-    expect(a1.argsMap).to.contain.keys("v1");
+    expect(a1.argsMap).toHaveProperty("v1");
   });
 
   it("should handle simple command", () => {
@@ -158,17 +157,17 @@ describe("parser", function () {
     );
     const { command } = nc.parse2(["foo", "a", "-t1", "b", "c", "-t2"], 1);
     const m = command.jsonMeta;
-    expect(m.opts).deep.eq({
+    expect(m.opts).toEqual({
       "1": true,
       "2": true,
       t: true
     });
-    expect(m.optsCount).deep.eq({
+    expect(m.optsCount).toEqual({
       "1": 1,
       "2": 1,
       t: 2
     });
-    expect(m.source).deep.eq({
+    expect(m.source).toEqual({
       "1": "cli",
       "2": "cli",
       t: "cli"

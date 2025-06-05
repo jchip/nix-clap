@@ -1,20 +1,20 @@
 import { fitLines } from "../../src/xtil";
-import { expect } from "chai";
+import { describe, it, expect } from "vitest";
 
-describe("fitLines", function () {
+describe("fitLines", () => {
   it("should return [] for no strs", () => {
-    expect(fitLines([])).to.deep.equal([]);
+    expect(fitLines([])).toEqual([]);
   });
 
   it("should return single line with margin", () => {
-    expect(fitLines(["hello"], "  ")).to.deep.equal(["  hello"]);
+    expect(fitLines(["hello"], "  ")).toEqual(["  hello"]);
   });
 
   it("should return lines if first str longer than leftWidth", () => {
     const x = fitLines(["blahblahblahblah", "hello world this is a test"], "  ", "    ", 10, 80);
-    expect(x[0]).to.equal("  blahblahblahblah");
-    expect(x[1].length).to.equal(80);
-    expect(x[1].trimLeft()).to.equal("hello world this is a test");
+    expect(x[0]).toBe("  blahblahblahblah");
+    expect(x[1].length).toBe(80);
+    expect(x[1].trimStart()).toBe("hello world this is a test");
   });
 
   it("should return lines all fit", () => {
@@ -25,9 +25,9 @@ describe("fitLines", function () {
       20,
       80
     );
-    expect(x.length).to.equal(1);
-    expect(x[0].length).to.equal(80);
-    expect(x[0]).to.equal(
+    expect(x.length).toBe(1);
+    expect(x[0].length).toBe(80);
+    expect(x[0]).toBe(
       "  blahblahblahblah     hello world this is a test                         [test]"
     );
   });
@@ -40,11 +40,11 @@ describe("fitLines", function () {
       20,
       80
     );
-    expect(x.length).to.equal(2);
-    expect(x[0]).to.equal(
+    expect(x.length).toBe(2);
+    expect(x[0]).toBe(
       "  blahblahblahblah     hello world this is a test hello world this is a test"
     );
-    expect(x[1]).to.equal(
+    expect(x[1]).toBe(
       "                                                                          [test]"
     );
   });
@@ -61,12 +61,12 @@ describe("fitLines", function () {
       20,
       80
     );
-    expect(x.length).to.equal(3);
-    expect(x[0]).to.equal("  blahblahblahblah");
-    expect(x[1]).to.equal(
+    expect(x.length).toBe(3);
+    expect(x[0]).toBe("  blahblahblahblah");
+    expect(x[1]).toBe(
       "      hello world this is a test hello world this is a test hello world this is a test hello world this is a test"
     );
-    expect(x[2]).to.equal(
+    expect(x[2]).toBe(
       "                                                                          [test]"
     );
   });

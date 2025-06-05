@@ -1,9 +1,8 @@
 import { NixClap, CommandSpec, OptionSpec } from "../../src";
 import { ParseResult } from "../../src/nix-clap";
-import { expect } from "chai";
+import { expect, describe, it } from "vitest";
 
-describe("simple nix-clap greedy mode test", function () {
-  this.timeout(10000);
+describe("simple nix-clap greedy mode test", () => {
   const noop = () => undefined;
   const noOutputExit = { output: noop, exit: noop };
 
@@ -59,7 +58,7 @@ describe("simple nix-clap greedy mode test", function () {
     console.log(JSON.stringify(result.command.jsonMeta, null, 2));
 
     // Check that required command exists
-    expect(result.command.jsonMeta.subCommands.required).to.exist;
+    expect(result.command.jsonMeta.subCommands.required).toBeDefined();
 
     // Log the actual argList to see what's happening
     console.log("required.argList:", result.command.jsonMeta.subCommands.required.argList);

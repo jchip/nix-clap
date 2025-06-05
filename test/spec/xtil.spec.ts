@@ -1,25 +1,25 @@
-import { expect } from "chai";
+import { describe, it, expect } from "vitest";
 import { validParseInt, toBoolean, isBoolean, fitLine, fitLines, camelCase } from "../../src/xtil";
 
-describe("xtil", function () {
+describe("xtil", () => {
   it("validParseInt should return default number", () => {
-    expect(validParseInt("", 951)).equal(951);
+    expect(validParseInt("", 951)).toBe(951);
   });
 
   it("validParseInt should reject without default number", () => {
-    expect(() => validParseInt("")).throw("Invalid number input");
+    expect(() => validParseInt("")).toThrow("Invalid number input");
   });
 
   it("validParseInt should reject string that is invalid number", () => {
-    expect(() => validParseInt("%$#%%$")).throw("Invalid number input");
+    expect(() => validParseInt("%$#%%$")).toThrow("Invalid number input");
   });
 
   it("toBoolean should return false for falsy arg", () => {
-    expect(toBoolean("")).equal(false);
+    expect(toBoolean("")).toBe(false);
   });
 
   it("isBoolean should return false for falsy arg", () => {
-    expect(isBoolean("")).equal(false);
+    expect(isBoolean("")).toBe(false);
   });
 
   it("fitLine should format lines correctly", () => {
@@ -28,7 +28,7 @@ describe("xtil", function () {
     const indent = " ";
     const lineWidth = 10;
     const result = fitLine(strs, margin, indent, lineWidth);
-    expect(result).to.deep.equal([">This is a", ">     test"]);
+    expect(result).toEqual([">This is a", ">     test"]);
   });
 
   it("fitLine should handle single word", () => {
@@ -37,7 +37,7 @@ describe("xtil", function () {
     const indent = " ";
     const lineWidth = 10;
     const result = fitLine(strs, margin, indent, lineWidth);
-    expect(result).to.deep.equal([">SingleWord"]);
+    expect(result).toEqual([">SingleWord"]);
   });
 
   it("fitLine should handle empty input", () => {
@@ -46,7 +46,7 @@ describe("xtil", function () {
     const indent = " ";
     const lineWidth = 10;
     const result = fitLine(strs, margin, indent, lineWidth);
-    expect(result).to.deep.equal([]);
+    expect(result).toEqual([]);
   });
 
   it("fitLine should handle long words", () => {
@@ -55,7 +55,7 @@ describe("xtil", function () {
     const indent = " ";
     const lineWidth = 10;
     const result = fitLine(strs, margin, indent, lineWidth);
-    expect(result).to.deep.equal([">ThisIsAVeryLongWordThatExceedsWidth"]);
+    expect(result).toEqual([">ThisIsAVeryLongWordThatExceedsWidth"]);
   });
 
   it("fitLine should handle multiple lines with exact width", () => {
@@ -64,7 +64,7 @@ describe("xtil", function () {
     const indent = " ";
     const lineWidth = 7;
     const result = fitLine(strs, margin, indent, lineWidth);
-    expect(result).to.deep.equal([">This", "> is a", ">  test"]);
+    expect(result).toEqual([">This", "> is a", ">  test"]);
   });
 
   it("fitLines should format lines correctly with margin and indent", () => {
@@ -74,7 +74,7 @@ describe("xtil", function () {
     const leftWidth = 5;
     const lineWidth = 10;
     const result = fitLines(strs, margin, indent, leftWidth, lineWidth);
-    expect(result).to.deep.equal([">This  is", "> a   test"]);
+    expect(result).toEqual([">This  is", "> a   test"]);
   });
 
   it("fitLines should handle single word", () => {
@@ -84,7 +84,7 @@ describe("xtil", function () {
     const leftWidth = 5;
     const lineWidth = 10;
     const result = fitLines(strs, margin, indent, leftWidth, lineWidth);
-    expect(result).to.deep.equal([">SingleWord"]);
+    expect(result).toEqual([">SingleWord"]);
   });
 
   it("fitLines should handle empty input", () => {
@@ -94,7 +94,7 @@ describe("xtil", function () {
     const leftWidth = 5;
     const lineWidth = 10;
     const result = fitLines(strs, margin, indent, leftWidth, lineWidth);
-    expect(result).to.deep.equal([]);
+    expect(result).toEqual([]);
   });
 
   it("fitLines should handle long words", () => {
@@ -104,7 +104,7 @@ describe("xtil", function () {
     const leftWidth = 5;
     const lineWidth = 10;
     const result = fitLines(strs, margin, indent, leftWidth, lineWidth);
-    expect(result).to.deep.equal([">ThisIsAVeryLongWordThatExceedsWidth"]);
+    expect(result).toEqual([">ThisIsAVeryLongWordThatExceedsWidth"]);
   });
 
   it("fitLines should handle multiple lines with exact width", () => {
@@ -114,7 +114,7 @@ describe("xtil", function () {
     const leftWidth = 5;
     const lineWidth = 7;
     const result = fitLines(strs, margin, indent, leftWidth, lineWidth);
-    expect(result).to.deep.equal([">This", "> is a", ">  test"]);
+    expect(result).toEqual([">This", "> is a", ">  test"]);
   });
 
   it("fitLines should handle lines with left width exceeding first word", () => {
@@ -124,30 +124,30 @@ describe("xtil", function () {
     const leftWidth = 2;
     const lineWidth = 10;
     const result = fitLines(strs, margin, indent, leftWidth, lineWidth);
-    expect(result).to.deep.equal([">This", ">  is a", ">     test"]);
+    expect(result).toEqual([">This", ">  is a", ">     test"]);
   });
 
   it("camelCase should convert kebab-case to camelCase", () => {
-    expect(camelCase("kebab-case-string")).to.equal("kebabCaseString");
+    expect(camelCase("kebab-case-string")).toBe("kebabCaseString");
   });
 
   it("camelCase should handle single word", () => {
-    expect(camelCase("single")).to.equal("single");
+    expect(camelCase("single")).toBe("single");
   });
 
   it("camelCase should handle empty string", () => {
-    expect(camelCase("")).to.equal("");
+    expect(camelCase("")).toBe("");
   });
 
   it("camelCase should handle multiple hyphens", () => {
-    expect(camelCase("multiple-hyphens-in-string")).to.equal("multipleHyphensInString");
+    expect(camelCase("multiple-hyphens-in-string")).toBe("multipleHyphensInString");
   });
 
   // it("camelCase should handle leading and trailing hyphens", () => {
-  //   expect(camelCase("-leading-and-trailing-")).to.equal("leadingAndTrailing");
+  //   expect(camelCase("-leading-and-trailing-")).toBe("leadingAndTrailing");
   // });
 
   // it("camelCase should handle consecutive hyphens", () => {
-  //   expect(camelCase("consecutive--hyphens")).to.equal("consecutiveHyphens");
+  //   expect(camelCase("consecutive--hyphens")).toBe("consecutiveHyphens");
   // });
 });

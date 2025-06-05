@@ -1,9 +1,8 @@
 import { NixClap, CommandSpec, OptionSpec } from "../../src";
 import { ParseResult } from "../../src/nix-clap";
-import { expect } from "chai";
+import { describe, it, expect } from "vitest";
 
-describe("nix-clap explicit greedy mode with -#", function () {
-  this.timeout(10000);
+describe("nix-clap explicit greedy mode with -#", () => {
   const noop = () => undefined;
   const noOutputExit = { output: noop, exit: noop };
 
@@ -81,10 +80,9 @@ describe("nix-clap explicit greedy mode with -#", function () {
   // Helper function to check if an object exists in meta.subCommands
   const expectCommandInResult = (meta: any, cmdName: string, exists = true) => {
     if (exists) {
-      expect(meta.subCommands[cmdName], `Command ${cmdName} should exist in result`).to.exist;
+      expect(meta.subCommands[cmdName]).toBeDefined();
     } else {
-      expect(meta.subCommands[cmdName], `Command ${cmdName} should not exist in result`).to.not
-        .exist;
+      expect(meta.subCommands[cmdName]).toBeUndefined();
     }
   };
 
@@ -97,7 +95,7 @@ describe("nix-clap explicit greedy mode with -#", function () {
 
     // Check that "simple" command exists without greedy mode
     expectCommandInResult(metaWithoutGreedy, "simple");
-    expect(metaWithoutGreedy.subCommands.simple.argList).to.be.empty;
+    expect(metaWithoutGreedy.subCommands.simple.argList).toEqual([]);
 
     // With -#, simple should enter greedy mode and consume arg1
     const withGreedy = parse(nc, "simple -# arg1");
@@ -105,7 +103,7 @@ describe("nix-clap explicit greedy mode with -#", function () {
 
     // Check that arg1 is now an argument to simple
     expectCommandInResult(metaWithGreedy, "simple");
-    expect(metaWithGreedy.subCommands.simple.argList).to.deep.equal(["arg1"]);
+    expect(metaWithGreedy.subCommands.simple.argList).toEqual(["arg1"]);
   });
 
   it("should consume additional arguments beyond requirements with -#", () => {
@@ -117,7 +115,7 @@ describe("nix-clap explicit greedy mode with -#", function () {
 
     // Check that required takes just its args without greedy mode
     expectCommandInResult(metaWithoutGreedy, "required");
-    expect(metaWithoutGreedy.subCommands.required.argList).to.deep.equal(["arg1", "arg2"]);
+    expect(metaWithoutGreedy.subCommands.required.argList).toEqual(["arg1", "arg2"]);
 
     // With -#, required should enter greedy mode and consume extra1
     const withGreedy = parse(nc, "required arg1 arg2 -# extra1 extra2");
@@ -125,8 +123,8 @@ describe("nix-clap explicit greedy mode with -#", function () {
 
     // Check that extra1 and extra2 are now arguments to required
     expectCommandInResult(metaWithGreedy, "required");
-    expect(metaWithGreedy.subCommands.required.argList).to.have.lengthOf(4);
-    expect(metaWithGreedy.subCommands.required.argList).to.deep.equal([
+    expect(metaWithGreedy.subCommands.required.argList).toHaveLength(4);
+    expect(metaWithGreedy.subCommands.required.argList).toEqual([
       "arg1",
       "arg2",
       "extra1",
@@ -145,8 +143,8 @@ describe("nix-clap explicit greedy mode with -#", function () {
     expectCommandInResult(meta, "simple");
 
     // required command should have all its args plus the extra ones due to -#
-    expect(meta.subCommands.required.argList).to.deep.equal(["arg1", "arg2", "extra1", "extra2"]);
-    expect(meta.subCommands.simple.argList).to.be.empty;
+    expect(meta.subCommands.required.argList).toEqual(["arg1", "arg2", "extra1", "extra2"]);
+    expect(meta.subCommands.simple.argList).toEqual([]);
   });
 
   it("should also work with -. as terminator after -#", () => {
@@ -160,8 +158,8 @@ describe("nix-clap explicit greedy mode with -#", function () {
     expectCommandInResult(meta, "simple");
 
     // required command should have all its args plus the extra ones due to -#
-    expect(meta.subCommands.required.argList).to.deep.equal(["arg1", "arg2", "extra1", "extra2"]);
-    expect(meta.subCommands.simple.argList).to.be.empty;
+    expect(meta.subCommands.required.argList).toEqual(["arg1", "arg2", "extra1", "extra2"]);
+    expect(meta.subCommands.simple.argList).toEqual([]);
   });
 
   it("should allow -# to consume command names as arguments", () => {
@@ -182,7 +180,7 @@ describe("nix-clap explicit greedy mode with -#", function () {
     // Check that "simple" is now an argument to required
     expectCommandInResult(metaWithGreedy, "required");
     expectCommandInResult(metaWithGreedy, "simple", false);
-    expect(metaWithGreedy.subCommands.required.argList).to.deep.equal(["arg1", "arg2", "simple"]);
+    expect(metaWithGreedy.subCommands.required.argList).toEqual(["arg1", "arg2", "simple"]);
   });
 
   it("should allow -# to work with options in greedy mode", () => {
@@ -194,9 +192,9 @@ describe("nix-clap explicit greedy mode with -#", function () {
 
     // Check that options are processed and arguments are consumed in greedy mode
     expectCommandInResult(meta, "required");
-    expect(result.command.opts().option).to.equal("value");
-    expect(result.command.options().option).to.deep.equal({ "0": "value" });
-    expect(meta.subCommands.required.argList).to.deep.equal(["arg1", "arg2", "extra1", "extra2"]);
+    expect(result.command.opts().option).toBe("value");
+    expect(result.command.options().option).toEqual({ "0": "value" });
+    expect(meta.subCommands.required.argList).toEqual(["arg1", "arg2", "extra1", "extra2"]);
   });
 
   it("should apply greedy mode to fixed-argument commands with -#", () => {
@@ -207,14 +205,14 @@ describe("nix-clap explicit greedy mode with -#", function () {
     const metaWithoutGreedy = withoutGreedy.command.jsonMeta;
 
     expectCommandInResult(metaWithoutGreedy, "fixedArgs");
-    expect(metaWithoutGreedy.subCommands.fixedArgs.argList).to.deep.equal(["val1", "val2", "val3"]);
+    expect(metaWithoutGreedy.subCommands.fixedArgs.argList).toEqual(["val1", "val2", "val3"]);
 
     // With -#, fixedArgs should consume additional arguments
     const withGreedy = parse(nc, "fixedArgs val1 val2 val3 -# extra1 extra2");
     const metaWithGreedy = withGreedy.command.jsonMeta;
 
     expectCommandInResult(metaWithGreedy, "fixedArgs");
-    expect(metaWithGreedy.subCommands.fixedArgs.argList).to.deep.equal([
+    expect(metaWithGreedy.subCommands.fixedArgs.argList).toEqual([
       "val1",
       "val2",
       "val3",
@@ -231,13 +229,13 @@ describe("nix-clap explicit greedy mode with -#", function () {
     const metaBeforeArgs = beforeArgs.command.jsonMeta;
 
     expectCommandInResult(metaBeforeArgs, "required");
-    expect(metaBeforeArgs.subCommands.required.argList).to.deep.equal(["arg1", "arg2", "extra1"]);
+    expect(metaBeforeArgs.subCommands.required.argList).toEqual(["arg1", "arg2", "extra1"]);
 
     // Test -# in the middle of arguments
     const middleArgs = parse(nc, "required arg1 -# arg2 extra1");
     const metaMiddleArgs = middleArgs.command.jsonMeta;
 
     expectCommandInResult(metaMiddleArgs, "required");
-    expect(metaMiddleArgs.subCommands.required.argList).to.deep.equal(["arg1", "arg2", "extra1"]);
+    expect(metaMiddleArgs.subCommands.required.argList).toEqual(["arg1", "arg2", "extra1"]);
   });
 });
