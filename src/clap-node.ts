@@ -1,8 +1,3 @@
-/* eslint-disable max-depth */
-/* eslint-disable one-var */
-/* eslint-disable complexity */
-/* eslint-disable no-use-before-define */
-
 /**
  * Represents a node in a command-line application parser.
  *
