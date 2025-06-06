@@ -1,0 +1,30 @@
+{
+  "name": "sample-1-cjs",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "homepage": "",
+  "license": "UNLICENSED",
+  "scripts": {
+    "test": "node numbers.cjs divide -# 90 10 1 2 3 -. sum 1 2 3 4 5 6 7 8 9 10 -. times 5 6 7"
+  },
+  "author": "",
+  "files": [
+    "src",
+    "lib",
+    "dist"
+  ],
+  "keywords": [],
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "fyn": {
+    "dependencies": {
+      "nix-clap": "../.."
+    }
+  },
+  "dependencies": {
+    "nix-clap": "^2.0.0"
+  }
+}

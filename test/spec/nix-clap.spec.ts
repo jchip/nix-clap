@@ -1,6 +1,3 @@
-/* eslint-disable quotes, quote-props, @typescript-eslint/no-unused-vars */
-/* eslint-disable max-params, @typescript-eslint/ban-ts-comment */
-
 /*
 
 - all `-` and `--` options can specify arg with `=` or ` `
@@ -15,7 +12,6 @@ import { defaultOutput, defaultExit, ParseResult } from "../../src/nix-clap";
 import { describe, it, expect, beforeEach } from "vitest";
 import { OptionSpec } from "../../src/option";
 import { CommandNode } from "../../src/command-node";
-import { CommandMeta } from "../../src/command";
 
 describe("nix-clap", () => {
   const noop = () => undefined;

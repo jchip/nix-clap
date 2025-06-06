@@ -6,3 +6,4 @@ coverage
 .vscode
 *-lock*
 dist
+dist-*

@@ -1,6 +1,6 @@
 "use strict";
 
-import { NixClap, CommandExecFunc } from "../src/index.ts";
+import { CommandExecFunc, NixClap } from "nix-clap";
 
 /*
  * Example to implement a cli program that has these commands:

@@ -1,5 +1,4 @@
 import stripAnsi from "strip-ansi";
-/* eslint-disable no-magic-numbers,max-params,@typescript-eslint/no-empty-function */
 
 /**
  * Converts a kebab-case string to camelCase.
@@ -64,7 +63,7 @@ export function validParseInt(s: string, defaultN?: number): number {
  * @returns The result of the function if `x` is a function, otherwise the value of `x`.
  */
 export function cbOrVal<T = string>(x: unknown): T {
-  return typeof x === "function" ? x() : x as T;
+  return typeof x === "function" ? x() : (x as T);
 }
 
 /**

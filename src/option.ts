@@ -1,5 +1,5 @@
-import { BaseSpec, CliBase } from "./base";
-import { dup, prefixOption } from "./xtil";
+import { BaseSpec, CliBase } from "./base.ts";
+import { dup, prefixOption } from "./xtil.ts";
 
 export const SUPPORT_TYPES = ["count", "string", "number", "float", "boolean"];
 export const OPTION_FIELDS = {

@@ -1,10 +1,9 @@
-/* eslint-disable @typescript-eslint/no-this-alias */
-/* eslint-disable consistent-this, no-use-before-define */
-import { ClapNode } from "./clap-node";
-import { Command, CommandMeta } from "./command";
-import { OptionNode } from "./option-node";
-import { ClapNodeGenerator, OptionSource } from "./node-generator";
-import { camelCase } from "./xtil";
+import { ClapNode } from "./clap-node.ts";
+import { Command } from "./command.ts";
+import { CommandMeta } from "./command-meta.ts";
+import { OptionNode } from "./option-node.ts";
+import { ClapNodeGenerator, OptionSource } from "./node-generator.ts";
+import { camelCase } from "./xtil.ts";
 
 /**
  * Object representation for an instance of a command on the CLI

@@ -50,17 +50,9 @@ describe("simple nix-clap greedy mode test", () => {
 
   it("should demonstrate greedy mode with -#", () => {
     const nc = initParser();
-
     // Parse a command with -#
     const result = parse(nc, "required arg1 arg2 -# extra1 extra2");
-
-    // Output the actual result for inspection
-    console.log(JSON.stringify(result.command.jsonMeta, null, 2));
-
     // Check that required command exists
     expect(result.command.jsonMeta.subCommands.required).toBeDefined();
-
-    // Log the actual argList to see what's happening
-    console.log("required.argList:", result.command.jsonMeta.subCommands.required.argList);
   });
 });

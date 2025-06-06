@@ -1,17 +1,11 @@
-/* eslint-disable max-params */
-/* eslint-disable max-depth */
-/* eslint-disable one-var */
-/* eslint-disable complexity */
-/* eslint-disable no-use-before-define */
-
 import assert from "assert";
-import { ArgInfo, BaseSpec, CliBase, UnknownCliArgError, UnknownOptionError } from "./base";
-import { ClapNode } from "./clap-node";
-import { CommandNode } from "./command-node";
-import { Option } from "./option";
-import { OptionNode } from "./option-node";
-import { OptionMatch } from "./options";
-import { isBoolean, toBoolean } from "./xtil";
+import { ArgInfo, BaseSpec, CliBase, UnknownCliArgError, UnknownOptionError } from "./base.ts";
+import { ClapNode } from "./clap-node.ts";
+import { CommandNode } from "./command-node.ts";
+import { Option } from "./option.ts";
+import { OptionNode } from "./option-node.ts";
+import { OptionMatch } from "./options.ts";
+import { isBoolean, toBoolean } from "./xtil.ts";
 
 /**
  * Represents the source of an option in the application.
@@ -162,7 +156,7 @@ export class ClapNodeGenerator {
       // unknown command or invalid argument
       throw new UnknownCliArgError(
         `Encountered unknown CLI argument '${arg}'` +
-          (!parsingCmd ? "." : ` while parsing for command '${parsingCmd}'`),
+        (!parsingCmd ? "." : ` while parsing for command '${parsingCmd}'`),
         arg
       );
     }
@@ -514,12 +508,12 @@ export class ClapNodeGenerator {
   /**
    *
    */
-  completeOpt() {}
+  completeOpt() { }
 
   /**
    *
    */
-  completeCmd() {}
+  completeCmd() { }
 
   complete() {
     this.endArgGathering();

@@ -1,7 +1,5 @@
-/* eslint-disable complexity */
-/* eslint-disable no-use-before-define */
 import assert from "assert";
-import { validParseInt } from "./xtil";
+import { validParseInt } from "./xtil.ts";
 
 const SUPPORT_TYPES = ["number", "string", "float", "boolean"];
 

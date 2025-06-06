@@ -1,12 +1,8 @@
-/* eslint-disable no-use-before-define */
-/* eslint-disable one-var,no-magic-numbers,max-params,complexity,max-statements */
-
-// import { Command } from "./command";
-import { rootCommandName } from "./base";
-import { ClapNode } from "./clap-node";
-import { NixClap } from "./nix-clap";
-import { ClapNodeGenerator } from "./node-generator";
-import { CommandNode } from "./command-node";
+import { rootCommandName } from "./base.ts";
+import { ClapNode } from "./clap-node.ts";
+import { NixClap } from "./nix-clap.ts";
+import { ClapNodeGenerator } from "./node-generator.ts";
+import { CommandNode } from "./command-node.ts";
 
 /**
  * Represents the result of parsing command-line arguments.
@@ -135,9 +131,9 @@ export class Parser {
 
     const rets = !(arg[0] === "-")
       ? // not an option
-        builder.consumeNonOpt(arg)
+      builder.consumeNonOpt(arg)
       : // an option
-        builder.consumeOpt(arg);
+      builder.consumeOpt(arg);
 
     for (const _builder of rets) {
       if (_builder === null) {

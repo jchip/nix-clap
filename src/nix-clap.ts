@@ -1,13 +1,12 @@
-/* eslint-disable no-magic-numbers,no-process-exit,max-statements,prefer-template,complexity, prefer-rest-params */
 import Path from "path";
-import { objEach, noop } from "./xtil";
+import { objEach, noop } from "./xtil.ts";
 import EventEmitter from "events";
-import { Parser } from "./parser";
-import { Command, CommandSpec } from "./command";
-import { OptionSpec } from "./option";
-import { CommandNode } from "./command-node";
-import { rootCommandName } from "./base";
-import { ClapNode } from "./clap-node";
+import { Parser } from "./parser.ts";
+import { Command, CommandSpec } from "./command.ts";
+import { OptionSpec } from "./option.ts";
+import { CommandNode } from "./command-node.ts";
+import { rootCommandName } from "./base.ts";
+import { ClapNode } from "./clap-node.ts";
 
 const HELP = Symbol("help");
 
@@ -238,15 +237,15 @@ export class NixClap extends EventEmitter {
     this._helpOpt = config.hasOwnProperty("help")
       ? config.help
       : {
-          [HELP]: true,
-          alias: config.helpAlias || ["?", "h"],
-          args: "[cmd string]",
-          desc: () => {
-            const cmdText =
-              this._rootCommand.subCommandCount > 0 ? " Add a command to show its help" : "";
-            return `Show help.${cmdText}`;
-          }
-        };
+        [HELP]: true,
+        alias: config.helpAlias || ["?", "h"],
+        args: "[cmd string]",
+        desc: () => {
+          const cmdText =
+            this._rootCommand.subCommandCount > 0 ? " Add a command to show its help" : "";
+          return `Show help.${cmdText}`;
+        }
+      };
 
     this._usage = config.usage || "$0";
     this._cmdUsage = config.cmdUsage || "$0 $1";

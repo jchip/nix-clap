@@ -1,9 +1,7 @@
-/* eslint-disable max-statements, no-magic-numbers */
-
 import assert from "assert";
-import { Command } from "./command";
-import { Option, OptionSpec } from "./option";
-import { cbOrVal, dup, fitLines, objEach } from "./xtil";
+import { Command } from "./command.ts";
+import { Option, OptionSpec } from "./option.ts";
+import { cbOrVal, dup, fitLines, objEach } from "./xtil.ts";
 
 /**
  * `Record<string, OptionSpec>`

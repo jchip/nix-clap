@@ -1,6 +1,6 @@
 "use strict";
 
-import { NixClap, CommandExecFunc } from "../src/index.ts";
+const { NixClap } = require("nix-clap");
 
 /*
  * Example to implement a cli program that has these commands:
@@ -18,7 +18,7 @@ import { NixClap, CommandExecFunc } from "../src/index.ts";
 //
 // exec for command sum
 //
-const sum: CommandExecFunc = cmd => {
+const sum = cmd => {
   const json = cmd.jsonMeta;
   console.log(
     "sum:",
@@ -29,7 +29,7 @@ const sum: CommandExecFunc = cmd => {
 //
 // exec for command sort
 //
-const sort: CommandExecFunc = cmd => {
+const sort = cmd => {
   const json = cmd.jsonMeta;
   const numbers = [...json.args._];
   const sorted = numbers.sort((a, b) => (json.opts.reverse ? b - a : a - b));
