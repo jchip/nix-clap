@@ -40,6 +40,10 @@ export type CommandSpec = BaseSpec & {
    * Sub commands under this command
    */
   subCommands?: Record<string, CommandSpec>;
+  /**
+   * Allow unknown options
+   */
+  allowUnknownOptions?: boolean;
 };
 
 /**
@@ -52,7 +56,7 @@ export type CommandSpec = BaseSpec & {
 export type CommandMatched = {
   name: string;
   alias: string;
-  cmd: Command;
+  cmd: CommandBase;
 };
 
 /**
@@ -83,13 +87,13 @@ export type CommandMatched = {
  * console.log(helpMessage.join('\n'));
  * ```
  */
-export class Command extends CliBase<CommandSpec> {
+export class CommandBase extends CliBase<CommandSpec> {
   subAliases: Record<string, string>;
   options: Options;
-  subCommandCount: number;
-  subCommands: Record<string, Command>;
+  subCmdCount: number;
+  subCmdsBase: Record<string, CommandBase>;
   execCount: number;
-  parent?: Command;
+  parent?: CommandBase;
 
   /**
    * Creates an instance of a Command.
@@ -98,12 +102,12 @@ export class Command extends CliBase<CommandSpec> {
    * @param cmdSpec - The specification object for the command.
    * @param parent - An optional parent command.
    */
-  constructor(name: string, cmdSpec: CommandSpec, parent?: Command) {
+  constructor(name: string, cmdSpec: CommandSpec, parent?: CommandBase) {
     const specCopy = dup(cmdSpec);
     super(name, specCopy);
-    this.subCommandCount = 0;
+    this.subCmdCount = 0;
     this.execCount = 0;
-    this.subCommands = {};
+    this.subCmdsBase = {};
     this.subAliases = {};
     this.parent = parent;
 
@@ -117,8 +121,8 @@ export class Command extends CliBase<CommandSpec> {
     if (specCopy.subCommands) {
       for (const subName in specCopy.subCommands) {
         const subSpec = specCopy.subCommands[subName];
-        this.subCommandCount++;
-        this.subCommands[subName] = new Command(subName, subSpec, this);
+        this.subCmdCount++;
+        this.subCmdsBase[subName] = new CommandBase(subName, subSpec, this);
         // count++;
         if (subSpec.exec) {
           this.execCount++;
@@ -156,7 +160,7 @@ export class Command extends CliBase<CommandSpec> {
    * @param _from - The command from which the verification is initiated.
    * @throws {Error} If the option already exists in the current command or any parent command.
    */
-  verifyOptionNotExist(optName: string, _from: Command) {
+  verifyOptionNotExist(optName: string, _from: CommandBase) {
     if (_from !== this && this.options._options.hasOwnProperty(optName)) {
       throw new Error(
         `Command ${_from.name} option ${optName} already used by parent command '${this.name}'`
@@ -178,6 +182,20 @@ export class Command extends CliBase<CommandSpec> {
     }
   }
 
+  /**
+   * Get the allowUnknownOptions flag
+   *
+   * @returns {boolean | undefined} The allowUnknownOptions flag
+   */
+  get allowUnknownOptions(): boolean | undefined {
+    return this.cmdSpec.allowUnknownOptions;
+  }
+
+  /**
+   * Get the verbatim arguments
+   *
+   * @returns {string} The verbatim arguments
+   */
   get verbatimArgs() {
     return this.cmdSpec.args || "";
   }
@@ -226,13 +244,13 @@ export class Command extends CliBase<CommandSpec> {
    * ```
    */
   matchSubCommand(alias: string): CommandMatched {
-    let cmd = this.subCommands[alias];
+    let cmd = this.subCmdsBase[alias];
     let name = alias;
 
     if (!cmd) {
       name = this.subAliases[alias];
       if (name) {
-        cmd = this.subCommands[name];
+        cmd = this.subCmdsBase[name];
       } else {
         name = alias;
       }
@@ -252,8 +270,8 @@ export class Command extends CliBase<CommandSpec> {
    */
   getExecCount() {
     let a = this.exec ? 1 : 0;
-    for (const cmd in this.subCommands) {
-      a += this.subCommands[cmd].getExecCount();
+    for (const cmd in this.subCmdsBase) {
+      a += this.subCmdsBase[cmd].getExecCount();
     }
     return a;
   }
@@ -275,11 +293,11 @@ export class Command extends CliBase<CommandSpec> {
 
     const data = [];
 
-    objEach(this.subCommands, (cmd: Command, name: string) => {
-      let args = cmd.verbatimArgs;
+    objEach(this.subCmdsBase, (cmdBase: CommandBase, name: string) => {
+      let args = cmdBase.verbatimArgs;
       args = args ? ` ${args}` : "";
-      const strs = [`${progName}${name}${args}`, cmd.desc ? ` ${cmd.desc.trim()}` : ""];
-      const alias = cmd.alias.join(" ");
+      const strs = [`${progName}${name}${args}`, cmdBase.desc ? ` ${cmdBase.desc.trim()}` : ""];
+      const alias = cmdBase.alias.join(" ");
       strs.push(alias.length > 0 ? `[aliases: ${alias}]` : "");
       data.push(strs);
     });

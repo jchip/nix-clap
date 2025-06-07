@@ -1,6 +1,6 @@
 import assert from "assert";
-import { Command } from "./command.ts";
-import { Option, OptionSpec } from "./option.ts";
+import { CommandBase } from "./command-base.ts";
+import { OptionBase, OptionSpec } from "./option-base.ts";
 import { cbOrVal, dup, fitLines, objEach } from "./xtil.ts";
 
 /**
@@ -26,7 +26,7 @@ export type OptionMatch = {
   verbatim: string;
   arg: string;
   dashes: number;
-  option?: Option;
+  option?: OptionBase;
 };
 
 /**
@@ -56,11 +56,11 @@ export class Options {
   specData: GroupOptionSpec;
   /** number of options specified */
   count: number;
-  _options: Record<string, Option>;
+  _options: Record<string, OptionBase>;
   _optAlias: Record<string, string>;
-  command: Command;
+  command: CommandBase;
 
-  constructor(specGroup: GroupOptionSpec, cmd: Command) {
+  constructor(specGroup: GroupOptionSpec, cmd: CommandBase) {
     this.specData = dup(specGroup);
     this._optAlias = {};
     this._options = {};
@@ -82,7 +82,7 @@ export class Options {
     this.count = 0;
     objEach(this.specData, (_spec: OptionSpec, name: string) => {
       this.count++;
-      this._options[name] = new Option(name, _spec);
+      this._options[name] = new OptionBase(name, _spec);
 
       if (_spec.alias) {
         if (!Array.isArray(_spec.alias)) {
@@ -129,7 +129,7 @@ export class Options {
    */
   findLongestOptionHelpText(): number {
     let max = 0;
-    objEach(this._options, (opt: Option) => {
+    objEach(this._options, (opt: OptionBase) => {
       max = Math.max(opt.help.length, max);
     });
     return max;
@@ -147,7 +147,7 @@ export class Options {
   makeHelp(): string[] {
     const width = this.findLongestOptionHelpText();
     let help = [];
-    objEach(this._options, (opt: Option) => {
+    objEach(this._options, (opt: OptionBase) => {
       const tail = [];
       if (opt.type) {
         tail.push(`[${opt.type}]`);

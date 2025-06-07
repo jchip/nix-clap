@@ -1,9 +1,9 @@
 import { expect, describe, it } from "vitest";
-import { Option, optUnknown } from "../../src/option";
+import { OptionBase, optUnknown } from "../../src/option-base";
 
 describe("option args", () => {
   it("should parse args and basic props", () => {
-    const opt = new Option("test", {
+    const opt = new OptionBase("test", {
       args: "<v1>",
       alias: "t",
       desc: "test option 1"
@@ -23,7 +23,7 @@ describe("option args", () => {
   });
 
   it("should parse array and variadic args and basic props", () => {
-    const opt = new Option("test", {
+    const opt = new OptionBase("test", {
       args: "<v1> <v2..3> <..4> <v3..>",
       alias: ["t"],
       desc: "test option 1"
@@ -68,7 +68,7 @@ describe("option args", () => {
   it("should catch optional before required args", () => {
     expect(
       () =>
-        new Option("test", {
+        new OptionBase("test", {
           args: "<v1> [v2] <v3>",
           alias: ["t"],
           desc: "test option 1"
@@ -77,7 +77,7 @@ describe("option args", () => {
   });
 
   it("should parse types from args", () => {
-    const opt = new Option("test", {
+    const opt = new OptionBase("test", {
       args: "<v1 string> <v2..3> <v3 number..>",
       alias: ["t"],
       desc: "test option 1"
@@ -113,7 +113,7 @@ describe("option args", () => {
   it("should catch unknown types from args", () => {
     expect(
       () =>
-        new Option("test", {
+        new OptionBase("test", {
           args: "<v1 foo> <v2..3> <v3 number..>",
           alias: ["t"],
           desc: "test option 1"
@@ -122,7 +122,7 @@ describe("option args", () => {
   });
 
   it("should parse variadic args", () => {
-    const opt = new Option("test", {
+    const opt = new OptionBase("test", {
       args: "<..>",
       desc: "test option 1"
     });
@@ -137,7 +137,7 @@ describe("option args", () => {
       }
     ]);
 
-    const opt2 = new Option("test", {
+    const opt2 = new OptionBase("test", {
       args: "<..1,>",
       desc: "test option 1"
     });
@@ -152,7 +152,7 @@ describe("option args", () => {
       }
     ]);
 
-    const opt3 = new Option("test", {
+    const opt3 = new OptionBase("test", {
       args: "<..1,Inf>",
       desc: "test option 1"
     });
@@ -169,7 +169,7 @@ describe("option args", () => {
   });
 
   it("should parse args that omit name and type", () => {
-    const opt = new Option("test", {
+    const opt = new OptionBase("test", {
       args: "<> []",
       desc: "test option 1"
     });
@@ -194,7 +194,7 @@ describe("option args", () => {
   });
 
   it("should parse args that omit name", () => {
-    const opt = new Option("test", {
+    const opt = new OptionBase("test", {
       args: "< xfoo> [ yfoo]",
       desc: "test option 1",
       coercions: {
@@ -223,10 +223,12 @@ describe("option args", () => {
   });
 
   it("optUnknown should return true for unknown", () => {
+    expect(optUnknown.isUnknown).eq(true);
     expect(optUnknown.unknown).eq(true);
   });
 
   it("should return false for unknown", () => {
-    expect(new Option("blah", {}).unknown).equal(false);
+    expect(new OptionBase("blah", {}).isUnknown).equal(false);
+    expect(new OptionBase("blah", {}).unknown).equal(false);
   });
 });

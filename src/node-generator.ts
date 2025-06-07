@@ -2,7 +2,7 @@ import assert from "assert";
 import { ArgInfo, BaseSpec, CliBase, UnknownCliArgError, UnknownOptionError } from "./base.ts";
 import { ClapNode } from "./clap-node.ts";
 import { CommandNode } from "./command-node.ts";
-import { Option } from "./option.ts";
+import { OptionBase } from "./option-base.ts";
 import { OptionNode } from "./option-node.ts";
 import { OptionMatch } from "./options.ts";
 import { isBoolean, toBoolean } from "./xtil.ts";
@@ -126,7 +126,7 @@ export class ClapNodeGenerator {
    */
   consumeNonOptAsCommand(arg: string, parsingCmd = ""): ClapNodeGenerator[] {
     const cmdNode = this.cmdNode;
-    const cmd = cmdNode.cmdSpec;
+    const cmd = cmdNode.cmdBase;
     // is it a sub command?
     const matched = cmd.matchSubCommand(arg);
     if (matched.cmd) {
@@ -156,7 +156,7 @@ export class ClapNodeGenerator {
       // unknown command or invalid argument
       throw new UnknownCliArgError(
         `Encountered unknown CLI argument '${arg}'` +
-        (!parsingCmd ? "." : ` while parsing for command '${parsingCmd}'`),
+          (!parsingCmd ? "." : ` while parsing for command '${parsingCmd}'`),
         arg
       );
     }
@@ -249,7 +249,7 @@ export class ClapNodeGenerator {
    * @returns
    */
   setOptValue(data: OptionMatch, complete = false, source: OptionSource = "cli"): OptionNode {
-    const cmd = this.cmdNode.cmdSpec;
+    const cmd = this.cmdNode.cmdBase;
 
     // does this command want this option
 
@@ -258,12 +258,15 @@ export class ClapNodeGenerator {
     let node: OptionNode;
 
     if (!matched) {
-      if (this.parent) {
-        return this.parent.setOptValue(data, complete);
+      const allowUnknownOptions = this.cmdNode?.cmdBase.allowUnknownOptions;
+      if (!allowUnknownOptions) {
+        if (allowUnknownOptions === undefined && this.parent) {
+          return this.parent.setOptValue(data, complete);
+        }
+        this.node.addError(
+          new UnknownOptionError(`Encountered unknown CLI option '${data.name}'.`, data.arg)
+        );
       }
-      this.node.addError(
-        new UnknownOptionError(`Encountered unknown CLI option '${data.name}'.`, data.arg)
-      );
       // no more parent, accept as unknown option at root command
       node = new OptionNode(data, this.node);
     } else {
@@ -290,7 +293,7 @@ export class ClapNodeGenerator {
   addOptionWithArgs(
     name: string,
     args: string[],
-    option: Option,
+    option: OptionBase,
     source: OptionSource = "default"
   ) {
     const builder = this.makeOptNode({
@@ -433,7 +436,11 @@ export class ClapNodeGenerator {
     } else {
       node.argsMap[0] =
         node.argsList.length > 0
-          ? this.convertValue("boolean", node.argsList[0], opt)
+          ? this.convertValue(
+              isBoolean(node.argsList[0]) ? "boolean" : "string",
+              node.argsList[0],
+              opt
+            )
           : (true as any);
     }
 
@@ -450,7 +457,7 @@ export class ClapNodeGenerator {
    */
   private cmdEndGatherArgs() {
     const node = this.cmdNode;
-    const cmd = node.cmdSpec;
+    const cmd = node.cmdBase;
     const args = cmd.args;
 
     assert(
@@ -508,12 +515,12 @@ export class ClapNodeGenerator {
   /**
    *
    */
-  completeOpt() { }
+  completeOpt() {}
 
   /**
    *
    */
-  completeCmd() { }
+  completeCmd() {}
 
   complete() {
     this.endArgGathering();

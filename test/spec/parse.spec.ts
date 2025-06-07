@@ -7,9 +7,9 @@ import { CommandNode } from "../../src/command-node";
 
 describe("parser", () => {
   function verifyNodeCommands(node: CommandNode, commands: string[]): void {
-    expect(node.cmdNodes).toBeDefined();
+    expect(node.subCmdNodes).toBeDefined();
     for (const cmd of commands) {
-      expect(node.cmdNodes[cmd]).toBeInstanceOf(CommandNode);
+      expect(node.subCmdNodes[cmd]).toBeInstanceOf(CommandNode);
     }
   }
 
@@ -77,11 +77,11 @@ describe("parser", () => {
     );
     verifyNodeOptions(node, ["u1"]);
     verifyNodeCommands(node, ["abc"]);
-    const abc = node.cmdNodes.abc;
+    const abc = node.subCmdNodes.abc;
     verifyNodeOptions(abc, ["t1", "t2"]);
     expect(abc.optNodes.t1.argsList).toEqual(["50"]);
     verifyNodeCommands(abc, ["a1"]);
-    const a1 = abc.cmdNodes.a1;
+    const a1 = abc.subCmdNodes.a1;
     verifyNodeOptions(a1, ["x1", "x2"]);
     expect(a1.argsMap).toHaveProperty("v1");
     expect(a1.argsMap).toHaveProperty("v2");
@@ -124,12 +124,12 @@ describe("parser", () => {
     );
     verifyNodeOptions(node, ["u1"]);
     verifyNodeCommands(node, ["abc"]);
-    const abc = node.cmdNodes.abc;
+    const abc = node.subCmdNodes.abc;
     verifyNodeOptions(abc, ["t1", "t2"]);
     expect(abc.optNodes.t1.argsList).toEqual(["50"]);
     expect(abc.optNodes.t2.argsList).toEqual(["80"]);
     verifyNodeCommands(abc, ["a1"]);
-    const a1 = abc.cmdNodes.a1;
+    const a1 = abc.subCmdNodes.a1;
     verifyNodeOptions(a1, ["x1", "x2"]);
     expect(a1.argsMap).toHaveProperty("v1");
   });

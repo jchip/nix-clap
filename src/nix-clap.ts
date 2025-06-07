@@ -2,8 +2,8 @@ import Path from "path";
 import { objEach, noop } from "./xtil.ts";
 import EventEmitter from "events";
 import { Parser } from "./parser.ts";
-import { Command, CommandSpec } from "./command.ts";
-import { OptionSpec } from "./option.ts";
+import { CommandBase, CommandSpec } from "./command-base.ts";
+import { OptionSpec } from "./option-base.ts";
 import { CommandNode } from "./command-node.ts";
 import { rootCommandName } from "./base.ts";
 import { ClapNode } from "./clap-node.ts";
@@ -92,6 +92,12 @@ export type NixClapConfig = {
    * When encounter an unknown command, take it and continue processing.
    */
   allowUnknownCommand?: boolean;
+
+  /**
+   * When encounter an unknown option, take it without creating an error.
+   * Each command can override this setting.
+   */
+  allowUnknownOptions?: boolean;
   /**
    * Usage message
    *
@@ -218,7 +224,7 @@ export class NixClap extends EventEmitter {
   private _skipExecDefault: boolean;
   // private _defaults: any;
   private _config: NixClapConfig;
-  _rootCommand?: Command;
+  _rootCommand?: CommandBase;
 
   /**
    * Constructs a new instance of the NixClap class.
@@ -226,9 +232,10 @@ export class NixClap extends EventEmitter {
    * @param config - Optional configuration object for NixClap.
    *
    */
-  constructor(config?: NixClapConfig) {
+  constructor(_config?: NixClapConfig) {
     super();
-    this._config = config = config || {};
+    const config = { ..._config };
+    this._config = config;
     this._name = config.name;
     this._version = config.version || false;
 
@@ -237,15 +244,15 @@ export class NixClap extends EventEmitter {
     this._helpOpt = config.hasOwnProperty("help")
       ? config.help
       : {
-        [HELP]: true,
-        alias: config.helpAlias || ["?", "h"],
-        args: "[cmd string]",
-        desc: () => {
-          const cmdText =
-            this._rootCommand.subCommandCount > 0 ? " Add a command to show its help" : "";
-          return `Show help.${cmdText}`;
-        }
-      };
+          [HELP]: true,
+          alias: config.helpAlias || ["?", "h"],
+          args: "[cmd string]",
+          desc: () => {
+            const cmdText =
+              this._rootCommand.subCmdCount > 0 ? " Add a command to show its help" : "";
+            return `Show help.${cmdText}`;
+          }
+        };
 
     this._usage = config.usage || "$0";
     this._cmdUsage = config.cmdUsage || "$0 $1";
@@ -352,10 +359,11 @@ export class NixClap extends EventEmitter {
     }
 
     // this._commands = new Commands(commands);
-    this._rootCommand = new Command(rootCommandName, {
+    this._rootCommand = new CommandBase(rootCommandName, {
       options,
       subCommands: commands,
-      desc: ""
+      desc: "",
+      allowUnknownOptions: this._config.allowUnknownOptions
     });
 
     // this._verifyOptions();
@@ -468,7 +476,7 @@ export class NixClap extends EventEmitter {
       }
     }
 
-    const commandsHelp = cmd.subCommandCount > 0 ? ["Commands:"].concat(cmd.makeHelp()) : [];
+    const commandsHelp = cmd.subCmdCount > 0 ? ["Commands:"].concat(cmd.makeHelp()) : [];
 
     const makeOptionsHelp = () => {
       const options = cmd.options.makeHelp();
@@ -634,7 +642,7 @@ export class NixClap extends EventEmitter {
     const command = parsed.command;
 
     let count = command.invokeExec(true);
-    if (count === 0 && command.cmdSpec.getExecCount() > 0) {
+    if (count === 0 && command.cmdBase.getExecCount() > 0) {
       const defaultCmd = this._makeDefaultExecCommand(parsed);
       if (defaultCmd) {
         count = defaultCmd.invokeExec(true);
@@ -656,7 +664,7 @@ export class NixClap extends EventEmitter {
     const command = parsed.command;
 
     let count = await command.invokeExecAsync(true);
-    if (count === 0 && command.cmdSpec.getExecCount() > 0) {
+    if (count === 0 && command.cmdBase.getExecCount() > 0) {
       const defaultCmd = this._makeDefaultExecCommand(parsed);
       if (defaultCmd) {
         count = await defaultCmd.invokeExecAsync(true);
@@ -685,7 +693,7 @@ export class NixClap extends EventEmitter {
       // trigger default command?
       // console.log("checking default command", this._config.defaultCommand);
 
-      const matched = command.cmdSpec.matchSubCommand(this._config.defaultCommand);
+      const matched = command.cmdBase.matchSubCommand(this._config.defaultCommand);
       if (matched.cmd) {
         const defaultCmd = new CommandNode(matched.name, matched.alias, matched.cmd);
         defaultCmd.applyDefaults();

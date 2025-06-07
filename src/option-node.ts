@@ -1,5 +1,5 @@
 import { ClapNode } from "./clap-node.ts";
-import { Option, optUnknown } from "./option.ts";
+import { OptionBase, optUnknown } from "./option-base.ts";
 import { OptionMatch } from "./options.ts";
 import { OptionSource } from "./node-generator.ts";
 
@@ -19,7 +19,7 @@ import { OptionSource } from "./node-generator.ts";
  *
  */
 export class OptionNode extends ClapNode {
-  option: Option;
+  option: OptionBase;
   source: OptionSource;
 
   constructor(data: OptionMatch, parent?: ClapNode) {

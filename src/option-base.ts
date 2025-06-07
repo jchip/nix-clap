@@ -43,7 +43,7 @@ export interface OptionSpec extends BaseSpec {
 /**
  * The class to represent an CLI Option from the specification of an option
  */
-export class Option extends CliBase<OptionSpec> {
+export class OptionBase extends CliBase<OptionSpec> {
   help: string;
   type: string;
   constructor(name: string, optSpec: OptionSpec) {
@@ -78,10 +78,18 @@ export class Option extends CliBase<OptionSpec> {
   get unknown(): boolean {
     return false;
   }
+
+  get isUnknown(): boolean {
+    return false;
+  }
 }
 
-class UnknownOption extends Option {
+class UnknownOption extends OptionBase {
   get unknown(): boolean {
+    return true;
+  }
+
+  get isUnknown(): boolean {
     return true;
   }
 }

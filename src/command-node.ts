@@ -1,5 +1,5 @@
 import { ClapNode } from "./clap-node.ts";
-import { Command } from "./command.ts";
+import { CommandBase } from "./command-base.ts";
 import { CommandMeta } from "./command-meta.ts";
 import { OptionNode } from "./option-node.ts";
 import { ClapNodeGenerator, OptionSource } from "./node-generator.ts";
@@ -13,11 +13,11 @@ export class CommandNode extends ClapNode {
   /**
    * sub command nodes
    */
-  cmdNodes: Record<string, CommandNode>;
+  subCmdNodes: Record<string, CommandNode>;
   /**
    * Associated Command data
    */
-  cmdSpec: Command;
+  cmdBase: CommandBase;
   /**
    * If this is a command node, then it can have options
    */
@@ -30,10 +30,10 @@ export class CommandNode extends ClapNode {
 
   _jsonMeta?: CommandMeta;
 
-  constructor(name: string, alias: string, cmd?: Command) {
+  constructor(name: string, alias: string, cmdBase?: CommandBase) {
     super(name, alias);
-    this.cmdSpec = cmd;
-    this.cmdNodes = {};
+    this.cmdBase = cmdBase;
+    this.subCmdNodes = {};
     this.optNodes = {};
     this.optCount = {};
     this.isGreedy = false;
@@ -58,12 +58,12 @@ export class CommandNode extends ClapNode {
    * @returns
    */
   getExecCommands(cmds: CommandNode[], includeSubCommands: boolean): CommandNode[] {
-    if (this.cmdSpec.exec) {
+    if (this.cmdBase.exec) {
       cmds.push(this);
     }
     if (includeSubCommands) {
-      for (const _key in this.cmdNodes) {
-        this.cmdNodes[_key].getExecCommands(cmds, includeSubCommands);
+      for (const _key in this.subCmdNodes) {
+        this.subCmdNodes[_key].getExecCommands(cmds, includeSubCommands);
       }
     }
     return cmds;
@@ -88,7 +88,7 @@ export class CommandNode extends ClapNode {
     const cmds = this.getExecCommands([], includeSubCommands);
 
     for (const cmd of cmds) {
-      cmd.cmdSpec.exec(cmd, cmd.getBreadCrumb());
+      cmd.cmdBase.exec(cmd, cmd.getBreadCrumb());
       count++;
     }
 
@@ -105,7 +105,7 @@ export class CommandNode extends ClapNode {
     const cmds = this.getExecCommands([], includeSubCommands);
 
     for (const cmd of cmds) {
-      await cmd.cmdSpec.exec(cmd, cmd.getBreadCrumb());
+      await cmd.cmdBase.exec(cmd, cmd.getBreadCrumb());
       count++;
     }
 
@@ -119,7 +119,7 @@ export class CommandNode extends ClapNode {
    */
   addCommandNode(node: CommandNode) {
     node._parent = this;
-    this.cmdNodes[node.name] = node;
+    this.subCmdNodes[node.name] = node;
     return node;
   }
 
@@ -135,8 +135,8 @@ export class CommandNode extends ClapNode {
       }
     }
 
-    for (const _key in this.cmdNodes) {
-      this.cmdNodes[_key].getErrorNodes(errorNodes);
+    for (const _key in this.subCmdNodes) {
+      this.subCmdNodes[_key].getErrorNodes(errorNodes);
     }
 
     return errorNodes;
@@ -175,7 +175,7 @@ export class CommandNode extends ClapNode {
       this.optNodes[optName].applyDefaults();
     }
 
-    const options = this.cmdSpec.options._options;
+    const options = this.cmdBase.options._options;
     // add any option with argDefault that was not specified
     for (const optName in options) {
       const opt = options[optName];
@@ -184,8 +184,8 @@ export class CommandNode extends ClapNode {
       }
     }
 
-    for (const subCmdName in this.cmdNodes) {
-      this.cmdNodes[subCmdName].applyDefaults();
+    for (const subCmdName in this.subCmdNodes) {
+      this.subCmdNodes[subCmdName].applyDefaults();
     }
   }
 
@@ -206,7 +206,7 @@ export class CommandNode extends ClapNode {
         arg: config[key],
         dashes: 0
       };
-      const matchOpt = this.cmdSpec.options.match(data);
+      const matchOpt = this.cmdBase.options.match(data);
       if (matchOpt) {
         const optNode = this.optNodes[matchOpt.name];
         if (!optNode || !optNode.source.startsWith("cli")) {
@@ -235,8 +235,8 @@ export class CommandNode extends ClapNode {
         this.optCount[camelCaseKey] = this.optCount[key];
       }
     }
-    for (const key in this.cmdNodes) {
-      this.cmdNodes[key].makeCamelCaseOptions();
+    for (const key in this.subCmdNodes) {
+      this.subCmdNodes[key].makeCamelCaseOptions();
     }
   }
 
@@ -247,7 +247,7 @@ export class CommandNode extends ClapNode {
    * @returns
    */
   checkRequiredOptions(missing = []) {
-    const _opts = this.cmdSpec.options._options;
+    const _opts = this.cmdBase.options._options;
     for (const name in _opts) {
       const opt = _opts[name];
       if (opt.spec.required) {
@@ -257,8 +257,8 @@ export class CommandNode extends ClapNode {
       }
     }
 
-    for (const kCmd in this.cmdNodes) {
-      this.cmdNodes[kCmd].checkRequiredOptions(missing);
+    for (const kCmd in this.subCmdNodes) {
+      this.subCmdNodes[kCmd].checkRequiredOptions(missing);
     }
 
     return missing;
@@ -297,8 +297,8 @@ export class CommandNode extends ClapNode {
     }
 
     const subCommands = {};
-    for (const name in this.cmdNodes) {
-      subCommands[name] = this.cmdNodes[name].jsonMeta;
+    for (const name in this.subCmdNodes) {
+      subCommands[name] = this.subCmdNodes[name].jsonMeta;
     }
 
     const meta: CommandMeta = {

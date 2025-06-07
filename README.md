@@ -13,8 +13,7 @@ Simple, lightweight, flexible, and comprehensive Un\*x Command Line Argument Par
 - Flexible handling of options and commands that can take variadic params.
 - A simple and straightforward JSON interface for specifying options and commands.
 - Very informative result that tells you where each option came from.
-- Greedy mode for command arguments with -# flag to consume additional arguments.
-  (Note: '-#' is a command-line flag, not a shell comment. Only '#' by itself starts a comment in shell scripts.)
+- Greedy mode for command arguments with -# flag to consume additional unknown arguments.
 - [Webpack] friendly - allows bundling your cli into a single JS file with webpack.
 
 # Examples

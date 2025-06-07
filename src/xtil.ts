@@ -208,7 +208,7 @@ export function toBoolean(arg: string) {
  */
 export function isBoolean(arg: string) {
   if (arg) {
-    const x = arg.toUpperCase();
+    const x = arg && arg.toUpperCase && arg.toUpperCase();
     return x === "0" || x === "1" || x === "FALSE" || x === "TRUE" || x === "YES" || x === "NO";
   }
   return false;

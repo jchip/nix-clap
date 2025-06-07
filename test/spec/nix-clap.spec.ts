@@ -10,7 +10,7 @@
 import { CommandExecFunc, CommandSpec, NixClap } from "../../src";
 import { defaultOutput, defaultExit, ParseResult } from "../../src/nix-clap";
 import { describe, it, expect, beforeEach } from "vitest";
-import { OptionSpec } from "../../src/option";
+import { OptionSpec } from "../../src/option-base";
 import { CommandNode } from "../../src/command-node";
 
 describe("nix-clap", () => {
@@ -218,19 +218,20 @@ describe("nix-clap", () => {
     const { command } = nc.parse2(getArgv("cmd3"));
     expect(command.error.message).contains("Not enough arguments for command 'cmd3'");
     const { command: x } = nc.parse2(getArgv("cmd3 test"));
-    expect(Object.keys(x.cmdNodes).length, "should have only one command").to.equal(1);
-    expect(x.cmdNodes.cmd3.argsList).to.deep.equal(["test"]);
-    expect(x.cmdNodes.cmd3.argsMap).to.deep.equal({ 0: "test", id: "test" });
-    expect(x.cmdNodes.cmd3.name).eq("cmd3");
-    expect(x.cmdNodes.cmd3.alias).eq("cmd3");
+    expect(Object.keys(x.subCmdNodes).length, "should have only one command").to.equal(1);
+    expect(x.subCmdNodes.cmd3.argsList).to.deep.equal(["test"]);
+    expect(x.subCmdNodes.cmd3.argsMap).to.deep.equal({ 0: "test", id: "test" });
+    expect(x.subCmdNodes.cmd3.name).eq("cmd3");
+    expect(x.subCmdNodes.cmd3.alias).eq("cmd3");
     const { command: x2 } = nc.parse2(getArgv("cmd3 test foo"));
-    expect(Object.keys(x2.cmdNodes).length, "should have one commands").to.equal(1);
-    expect(x2.cmdNodes.cmd3.argsList).to.deep.equal(["test"]);
-    expect(x2.cmdNodes.cmd3.argsMap).to.deep.equal({ 0: "test", id: "test" });
-    expect(Object.keys(x2.cmdNodes.cmd3.cmdNodes).length, "cmd3 should have one sub command").to.eq(
-      1
-    );
-    expect(x2.cmdNodes.cmd3.cmdNodes.foo.jsonMeta).to.deep.eq({
+    expect(Object.keys(x2.subCmdNodes).length, "should have one commands").to.equal(1);
+    expect(x2.subCmdNodes.cmd3.argsList).to.deep.equal(["test"]);
+    expect(x2.subCmdNodes.cmd3.argsMap).to.deep.equal({ 0: "test", id: "test" });
+    expect(
+      Object.keys(x2.subCmdNodes.cmd3.subCmdNodes).length,
+      "cmd3 should have one sub command"
+    ).to.eq(1);
+    expect(x2.subCmdNodes.cmd3.subCmdNodes.foo.jsonMeta).to.deep.eq({
       name: "foo",
       alias: "foo",
       argList: [],
@@ -253,7 +254,6 @@ describe("nix-clap", () => {
     const m = x.command.jsonMeta;
 
     expect(m.opts).deep.eq({
-      "cmd1-foo": true,
       fooNum: 900,
       floatNum: 1.23,
       customFn: "xfoo-value",
@@ -263,7 +263,8 @@ describe("nix-clap", () => {
       "log-level": "info",
       "force-cache": true,
       "apply-default": true,
-      cmd1Foo: true,
+      cmd1Foo: "1foo",
+      "cmd1-foo": "1foo",
       logLevel: "info",
       forceCache: true,
       applyDefault: true
@@ -1304,12 +1305,12 @@ describe("nix-clap", () => {
   });
 
   it("should use name passed to construtor", () => {
-    const nc = initParser(null, new NixClap({ name: "foo-test", ...noOutputExit }));
+    const nc = initParser(undefined, new NixClap({ name: "foo-test", ...noOutputExit }));
     process.argv = getArgv("node blah.js cmd1 a --cmd1-bar woo");
     const r = nc.parse();
     const h = nc.makeHelp();
     expect(h[1]).to.equal("Usage: foo-test <command>");
-    const h2 = r.command.cmdSpec.makeHelp("foo-1");
+    const h2 = r.command.cmdBase.makeHelp("foo-1");
     expect(h2[0]).contain("foo-1 cmd1");
   });
 
@@ -1325,7 +1326,7 @@ describe("nix-clap", () => {
       }
     );
     const r = nc.parse(["cmd1"]);
-    const h = r.command.cmdNodes.cmd1.cmdSpec.makeHelp();
+    const h = r.command.subCmdNodes.cmd1.cmdBase.makeHelp();
     expect(h[0]).contain("cmd1 cmd2");
   });
 
@@ -2092,11 +2093,11 @@ Options:
         p = nc.parse([]);
       }
       expect(cmd).to.be.ok;
-      expect(cmd.name).to.equal("foo");
-      expect(cmd.jsonMeta.opts).deep.eq({
+      expect(cmd!.name).to.equal("foo");
+      expect(cmd!.jsonMeta.opts).deep.eq({
         bar: "hello"
       });
-      expect(cmd.jsonMeta.source).deep.eq({
+      expect(cmd!.jsonMeta.source).deep.eq({
         bar: "default"
       });
     };
@@ -2325,5 +2326,109 @@ Options:
 
     await verify(false);
     await verify(true);
+  });
+
+  describe("allowUnknownOptions configuration", () => {
+    it("should allow unknown options at root level when allowUnknownOptions is true", () => {
+      const nc = new NixClap({
+        ...noOutputExit,
+        allowUnknownOptions: true
+      }).init();
+
+      const result = nc.parse(["node", "test.js", "--unknown-opt=value"], 2);
+      expect(result.command.error).toBeUndefined();
+      expect(result.command.jsonMeta.opts["unknown-opt"]).toBe("value");
+    });
+
+    it("should reject unknown options at root level when allowUnknownOptions is false", () => {
+      const nc = new NixClap({
+        ...noOutputExit,
+        allowUnknownOptions: false
+      }).init();
+
+      const result = nc.parse(["node", "test.js", "--unknown-opt=value"], 2);
+      expect(result.command.getErrorNodes().length).toBe(1);
+      expect(result.command.getErrorNodes()[0].error.message).toContain("unknown CLI option");
+    });
+
+    it("should allow unknown options in command when command's allowUnknownOptions is true", () => {
+      const nc = new NixClap({
+        ...noOutputExit,
+        allowUnknownOptions: false
+      }).init(
+        {},
+        {
+          test: {
+            allowUnknownOptions: true
+          }
+        }
+      );
+
+      const result = nc.parse(["node", "test.js", "test", "--unknown-opt=value"], 2);
+      expect(result.command.getErrorNodes().length).toBe(0);
+      expect(result.command.jsonMeta.subCommands.test.opts["unknown-opt"]).toBe("value");
+    });
+
+    it("should reject unknown options in command when command's allowUnknownOptions is false", () => {
+      const nc = new NixClap({
+        ...noOutputExit,
+        allowUnknownOptions: true
+      }).init(
+        {},
+        {
+          test: {
+            allowUnknownOptions: false
+          }
+        }
+      );
+
+      const result = nc.parse(["node", "test.js", "test", "--unknown-opt", "value"], 2);
+      expect(result.command.getErrorNodes().length).toBe(1);
+      expect(result.command.getErrorNodes()[0].error.message).toContain("unknown CLI option");
+    });
+
+    it("should propagate unknown options to parent command", () => {
+      const nc = new NixClap({
+        ...noOutputExit,
+        allowUnknownOptions: false
+      }).init(
+        {},
+        {
+          parent: {
+            allowUnknownOptions: true,
+            subCommands: {
+              child: {}
+            }
+          }
+        }
+      );
+
+      const result = nc.parse(["node", "test.js", "parent", "child", "--unknown-opt=value"], 2);
+      expect(result.command.error).toBeUndefined();
+      expect(result.command.jsonMeta.subCommands.parent.opts["unknown-opt"]).toBe("value");
+    });
+
+    it("should override parent command's allowUnknownOptions", () => {
+      const nc = new NixClap({
+        ...noOutputExit,
+        allowUnknownOptions: false
+      }).init(
+        {},
+        {
+          parent: {
+            allowUnknownOptions: true,
+            subCommands: {
+              child: {
+                allowUnknownOptions: false
+              }
+            }
+          }
+        }
+      );
+
+      const result = nc.parse(["parent", "child", "--unknown-opt=value"]);
+      expect(result.command.getErrorNodes().length).toBe(1);
+      expect(result.command.getErrorNodes()[0].error.message).toContain("unknown CLI option");
+    });
   });
 });

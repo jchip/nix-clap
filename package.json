@@ -19,6 +19,7 @@
   "scripts": {
     "build": "rm -rf dist-* && tsc --build tsconfig.esm.json && tsc --build tsconfig.cjs.json && ts2mjs --cjs --skip-ts --remove-source dist-cjs",
     "test": "vitest run",
+    "test-debug": "vitest run --inspect-brk --no-file-parallelism",
     "coveralls": "vitest run --coverage && cat coverage/lcov.info | coveralls",
     "coverage": "vitest run --coverage",
     "prepublishOnly": "xrun --serial [[build, docs], xarc/check]",
