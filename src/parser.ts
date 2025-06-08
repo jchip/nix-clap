@@ -3,6 +3,7 @@ import { ClapNode } from "./clap-node.ts";
 import { NixClap } from "./nix-clap.ts";
 import { ClapNodeGenerator } from "./node-generator.ts";
 import { CommandNode } from "./command-node.ts";
+import { _NEXT, _PREV } from "./symbols.ts";
 
 /**
  * Represents the result of parsing command-line arguments.
@@ -106,9 +107,19 @@ export class Parser {
    */
   private _addNodeToList(node: ClapNode) {
     if (this._nodeList.length > 0) {
-      const l = this._nodeList.at(-1);
-      node._prev = l;
-      l._next = node;
+      const l = this._nodeList.at(-1);  
+      Object.defineProperty(node, _PREV, {
+        value: l,
+        configurable: true,
+        enumerable: false,
+        writable: true,
+      });
+      Object.defineProperty(l, _NEXT, {
+        value: node,
+        configurable: true,
+        enumerable: false,
+        writable: true,
+      });
     }
 
     this._nodeList.push(node);

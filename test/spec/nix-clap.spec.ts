@@ -2431,4 +2431,44 @@ Options:
       expect(result.command.getErrorNodes()[0].error.message).toContain("unknown CLI option");
     });
   });
+
+  describe("help handler", () => {
+    it("should show help for a specific command", () => {
+      let helpShown = false;
+      const nc = new NixClap({
+        output: () => {
+          helpShown = true;
+        },
+        exit: () => undefined
+      }).init(
+        {
+          help: { args: "< string>" }
+        },
+        {
+          test: {
+            desc: "test command",
+            options: {
+              foo: { args: "< string>" }
+            }
+          }
+        }
+      );
+
+      const result = nc.parse(["node", "test.js", "--help", "test"]);
+      expect(helpShown).toBe(true);
+    });
+  });
+
+  it("should not call exit when noDefaultHandlers is true", () => {
+    let exitCalled = false;
+    const nc = new NixClap({
+      noDefaultHandlers: true,
+      exit: () => {
+        exitCalled = true;
+      }
+    }).init({}, {});
+
+    const result = nc.parse(["node", "test.js", "--unknown"]);
+    expect(exitCalled).toBe(false);
+  });
 });

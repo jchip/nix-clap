@@ -1,5 +1,6 @@
 import assert from "assert";
 import { validParseInt } from "./xtil.ts";
+import { OptionMatch } from "./options.ts";
 
 const SUPPORT_TYPES = ["number", "string", "float", "boolean"];
 
@@ -28,10 +29,10 @@ export class InvalidArgSpecifierError extends Error {
  * User provided an option that's unknown
  */
 export class UnknownOptionError extends Error {
-  arg: string;
-  constructor(msg: string, arg: string) {
+  data: OptionMatch;
+  constructor(msg: string, data: OptionMatch) {
     super(msg);
-    this.arg = arg;
+    this.data = data;
   }
 }
 

@@ -4,6 +4,7 @@ import { CommandMeta } from "./command-meta.ts";
 import { OptionNode } from "./option-node.ts";
 import { ClapNodeGenerator, OptionSource } from "./node-generator.ts";
 import { camelCase } from "./xtil.ts";
+import { _PARENT } from "./symbols.ts";
 
 /**
  * Object representation for an instance of a command on the CLI
@@ -39,11 +40,11 @@ export class CommandNode extends ClapNode {
     this.isGreedy = false;
   }
 
-  options() {
+  get options() {
     return this.jsonMeta.optsFull;
   }
 
-  opts() {
+  get opts() {
     return this.jsonMeta.opts;
   }
 
@@ -115,10 +116,10 @@ export class CommandNode extends ClapNode {
   /**
    * Add a sub command to this node
    * @param name
-   * @returns node for the new command
+   * @returns node for the new command  
    */
   addCommandNode(node: CommandNode) {
-    node._parent = this;
+    node[_PARENT] = this;
     this.subCmdNodes[node.name] = node;
     return node;
   }
@@ -148,7 +149,7 @@ export class CommandNode extends ClapNode {
    * @returns node for the new option
    */
   addOptionNode(node: OptionNode) {
-    node._parent = this;
+    node[_PARENT] = this;
     const name = node.option.name || node.name;
 
     this.optNodes[name] = node;

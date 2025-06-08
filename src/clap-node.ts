@@ -15,6 +15,7 @@
  *
  * @public
  */
+import { _NEXT, _PARENT, _PREV } from "./symbols.ts";
 export class ClapNode {
   /**
    * command/option name
@@ -33,9 +34,9 @@ export class ClapNode {
   /**
    * Parent node (command -> sub command, option)
    */
-  _parent?: ClapNode;
-  _prev?: ClapNode;
-  _next?: ClapNode;
+  private [_PARENT]?: ClapNode;
+  private [_PREV]?: ClapNode;
+  private [_NEXT]?: ClapNode;
 
   private _errors: Error[];
   /**
@@ -45,12 +46,18 @@ export class ClapNode {
    * @param parent
    */
   constructor(name: string, alias: string, parent?: ClapNode) {
+    
     this.name = name;
     this.alias = alias;
     this.argsList = [];
     this.argsMap = {};
     if (parent) {
-      this._parent = parent;
+      Object.defineProperty(this, _PARENT, {
+        value: parent,
+        configurable: true, 
+        enumerable: false,
+        writable: true,
+      });
     }
     this._errors = [];
   }
@@ -81,7 +88,7 @@ export class ClapNode {
   }
 
   get parent(): ClapNode {
-    return this._parent;
+    return this[_PARENT];
   }
 
   getParent<T extends ClapNode = ClapNode>(): T {

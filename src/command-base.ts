@@ -1,5 +1,6 @@
 import { BaseSpec, CliBase, isRootCommand } from "./base.ts";
 import { CommandNode } from "./command-node.ts";
+import { NixClapConfig } from "./nix-clap.ts";
 import { GroupOptionSpec, Options } from "./options.ts";
 import { cbOrVal, dup, fitLines, objEach } from "./xtil.ts";
 
@@ -94,15 +95,17 @@ export class CommandBase extends CliBase<CommandSpec> {
   subCmdsBase: Record<string, CommandBase>;
   execCount: number;
   parent?: CommandBase;
+  ncConfig?: NixClapConfig;
 
   /**
    * Creates an instance of a Command.
    *
    * @param name - The name of the command.
    * @param cmdSpec - The specification object for the command.
+   * @param ncConfig - The NixClap configuration.
    * @param parent - An optional parent command.
    */
-  constructor(name: string, cmdSpec: CommandSpec, parent?: CommandBase) {
+  constructor(name: string, cmdSpec: CommandSpec, ncConfig?: NixClapConfig, parent?: CommandBase) {
     const specCopy = dup(cmdSpec);
     super(name, specCopy);
     this.subCmdCount = 0;
@@ -110,6 +113,7 @@ export class CommandBase extends CliBase<CommandSpec> {
     this.subCmdsBase = {};
     this.subAliases = {};
     this.parent = parent;
+    this.ncConfig = ncConfig;
 
     specCopy.alias = [].concat(specCopy.alias || []);
     specCopy.desc = specCopy.desc;
@@ -122,7 +126,7 @@ export class CommandBase extends CliBase<CommandSpec> {
       for (const subName in specCopy.subCommands) {
         const subSpec = specCopy.subCommands[subName];
         this.subCmdCount++;
-        this.subCmdsBase[subName] = new CommandBase(subName, subSpec, this);
+        this.subCmdsBase[subName] = new CommandBase(subName, subSpec, this.ncConfig, this);
         // count++;
         if (subSpec.exec) {
           this.execCount++;
@@ -307,3 +311,27 @@ export class CommandBase extends CliBase<CommandSpec> {
     return data.reduce((help, strs) => help.concat(fitLines(strs, "  ", "    ", cmdWidth, 80)), []);
   }
 }
+
+/**
+ * Unknown command base with options.  This is used when allowUnknownOptions is true.
+ */
+export const unknownCommandBase = new CommandBase("unknown", {
+  options: {},
+  subCommands: {},
+  allowUnknownOptions: true,
+  desc: "Unknown command",
+  usage: "Unknown command",
+  alias: []
+});
+
+/**
+ * Unknown command base with no options.  This is used when allowUnknownOptions is false.
+ */
+export const unknownCommandBaseNoOptions = new CommandBase("unknown no unknown options", {
+  options: {},
+  subCommands: {},
+  allowUnknownOptions: false,
+  desc: "Unknown command",
+  usage: "Unknown command",
+  alias: []
+});

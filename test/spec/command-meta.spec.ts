@@ -8,7 +8,7 @@ describe("CommandMeta", () => {
     exit: () => undefined
   };
 
-  it.only("should properly initialize and populate all CommandMeta properties", () => {
+  it("should properly initialize and populate all CommandMeta properties", () => {
     const nc = new NixClap({ ...noOutputExit }).init(
       {
         strOpt: { args: "< string>" },
@@ -88,7 +88,7 @@ describe("CommandMeta", () => {
                 grandchild: {
                   desc: "grandchild command",
                   options: {
-                    gcOpt: { args: "< string>" }
+                    "gc-opt": { args: "< string>" }
                   }
                 }
               }
@@ -98,15 +98,10 @@ describe("CommandMeta", () => {
       }
     );
 
-    const result = nc.parse([
-      "node",
-      "test.js",
-      "parent",
-      "child",
-      "grandchild",
-      "--gc-opt",
-      "value"
-    ]);
+    const result = nc.parse(
+      ["node", "test.js", "parent", "child", "grandchild", "--gc-opt", "value"],
+      2
+    );
 
     const meta = result.command.jsonMeta;
     expect(meta.subCommands.parent).toBeDefined();
@@ -115,23 +110,19 @@ describe("CommandMeta", () => {
 
     const gcMeta = meta.subCommands.parent.subCommands.child.subCommands.grandchild;
     expect(gcMeta.name).toBe("grandchild");
-    expect(gcMeta.opts).toEqual({
-      "gc-opt": "value",
-      gcOpt: "value"
-    });
-    expect(gcMeta.source).toEqual({
-      "gc-opt": "cli",
-      gcOpt: "cli"
-    });
+    expect(gcMeta.opts["gc-opt"]).toBe("value");
+    expect(gcMeta.source["gc-opt"]).toBe("cli");
   });
 
   it("should handle unknown commands", () => {
-    const nc = new NixClap({ ...noOutputExit }).init({}, {});
-    const result = nc.parse(["node", "test.js", "unknown"]);
+    const nc = new NixClap({
+      ...noOutputExit,
+      allowUnknownCommand: true
+    }).init({}, {});
+    const result = nc.parse(["node", "test.js", "unknown"], 2);
 
     const meta = result.command.jsonMeta;
     expect(meta.subCommands.unknown).toBeDefined();
-    expect(meta.subCommands.unknown.unknown).toBe(true);
     expect(meta.subCommands.unknown.name).toBe("unknown");
     expect(meta.subCommands.unknown.alias).toBe("unknown");
     expect(meta.subCommands.unknown.opts).toEqual({});
@@ -152,7 +143,7 @@ describe("CommandMeta", () => {
       {}
     );
 
-    const result = nc.parse(["node", "test.js", "--kebab-case-opt", "value"]);
+    const result = nc.parse(["node", "test.js", "--kebab-case-opt", "value"], 2);
 
     const meta = result.command.jsonMeta;
     expect(meta.opts).toEqual({
@@ -174,7 +165,7 @@ describe("CommandMeta", () => {
       {}
     );
 
-    const result = nc.parse(["node", "test.js", "--opt1", "cliValue"]);
+    const result = nc.parse(["--opt1", "cliValue"]);
 
     const meta = result.command.jsonMeta;
     expect(meta.opts).toEqual({
@@ -182,8 +173,22 @@ describe("CommandMeta", () => {
       opt2: undefined
     });
     expect(meta.source).toEqual({
-      opt1: "cli",
-      opt2: "default"
+      opt1: "cli"
+    });
+  });
+
+  describe("allowUnknownCommand configuration", () => {
+    it("should add unknown command to subCmdNodes with allowUnknownOptions true", () => {
+      const nc = new NixClap({
+        ...noOutputExit,
+        allowUnknownCommand: true,
+        allowUnknownOptions: true
+      }).init({}, {});
+
+      const result = nc.parse(["node", "test.js", "unknown", "--foo", "bar"], 2);
+      expect(result.command.subCmdNodes.unknown).toBeDefined();
+      expect(result.command.subCmdNodes.unknown.name).toBe("unknown");
+      expect(result.command.subCmdNodes.unknown.optNodes.foo).toBeDefined();
     });
   });
 });

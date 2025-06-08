@@ -6,6 +6,8 @@ import { OptionBase } from "./option-base.ts";
 import { OptionNode } from "./option-node.ts";
 import { OptionMatch } from "./options.ts";
 import { isBoolean, toBoolean } from "./xtil.ts";
+import { CommandMatched } from "./command-base.ts";
+import { unknownCommandBase, unknownCommandBaseNoOptions } from "./command-base.ts";
 
 /**
  * Represents the source of an option in the application.
@@ -127,10 +129,8 @@ export class ClapNodeGenerator {
   consumeNonOptAsCommand(arg: string, parsingCmd = ""): ClapNodeGenerator[] {
     const cmdNode = this.cmdNode;
     const cmd = cmdNode.cmdBase;
-    // is it a sub command?
-    const matched = cmd.matchSubCommand(arg);
-    if (matched.cmd) {
-      // process as a known sub command
+
+    const createNewCommand = (matched: CommandMatched) => {
       const node = new CommandNode(matched.name, matched.alias, matched.cmd);
       cmdNode.addCommandNode(node);
 
@@ -138,6 +138,15 @@ export class ClapNodeGenerator {
       builder.parent = this;
       this.endArgGathering();
       return [builder];
+    };
+
+    // is it a sub command?
+    const matched = cmd.matchSubCommand(arg);
+    const ncConfig = this.cmdNode.cmdBase.ncConfig;
+
+    if (matched.cmd) {
+      // process as a known sub command
+      return createNewCommand(matched);
     } else if (!this.status && cmd.expectArgs > 0) {
       // can we take it as an argument to the command?
       // is it a valid argument?
@@ -147,12 +156,19 @@ export class ClapNodeGenerator {
       if (cmd.expectArgs === this.node.argsList.length) {
         this.endArgGathering();
       }
+    } else if (ncConfig?.allowUnknownCommand) {
+      return createNewCommand({
+        name: arg,
+        alias: arg,
+        cmd: ncConfig.allowUnknownOptions ? unknownCommandBase : unknownCommandBaseNoOptions
+      });
     } else {
       this.endArgGathering();
       // this may be a sub command for the parent, if it's a command also
       if (this.parent && this.parent.cmdNode) {
         return this.parent.consumeNonOptAsCommand(arg, parsingCmd || cmd.name);
       }
+
       // unknown command or invalid argument
       throw new UnknownCliArgError(
         `Encountered unknown CLI argument '${arg}'` +
@@ -264,7 +280,7 @@ export class ClapNodeGenerator {
           return this.parent.setOptValue(data, complete);
         }
         this.node.addError(
-          new UnknownOptionError(`Encountered unknown CLI option '${data.name}'.`, data.arg)
+          new UnknownOptionError(`Encountered unknown CLI option '${data.name}'.`, data)
         );
       }
       // no more parent, accept as unknown option at root command

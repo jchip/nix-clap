@@ -2,11 +2,12 @@ import Path from "path";
 import { objEach, noop } from "./xtil.ts";
 import EventEmitter from "events";
 import { Parser } from "./parser.ts";
-import { CommandBase, CommandSpec } from "./command-base.ts";
+import { CommandBase, CommandSpec, unknownCommandBaseNoOptions } from "./command-base.ts";
 import { OptionSpec } from "./option-base.ts";
 import { CommandNode } from "./command-node.ts";
 import { rootCommandName } from "./base.ts";
 import { ClapNode } from "./clap-node.ts";
+import { unknownCommandBase } from "./command-base.ts";
 
 const HELP = Symbol("help");
 
@@ -140,6 +141,11 @@ export type NixClapConfig = {
    * Default is to emit the `exit` event
    */
   exit?: (code: number) => void;
+  /**
+   * Set to `true` to skip installing default handlers and always return the parsed result, and
+   * allow user to process and handle errors and show help.
+   */
+  noDefaultHandlers?: boolean;
 };
 
 /**
@@ -258,28 +264,32 @@ export class NixClap extends EventEmitter {
     this._cmdUsage = config.cmdUsage || "$0 $1";
     this.exit = config.exit || (n => this.emit("exit", n));
     this.output = config.output || defaultOutput;
-    this._evtHandlers = {
-      "pre-help": noop,
-      help: parsed => this.showHelp(parsed.error, parsed.command.optNodes.help.argsMap.cmd),
-      "post-help": noop,
-      // version: () => this.showVersion(),
-      "parse-fail": parsed => this.showHelp(parsed.command.getErrorNodes()[0].error),
-      // parsed: () => undefined,
-      // "unknown-option": name => {
-      //   throw new Error(`Unknown option ${name}`);
-      // },
-      // "unknown-options-v2": noop,
-      // "unknown-command": ctx => {
-      //   throw new Error(`Unknown command ${ctx.name}`);
-      // },
-      "no-action": () => this.showHelp(new Error("No command given")),
-      // "new-command": noop,
-      exit: defaultExit
-    };
+    this._evtHandlers = config.noDefaultHandlers
+      ? {}
+      : {
+          "pre-help": noop,
+          help: parsed => this.showHelp(parsed.error, parsed.command.optNodes.help.argsMap.cmd),
+          "post-help": noop,
+          // version: () => this.showVersion(),
+          "parse-fail": parsed => this.showHelp(parsed.command.getErrorNodes()[0].error),
+          // parsed: () => undefined,
+          // "unknown-option": name => {
+          //   throw new Error(`Unknown option ${name}`);
+          // },
+          // "unknown-options-v2": noop,
+          // "unknown-command": ctx => {
+          //   throw new Error(`Unknown command ${ctx.name}`);
+          // },
+          "no-action": () => this.showHelp(new Error("No command given")),
+          // "new-command": noop,
+          exit: defaultExit
+        };
     const handlers = config.handlers || {};
     objEach(this._evtHandlers, (handler, name) => {
       handler = handlers.hasOwnProperty(name) ? handlers[name] : handler;
-      if (typeof handler === "function") this.on(name, handler);
+      if (typeof handler === "function") {
+        this.on(name, handler);
+      }
     });
     this._skipExec = config.skipExec;
     this._skipExecDefault = config.skipExecDefault;
@@ -359,12 +369,21 @@ export class NixClap extends EventEmitter {
     }
 
     // this._commands = new Commands(commands);
-    this._rootCommand = new CommandBase(rootCommandName, {
-      options,
-      subCommands: commands,
-      desc: "",
-      allowUnknownOptions: this._config.allowUnknownOptions
-    });
+    this._rootCommand = new CommandBase(
+      rootCommandName,
+      {
+        options,
+        subCommands: commands,
+        desc: "",
+        allowUnknownOptions: this._config.allowUnknownOptions
+      },
+      this._config
+    );
+
+    unknownCommandBase.ncConfig = this._config;
+    unknownCommandBase.parent = this._rootCommand;
+    unknownCommandBaseNoOptions.ncConfig = this._config;
+    unknownCommandBaseNoOptions.parent = this._rootCommand;
 
     // this._verifyOptions();
     // this._defaults = makeDefaults(options);
@@ -621,10 +640,11 @@ export class NixClap extends EventEmitter {
     command.applyDefaults();
     command.makeCamelCaseOptions();
 
+    const errorNodes = command.getErrorNodes();
     return {
       command,
       argv,
-      errorNodes: command.getErrorNodes(),
+      errorNodes,
       _: argv.slice(index),
       index
     };
