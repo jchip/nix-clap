@@ -85,23 +85,25 @@ export class ClapNodeGenerator {
     } else if (!type || type === "boolean") {
       return toBoolean(value);
     } else {
-      const coercion = base.spec.coercions?.[type];
-      if (coercion === undefined) {
-        // no coercion, so just keep as string
+      const customTypes = (base.spec.customTypes ||
+        // @ts-ignore
+        base.spec.coercions)?.[type];
+      if (customTypes === undefined) {
+        // no custom type, so just keep as string
         return value;
       }
 
-      if (typeof coercion === "string") {
-        return coercion;
-      } else if (typeof coercion === "function") {
+      if (typeof customTypes === "string") {
+        return customTypes;
+      } else if (typeof customTypes === "function") {
         try {
-          return coercion(value);
+          return customTypes(value);
         } catch (e) {
           this.node.addError(e);
-          return `${type} coercion function threw error: ${e.message}`;
+          return `${type} custom type function threw error: ${e.message}`;
         }
-      } else if (coercion instanceof RegExp) {
-        const mx = value.match(coercion);
+      } else if (customTypes instanceof RegExp) {
+        const mx = value.match(customTypes);
         if (mx) {
           return mx[0];
         }
@@ -114,7 +116,7 @@ export class ClapNodeGenerator {
           new Error(`argument '${value}' didn't match RegExp requirement for ${base.name}`)
         );
       } else {
-        this.node.errors.push(new Error(`Unknown coercion handler type: ${typeof coercion}`));
+        this.node.errors.push(new Error(`Unknown custom type handler: ${typeof customTypes}`));
       }
     }
 
@@ -172,7 +174,7 @@ export class ClapNodeGenerator {
       // unknown command or invalid argument
       throw new UnknownCliArgError(
         `Encountered unknown CLI argument '${arg}'` +
-          (!parsingCmd ? "." : ` while parsing for command '${parsingCmd}'`),
+        (!parsingCmd ? "." : ` while parsing for command '${parsingCmd}'`),
         arg
       );
     }
@@ -453,10 +455,10 @@ export class ClapNodeGenerator {
       node.argsMap[0] =
         node.argsList.length > 0
           ? this.convertValue(
-              isBoolean(node.argsList[0]) ? "boolean" : "string",
-              node.argsList[0],
-              opt
-            )
+            isBoolean(node.argsList[0]) ? "boolean" : "string",
+            node.argsList[0],
+            opt
+          )
           : (true as any);
     }
 
@@ -531,12 +533,12 @@ export class ClapNodeGenerator {
   /**
    *
    */
-  completeOpt() {}
+  completeOpt() { }
 
   /**
    *
    */
-  completeCmd() {}
+  completeCmd() { }
 
   complete() {
     this.endArgGathering();

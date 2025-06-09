@@ -10,7 +10,7 @@ export const isRootCommand = (name: string) => name === rootCommandName;
 
 export type BaseArgTypes = string | number | boolean;
 
-export type CoercionFunc = (value: string) => any;
+export type CustomTypeFunc = (value: string) => any;
 
 /**
  * Error thrown when an invalid argument specifier is encountered.
@@ -100,7 +100,7 @@ export type BaseSpec = {
   argDefault?: string | string[];
 
   /**
-   * Specifies coercion handlers for custom types.
+   * Specifies handlers for custom types.
    *
    * The handler can be one of:
    * - A function: the return value will be taken as the argument value.
@@ -114,7 +114,7 @@ export type BaseSpec = {
    * }
    * ```
    */
-  coercions?: Record<string, CoercionFunc | RegExp | string>;
+  customTypes?: Record<string, CustomTypeFunc | RegExp | string>;
 };
 
 export type ArgInfo = {
@@ -217,7 +217,10 @@ export class CliBase<TSpec extends BaseSpec> {
       const name = xm[1]; // "a b..1,3" <-- "a"
       const type = xm[3] || "string"; // "a b..1,3" <-- "b"
       assert(
-        SUPPORT_TYPES.indexOf(type) >= 0 || spec.coercions?.hasOwnProperty(type),
+        SUPPORT_TYPES.indexOf(type) >= 0 ||
+        (spec.customTypes ||
+          // @ts-ignore
+          spec.coercions)?.hasOwnProperty(type),
         new InvalidArgSpecifierError(
           `${this.cliType} ${this.name} - unknown type '${type}' for argument '${a}'`,
           args

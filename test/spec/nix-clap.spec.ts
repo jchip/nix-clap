@@ -1118,7 +1118,7 @@ describe("nix-clap", () => {
     const nc = initParser(
       undefined,
       undefined,
-      { "parse-fail": () => {} },
+      { "parse-fail": () => { } },
       {
         requireMe: {
           desc: "must have",
@@ -1137,7 +1137,7 @@ describe("nix-clap", () => {
     const nc = initParser(
       undefined,
       undefined,
-      { "parse-fail": () => {} },
+      { "parse-fail": () => { } },
       {
         requireMe: {
           desc: "must have",
@@ -1226,7 +1226,7 @@ describe("nix-clap", () => {
     );
 
     const r = nc.parse(getArgv("--blah 12345.9"));
-    expect(r.errorNodes![0].error.message).contains("Unknown coercion handler type: number");
+    expect(r.errorNodes![0].error.message).contains("Unknown custom type handler: number");
   });
 
   it("should handle type coercion for commands", () => {
