@@ -80,9 +80,9 @@ describe("nix-clap explicit greedy mode with -#", () => {
   // Helper function to check if an object exists in meta.subCommands
   const expectCommandInResult = (meta: any, cmdName: string, exists = true) => {
     if (exists) {
-      expect(meta.subCommands[cmdName]).toBeDefined();
+      expect(meta.subCommands[cmdName], `command ${cmdName} should exist`).toBeDefined();
     } else {
-      expect(meta.subCommands[cmdName]).toBeUndefined();
+      expect(meta.subCommands[cmdName], `command ${cmdName} should not exist`).toBeUndefined();
     }
   };
 

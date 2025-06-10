@@ -1,5 +1,5 @@
 import assert from "assert";
-import { ArgInfo, BaseSpec, CliBase, UnknownCliArgError, UnknownOptionError } from "./base.ts";
+import { ArgInfo, BaseSpec, CliBase, rootCommandName, UnknownCliArgError, UnknownOptionError } from "./base.ts";
 import { ClapNode } from "./clap-node.ts";
 import { CommandNode } from "./command-node.ts";
 import { OptionBase } from "./option-base.ts";
@@ -85,25 +85,27 @@ export class ClapNodeGenerator {
     } else if (!type || type === "boolean") {
       return toBoolean(value);
     } else {
-      const customTypes = (base.spec.customTypes ||
+      const customType = (base.spec.customTypes ||
         // @ts-ignore
         base.spec.coercions)?.[type];
-      if (customTypes === undefined) {
+      if (customType === undefined) {
         // no custom type, so just keep as string
         return value;
       }
 
-      if (typeof customTypes === "string") {
-        return customTypes;
-      } else if (typeof customTypes === "function") {
+      if (typeof customType === "string") {
+        return customType;
+      } else if (typeof customType === "function") {
         try {
-          return customTypes(value);
+
+          //
+          return customType(value);
         } catch (e) {
           this.node.addError(e);
           return `${type} custom type function threw error: ${e.message}`;
         }
-      } else if (customTypes instanceof RegExp) {
-        const mx = value.match(customTypes);
+      } else if (customType instanceof RegExp) {
+        const mx = value.match(customType);
         if (mx) {
           return mx[0];
         }
@@ -112,11 +114,11 @@ export class ClapNodeGenerator {
           return base.spec.argDefault;
         }
 
-        this.node.errors.push(
+        this.node.addError(
           new Error(`argument '${value}' didn't match RegExp requirement for ${base.name}`)
         );
       } else {
-        this.node.errors.push(new Error(`Unknown custom type handler: ${typeof customTypes}`));
+        this.node.addError(new Error(`Unknown custom type handler: ${typeof customType}`));
       }
     }
 
@@ -158,23 +160,25 @@ export class ClapNodeGenerator {
       if (cmd.expectArgs === this.node.argsList.length) {
         this.endArgGathering();
       }
-    } else if (ncConfig?.allowUnknownCommand) {
+    } else if (ncConfig?.allowUnknownCommand && this.cmdNode.name === rootCommandName) {
+      // not allow unknown command to have sub commands
+      // and unknown commands go as sub commands of the root command
       return createNewCommand({
         name: arg,
         alias: arg,
         cmd: ncConfig.allowUnknownOptions ? unknownCommandBase : unknownCommandBaseNoOptions
       });
     } else {
+      parsingCmd = parsingCmd || cmd.name;
       this.endArgGathering();
       // this may be a sub command for the parent, if it's a command also
       if (this.parent && this.parent.cmdNode) {
-        return this.parent.consumeNonOptAsCommand(arg, parsingCmd || cmd.name);
+        return this.parent.consumeNonOptAsCommand(arg, parsingCmd);
       }
 
       // unknown command or invalid argument
       throw new UnknownCliArgError(
-        `Encountered unknown CLI argument '${arg}'` +
-        (!parsingCmd ? "." : ` while parsing for command '${parsingCmd}'`),
+        `Encountered unknown CLI argument '${arg}' while parsing for command '${parsingCmd}'`,
         arg
       );
     }

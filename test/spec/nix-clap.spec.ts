@@ -114,19 +114,19 @@ describe("nix-clap", () => {
           },
           customFn: {
             args: "< xfoo>",
-            coercions: {
+            customTypes: {
               xfoo: () => "xfoo-value"
             }
           },
           customRegex: {
             args: "< rxmatch>",
-            coercions: {
+            customTypes: {
               rxmatch: /^test$/i
             }
           },
           customOther: {
             args: "< rxother>",
-            coercions: {
+            customTypes: {
               rxother: () => "oops"
             }
           },
@@ -359,7 +359,7 @@ describe("nix-clap", () => {
     const nc = new NixClap({ ...noOutputExit }).init({
       regex: {
         args: "[ enum]",
-        coercions: {
+        customTypes: {
           enum: /^test$/
         },
         argDefault: "foo"
@@ -378,7 +378,7 @@ describe("nix-clap", () => {
       {
         foo: {
           args: "<foo enum>",
-          coercions: {
+          customTypes: {
             enum: /^test$/
           }
         }
@@ -397,7 +397,7 @@ describe("nix-clap", () => {
       .init({
         foo: {
           args: "< bar>",
-          coercions: {
+          customTypes: {
             bar: () => {
               throw new Error("test");
             }
@@ -772,7 +772,7 @@ describe("nix-clap", () => {
     });
     expect(m.argList).to.be.empty;
     expect(m.subCommands).deep.eq({});
-    expect(x.command.error.message).contain(`Encountered unknown CLI argument 'd'.`);
+    expect(x.command.error.message).contain(`Encountered unknown CLI argument 'd'`);
   };
 
   it("should terminate option array with -. and parse the remaining args", () => {
@@ -865,7 +865,7 @@ describe("nix-clap", () => {
     const cmd = x.command;
     const m = cmd.jsonMeta;
 
-    expect(cmd.error.message).contains("Encountered unknown CLI argument 'd'.");
+    expect(cmd.error.message).contains("Encountered unknown CLI argument 'd'");
 
     expect(m.opts).to.deep.eq({
       "log-level": "info",
@@ -1196,7 +1196,7 @@ describe("nix-clap", () => {
     const nc = new NixClap({ ...noOutputExit }).init(
       {
         blah: {
-          coercions: {
+          customTypes: {
             x: "as-string-value"
           },
           args: "<x1 x>"
@@ -1216,7 +1216,7 @@ describe("nix-clap", () => {
     const nc = new NixClap({ ...noOutputExit }).init(
       {
         blah: {
-          coercions: {
+          customTypes: {
             x: 11234 as any
           },
           args: "<x1 x>"
@@ -1235,7 +1235,7 @@ describe("nix-clap", () => {
       {
         foo: {
           args: "<oop m1> <boo m2>",
-          coercions: { m1: value => `for-oop ${value}`, m2: /^wooo$/i }
+          customTypes: { m1: value => `for-oop ${value}`, m2: /^wooo$/i }
           // defaultValues: {
           //   m2: "oow"
           // }

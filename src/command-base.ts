@@ -310,7 +310,10 @@ export class CommandBase extends CliBase<CommandSpec> {
 
     return data.reduce((help, strs) => help.concat(fitLines(strs, "  ", "    ", cmdWidth, 80)), []);
   }
+
+
 }
+
 
 /**
  * Unknown command base with options.  This is used when allowUnknownOptions is true.
