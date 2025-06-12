@@ -48,6 +48,18 @@ export class CommandNode extends ClapNode {
     return this.jsonMeta.opts;
   }
 
+  get source() {
+    return this.jsonMeta.source;
+  }
+
+  get optsFull() {
+    return this.jsonMeta.optsFull;
+  }
+
+  get subCommands() {
+    return this.jsonMeta.subCommands;
+  }
+
   getParent<T extends ClapNode = CommandNode>(): T {
     return super.getParent();
   }

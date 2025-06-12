@@ -229,4 +229,104 @@ describe("parser", () => {
     expect(result3.command.jsonMeta.opts.flag).toBe(true);
     expect(result3.command.jsonMeta.source.flag).toBe("cli");
   });
+
+  it("should properly populate new CommandNode fields", () => {
+    const nc = new NixClap({
+      allowUnknownCommand: true,
+      allowUnknownOption: true
+    }).init(
+      {
+        rootOpt: {
+          args: "< string..1,3>", // Array option that takes 1-3 values
+          alias: "r"
+        }
+      },
+      {
+        cmd1: {
+          options: {
+            opt1: {
+              args: "< string>",
+              argDefault: "default1"
+            },
+            opt2: {
+              args: "< string..1,2>", // Array option that takes 1-2 values
+              alias: "o2"
+            }
+          },
+          subCommands: {
+            subcmd: {
+              options: {
+                subopt: { args: "< string>" }
+              }
+            }
+          }
+        }
+      }
+    );
+
+    const result = nc.parse(
+      [
+        "cmd1",
+        "--opt1",
+        "value1",
+        "--opt2",
+        "val2a",
+        "val2b",
+        "--rootOpt",
+        "root1",
+        "root2",
+        "-.",
+        "subcmd",
+        "--subopt",
+        "subvalue"
+      ],
+      0
+    );
+
+    const cmd = result.command;
+
+    // Check source field
+    expect(cmd.source).toEqual({
+      rootOpt: "cli"
+    });
+
+    // Check optsFull field for array values
+    expect(cmd.optsFull).toEqual({
+      rootOpt: {
+        "0": ["root1", "root2"]
+      }
+    });
+
+    // Check subCommands and their fields
+    const cmd1 = cmd.subCmdNodes.cmd1;
+    expect(cmd1).toBeDefined();
+    expect(cmd1.source).toEqual({
+      opt1: "cli",
+      opt2: "cli"
+    });
+    expect(cmd1.optsFull).toEqual({
+      opt1: {
+        "0": "value1"
+      },
+      opt2: {
+        "0": ["val2a", "val2b"]
+      }
+    });
+
+    // Check nested subcommand
+    const subcmd = cmd1.subCommands.subcmd;
+    expect(subcmd).toBeDefined();
+    expect(subcmd.source).toEqual({
+      subopt: "cli"
+    });
+    expect(subcmd.optsFull).toEqual({
+      subopt: {
+        "0": "subvalue"
+      }
+    });
+
+    // Verify the command hierarchy
+    expect(Object.keys(cmd.subCmdNodes)).toEqual(["cmd1"]);
+    expect(Object.keys(cmd1.subCmdNodes)).toEqual(["subcmd"]);
+  });
 });
