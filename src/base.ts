@@ -97,7 +97,7 @@ export type BaseSpec = {
    *
    * The `source` will be `"default"`.
    */
-  argDefault?: string | string[];
+  argDefault?: string | string[] | null;
 
   /**
    * Specifies handlers for custom types.
@@ -218,9 +218,11 @@ export class CliBase<TSpec extends BaseSpec> {
       const type = xm[3] || "string"; // "a b..1,3" <-- "b"
       assert(
         SUPPORT_TYPES.indexOf(type) >= 0 ||
-        (spec.customTypes ||
-          // @ts-ignore
-          spec.coercions)?.hasOwnProperty(type),
+          (
+            spec.customTypes ||
+            // @ts-ignore
+            spec.coercions
+          )?.hasOwnProperty(type),
         new InvalidArgSpecifierError(
           `${this.cliType} ${this.name} - unknown type '${type}' for argument '${a}'`,
           args

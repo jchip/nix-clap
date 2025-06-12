@@ -9,9 +9,14 @@ const nc = new NixClap({
   a: {
     alias: "a",
     args: "< string>"
+  },
+  l: {
+    alias: "l",
+    args: "< string>",
+    argDefault: null
   }
 });
 
 const r = nc.parse(["-a", "50"], 0);
 
-console.log(r.command.opts.a);
+console.log(JSON.stringify(r.command.jsonMeta, null, 2));

@@ -180,7 +180,7 @@ export class CommandNode extends ClapNode {
     // for any option that was not specified in command line or config, if it has argDefault then add it
     for (const optName in options) {
       const opt = options[optName];
-      if (opt.spec.argDefault && !this.optNodes[optName]) {
+      if (opt.spec.hasOwnProperty("argDefault") && !this.optNodes[optName]) {
         new ClapNodeGenerator(this).addOptionWithArgs(optName, [].concat(opt.spec.argDefault), opt);
       }
     }
