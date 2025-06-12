@@ -3,8 +3,8 @@
 import { NixClap } from "../src/index.ts";
 
 const nc = new NixClap({
-    allowUnknownCommand: true,
-    allowUnknownOptions: true,
+  allowUnknownCommand: true,
+  allowUnknownOption: true
 });
 
 const args = ["node", "xrun", "task1", "task2"];

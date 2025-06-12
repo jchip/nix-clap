@@ -5,8 +5,13 @@ import { NixClap, CommandExecFunc } from "../src/index.ts";
 const nc = new NixClap({
   allowUnknownCommand: true,
   allowUnknownOption: true
+}).init({
+  a: {
+    alias: "a",
+    args: "< string>"
+  }
 });
 
-const r = nc.init({}).parse(["foo", "-a=50", "--bar=60"], 0);
+const r = nc.parse(["-a", "50"], 0);
 
-console.log(r.command.subCmdNodes.foo.options);
+console.log(r.command.opts.a);

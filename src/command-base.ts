@@ -44,7 +44,7 @@ export type CommandSpec = BaseSpec & {
   /**
    * Allow unknown options
    */
-  allowUnknownOptions?: boolean;
+  allowUnknownOption?: boolean;
 };
 
 /**
@@ -187,12 +187,12 @@ export class CommandBase extends CliBase<CommandSpec> {
   }
 
   /**
-   * Get the allowUnknownOptions flag
+   * Get the allowUnknownOption flag
    *
-   * @returns {boolean | undefined} The allowUnknownOptions flag
+   * @returns {boolean | undefined} The allowUnknownOption flag
    */
-  get allowUnknownOptions(): boolean | undefined {
-    return this.cmdSpec.allowUnknownOptions;
+  get allowUnknownOption(): boolean | undefined {
+    return this.cmdSpec.allowUnknownOption;
   }
 
   /**
@@ -310,30 +310,27 @@ export class CommandBase extends CliBase<CommandSpec> {
 
     return data.reduce((help, strs) => help.concat(fitLines(strs, "  ", "    ", cmdWidth, 80)), []);
   }
-
-
 }
 
-
 /**
- * Unknown command base with options.  This is used when allowUnknownOptions is true.
+ * Unknown command base with options.  This is used when allowUnknownOption is true.
  */
 export const unknownCommandBase = new CommandBase("unknown", {
   options: {},
   subCommands: {},
-  allowUnknownOptions: true,
+  allowUnknownOption: true,
   desc: "Unknown command",
   usage: "Unknown command",
   alias: []
 });
 
 /**
- * Unknown command base with no options.  This is used when allowUnknownOptions is false.
+ * Unknown command base with no options.  This is used when allowUnknownOption is false.
  */
 export const unknownCommandBaseNoOptions = new CommandBase("unknown no unknown options", {
   options: {},
   subCommands: {},
-  allowUnknownOptions: false,
+  allowUnknownOption: false,
   desc: "Unknown command",
   usage: "Unknown command",
   alias: []

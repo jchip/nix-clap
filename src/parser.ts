@@ -107,18 +107,18 @@ export class Parser {
    */
   private _addNodeToList(node: ClapNode) {
     if (this._nodeList.length > 0) {
-      const l = this._nodeList.at(-1);  
+      const l = this._nodeList.at(-1);
       Object.defineProperty(node, _PREV, {
         value: l,
         configurable: true,
         enumerable: false,
-        writable: true,
+        writable: true
       });
       Object.defineProperty(l, _NEXT, {
         value: node,
         configurable: true,
         enumerable: false,
-        writable: true,
+        writable: true
       });
     }
 
@@ -142,13 +142,16 @@ export class Parser {
 
     const rets = !(arg[0] === "-")
       ? // not an option
-      builder.consumeNonOpt(arg)
+        builder.consumeNonOpt(arg)
       : // an option
-      builder.consumeOpt(arg);
+        builder.consumeOpt(arg);
 
     for (const _builder of rets) {
       if (_builder === null) {
-        this._builderStack.pop();
+        // avoid popping the root node
+        if (this._builderStack.length > 1) {
+          this._builderStack.pop();
+        }
       } else {
         this._addNodeToList(_builder.node);
         if (!_builder.isComplete) {

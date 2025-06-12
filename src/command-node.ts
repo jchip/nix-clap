@@ -116,7 +116,7 @@ export class CommandNode extends ClapNode {
   /**
    * Add a sub command to this node
    * @param name
-   * @returns node for the new command  
+   * @returns node for the new command
    */
   addCommandNode(node: CommandNode) {
     node[_PARENT] = this;
@@ -177,7 +177,7 @@ export class CommandNode extends ClapNode {
     }
 
     const options = this.cmdBase.options._options;
-    // add any option with argDefault that was not specified
+    // for any option that was not specified in command line or config, if it has argDefault then add it
     for (const optName in options) {
       const opt = options[optName];
       if (opt.spec.argDefault && !this.optNodes[optName]) {

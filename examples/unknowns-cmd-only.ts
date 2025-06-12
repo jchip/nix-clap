@@ -4,7 +4,7 @@ import { NixClap, CommandExecFunc } from "../src/index.ts";
 
 const nc = new NixClap({
   allowUnknownCommand: true,
-  allowUnknownOptions: false,
+  allowUnknownOption: false,
   noDefaultHandlers: true
 });
 

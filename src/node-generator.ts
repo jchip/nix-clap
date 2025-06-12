@@ -1,5 +1,12 @@
 import assert from "assert";
-import { ArgInfo, BaseSpec, CliBase, rootCommandName, UnknownCliArgError, UnknownOptionError } from "./base.ts";
+import {
+  ArgInfo,
+  BaseSpec,
+  CliBase,
+  rootCommandName,
+  UnknownCliArgError,
+  UnknownOptionError
+} from "./base.ts";
 import { ClapNode } from "./clap-node.ts";
 import { CommandNode } from "./command-node.ts";
 import { OptionBase } from "./option-base.ts";
@@ -97,7 +104,6 @@ export class ClapNodeGenerator {
         return customType;
       } else if (typeof customType === "function") {
         try {
-
           //
           return customType(value);
         } catch (e) {
@@ -166,7 +172,7 @@ export class ClapNodeGenerator {
       return createNewCommand({
         name: arg,
         alias: arg,
-        cmd: ncConfig.allowUnknownOptions ? unknownCommandBase : unknownCommandBaseNoOptions
+        cmd: ncConfig.allowUnknownOption ? unknownCommandBase : unknownCommandBaseNoOptions
       });
     } else {
       parsingCmd = parsingCmd || cmd.name;
@@ -280,9 +286,9 @@ export class ClapNodeGenerator {
     let node: OptionNode;
 
     if (!matched) {
-      const allowUnknownOptions = this.cmdNode?.cmdBase.allowUnknownOptions;
-      if (!allowUnknownOptions) {
-        if (allowUnknownOptions === undefined && this.parent) {
+      const allowUnknownOption = this.cmdNode?.cmdBase.allowUnknownOption;
+      if (!allowUnknownOption) {
+        if (allowUnknownOption === undefined && this.parent) {
           return this.parent.setOptValue(data, complete);
         }
         this.node.addError(
@@ -359,7 +365,7 @@ export class ClapNodeGenerator {
    * ```
    */
   consumeOpt(opt: string): ClapNodeGenerator[] {
-    if (this.cmdNode && (opt === "-#" || opt === "--#")) {
+    if (this.cmdNode && (opt === "-#" || opt === "-")) {
       this.cmdNode.isGreedy = true;
       return [];
     }
@@ -368,6 +374,7 @@ export class ClapNodeGenerator {
       if (this.optNode) {
         this.complete();
       } else {
+        this.cmdNode.isGreedy = false; // stop greedy mode
         this.endArgGathering();
       }
       return [null];
@@ -459,10 +466,10 @@ export class ClapNodeGenerator {
       node.argsMap[0] =
         node.argsList.length > 0
           ? this.convertValue(
-            isBoolean(node.argsList[0]) ? "boolean" : "string",
-            node.argsList[0],
-            opt
-          )
+              isBoolean(node.argsList[0]) ? "boolean" : "string",
+              node.argsList[0],
+              opt
+            )
           : (true as any);
     }
 
@@ -537,12 +544,12 @@ export class ClapNodeGenerator {
   /**
    *
    */
-  completeOpt() { }
+  completeOpt() {}
 
   /**
    *
    */
-  completeCmd() { }
+  completeCmd() {}
 
   complete() {
     this.endArgGathering();

@@ -173,4 +173,60 @@ describe("parser", () => {
       t: "cli"
     });
   });
+
+  it("should handle special character # in option", () => {
+    const nc = new NixClap({
+      allowUnknownCommand: true,
+      allowUnknownOption: true,
+      defaultCommand: "a"
+    }).init({
+      a: {
+        alias: "a"
+      }
+    });
+    const { command: node } = nc.parse2(
+      ["node", "cli.js", "--a", "-#", "cmd1", "a", "b", "c", "-.", "cmd2"],
+      2
+    );
+    const m = node.jsonMeta;
+    console.log(JSON.stringify(m, null, 2));
+    expect(m.argList).toEqual(["cmd1", "a", "b", "c"]);
+    expect(m.opts.a).toBe(true);
+    expect(m.subCommands.cmd2).toBeDefined();
+  });
+
+  it("should handle boolean options with different CLI syntaxes", () => {
+    const nc = new NixClap({
+      allowUnknownCommand: true,
+      allowUnknownOption: true
+    }).init({
+      test: {
+        args: "< string>"
+      },
+      flag: {
+        args: "< boolean>"
+      }
+    });
+
+    // Test --option (no value)
+    const result1 = nc.parse(["--test", "50", "--flag", "true"], 0);
+    expect(result1.command.jsonMeta.opts.test).toBe("50");
+    expect(result1.command.jsonMeta.source.test).toBe("cli");
+    expect(result1.command.jsonMeta.opts.flag).toBe(true);
+    expect(result1.command.jsonMeta.source.flag).toBe("cli");
+
+    // Test --option=value
+    const result2 = nc.parse(["--test", "something", "--flag", "blah"], 0);
+    expect(result2.command.jsonMeta.opts.test).toBe("something");
+    expect(result2.command.jsonMeta.source.test).toBe("cli");
+    expect(result2.command.jsonMeta.opts.flag).toBe(true);
+    expect(result2.command.jsonMeta.source.flag).toBe("cli");
+
+    // Test multiple boolean options
+    const result3 = nc.parse(["node", "cli.js", "--test=50", "--flag=1"], 2);
+    expect(result3.command.jsonMeta.opts.test).toBe("50");
+    expect(result3.command.jsonMeta.source.test).toBe("cli");
+    expect(result3.command.jsonMeta.opts.flag).toBe(true);
+    expect(result3.command.jsonMeta.source.flag).toBe("cli");
+  });
 });

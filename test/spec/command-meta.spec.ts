@@ -178,11 +178,11 @@ describe("CommandMeta", () => {
   });
 
   describe("allowUnknownCommand configuration", () => {
-    it("should add unknown command to subCmdNodes with allowUnknownOptions true", () => {
+    it("should add unknown command to subCmdNodes with allowUnknownOption true", () => {
       const nc = new NixClap({
         ...noOutputExit,
         allowUnknownCommand: true,
-        allowUnknownOptions: true
+        allowUnknownOption: true
       }).init({}, {});
 
       const result = nc.parse(["node", "test.js", "unknown", "--foo", "bar"], 2);

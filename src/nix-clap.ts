@@ -98,7 +98,7 @@ export type NixClapConfig = {
    * When encounter an unknown option, take it without creating an error.
    * Each command can override this setting.
    */
-  allowUnknownOptions?: boolean;
+  allowUnknownOption?: boolean;
   /**
    * Usage message
    *
@@ -375,7 +375,7 @@ export class NixClap extends EventEmitter {
         options,
         subCommands: commands,
         desc: "",
-        allowUnknownOptions: this._config.allowUnknownOptions
+        allowUnknownOption: this._config.allowUnknownOption
       },
       this._config
     );

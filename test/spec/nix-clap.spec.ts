@@ -1118,7 +1118,7 @@ describe("nix-clap", () => {
     const nc = initParser(
       undefined,
       undefined,
-      { "parse-fail": () => { } },
+      { "parse-fail": () => {} },
       {
         requireMe: {
           desc: "must have",
@@ -1137,7 +1137,7 @@ describe("nix-clap", () => {
     const nc = initParser(
       undefined,
       undefined,
-      { "parse-fail": () => { } },
+      { "parse-fail": () => {} },
       {
         requireMe: {
           desc: "must have",
@@ -2328,11 +2328,11 @@ Options:
     await verify(true);
   });
 
-  describe("allowUnknownOptions configuration", () => {
-    it("should allow unknown options at root level when allowUnknownOptions is true", () => {
+  describe("allowUnknownOption configuration", () => {
+    it("should allow unknown options at root level when allowUnknownOption is true", () => {
       const nc = new NixClap({
         ...noOutputExit,
-        allowUnknownOptions: true
+        allowUnknownOption: true
       }).init();
 
       const result = nc.parse(["node", "test.js", "--unknown-opt=value"], 2);
@@ -2340,10 +2340,10 @@ Options:
       expect(result.command.jsonMeta.opts["unknown-opt"]).toBe("value");
     });
 
-    it("should reject unknown options at root level when allowUnknownOptions is false", () => {
+    it("should reject unknown options at root level when allowUnknownOption is false", () => {
       const nc = new NixClap({
         ...noOutputExit,
-        allowUnknownOptions: false
+        allowUnknownOption: false
       }).init();
 
       const result = nc.parse(["node", "test.js", "--unknown-opt=value"], 2);
@@ -2351,15 +2351,15 @@ Options:
       expect(result.command.getErrorNodes()[0].error.message).toContain("unknown CLI option");
     });
 
-    it("should allow unknown options in command when command's allowUnknownOptions is true", () => {
+    it("should allow unknown options in command when command's allowUnknownOption is true", () => {
       const nc = new NixClap({
         ...noOutputExit,
-        allowUnknownOptions: false
+        allowUnknownOption: false
       }).init(
         {},
         {
           test: {
-            allowUnknownOptions: true
+            allowUnknownOption: true
           }
         }
       );
@@ -2369,15 +2369,15 @@ Options:
       expect(result.command.jsonMeta.subCommands.test.opts["unknown-opt"]).toBe("value");
     });
 
-    it("should reject unknown options in command when command's allowUnknownOptions is false", () => {
+    it("should reject unknown options in command when command's allowUnknownOption is false", () => {
       const nc = new NixClap({
         ...noOutputExit,
-        allowUnknownOptions: true
+        allowUnknownOption: true
       }).init(
         {},
         {
           test: {
-            allowUnknownOptions: false
+            allowUnknownOption: false
           }
         }
       );
@@ -2390,12 +2390,12 @@ Options:
     it("should propagate unknown options to parent command", () => {
       const nc = new NixClap({
         ...noOutputExit,
-        allowUnknownOptions: false
+        allowUnknownOption: false
       }).init(
         {},
         {
           parent: {
-            allowUnknownOptions: true,
+            allowUnknownOption: true,
             subCommands: {
               child: {}
             }
@@ -2408,18 +2408,18 @@ Options:
       expect(result.command.jsonMeta.subCommands.parent.opts["unknown-opt"]).toBe("value");
     });
 
-    it("should override parent command's allowUnknownOptions", () => {
+    it("should override parent command's allowUnknownOption", () => {
       const nc = new NixClap({
         ...noOutputExit,
-        allowUnknownOptions: false
+        allowUnknownOption: false
       }).init(
         {},
         {
           parent: {
-            allowUnknownOptions: true,
+            allowUnknownOption: true,
             subCommands: {
               child: {
-                allowUnknownOptions: false
+                allowUnknownOption: false
               }
             }
           }
