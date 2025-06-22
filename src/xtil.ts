@@ -7,7 +7,8 @@ import stripAnsi from "strip-ansi";
  * @returns The camelCase version of the input string.
  */
 export function camelCase(str: string) {
-  return str.split("-").reduce((cc, w) => `${cc}${w[0].toUpperCase()}${w.slice(1)}`);
+  const parts = str.split("-").filter(Boolean);
+  return parts.length > 0 ? parts.reduce((cc, w) => `${cc}${w[0].toUpperCase()}${w.slice(1)}`) : "";
 }
 
 /**
