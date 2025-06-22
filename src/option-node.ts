@@ -24,6 +24,7 @@ export class OptionNode extends ClapNode {
 
   constructor(data: OptionMatch, parent?: ClapNode) {
     super(data.name, data.alias, parent);
+    this.argv.push(data.arg);
     if (data.value !== undefined) {
       this.addArg(data.value);
     }

@@ -189,7 +189,7 @@ describe("parser", () => {
       2
     );
     const m = node.jsonMeta;
-    console.log(JSON.stringify(m, null, 2));
+    // console.log(JSON.stringify(m, null, 2));
     expect(m.argList).toEqual(["cmd1", "a", "b", "c"]);
     expect(m.opts.a).toBe(true);
     expect(m.subCommands.cmd2).toBeDefined();
@@ -328,5 +328,88 @@ describe("parser", () => {
     // Verify the command hierarchy
     expect(Object.keys(cmd.subCmdNodes)).toEqual(["cmd1"]);
     expect(Object.keys(cmd1.subCmdNodes)).toEqual(["subcmd"]);
+  });
+
+  it("should properly track verbatim argv for commands and options", () => {
+    const nc = new NixClap({
+      allowUnknownCommand: true,
+      allowUnknownOption: true
+    }).init(
+      {}, // root options
+      {
+        cmd1: {
+          args: "[...]", // allow variadic args
+          options: {
+            "cmd1-foo": {
+              alias: "1f",
+              args: "< string>"
+            },
+            "cmd1-bar": {
+              alias: "1r",
+              args: "< string>"
+            },
+            "cmd1-boo": {
+              alias: "1b",
+              args: "< boolean>"
+            },
+            dev: {
+              args: "<..1,Inf>" // array option that takes 1 or more values
+            }
+          }
+        }
+      }
+    );
+
+    const { command: node } = nc.parse2(
+      [
+        "cmd1", // command name
+        "arg1", // command arg
+        "--cmd1-foo", // command option
+        "value1", // option value
+        "--cmd1-bar", // another command option
+        "value2", // option value
+        "--1b", // boolean option alias
+        "--cx=90",
+        "arg2", // command arg
+        "--dev", // array option
+        "x", // array option value
+        "y", // array option value
+        "z", // array option value
+        "-.", // terminator
+        "arg3" // command arg
+      ],
+      0
+    );
+
+    // Check root command's
+    expect(node.argv).toEqual(["~root-command~"]);
+
+    // Get cmd1 command node
+    const cmd1 = node.subCmdNodes.cmd1;
+    expect(cmd1).toBeDefined();
+
+    // Check cmd1's argv - should contain all args and options in order
+    expect(cmd1.argv).toEqual([
+      "cmd1",
+      "arg1",
+      "--cmd1-foo",
+      "value1",
+      "--cmd1-bar",
+      "value2",
+      "--1b",
+      "--cx=90",
+      "arg2",
+      "--dev",
+      "x",
+      "y",
+      "z",
+      "arg3"
+    ]);
+
+    // Check option nodes' verbatim argv
+    expect(cmd1.optNodes["cmd1-foo"].argv).toEqual(["--cmd1-foo", "value1"]);
+    expect(cmd1.optNodes["cmd1-bar"].argv).toEqual(["--cmd1-bar", "value2"]);
+    expect(cmd1.optNodes["cmd1-boo"].argv).toEqual(["--1b"]);
+    expect(cmd1.optNodes["dev"].argv).toEqual(["--dev", "x", "y", "z"]);
   });
 });

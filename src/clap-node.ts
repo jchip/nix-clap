@@ -15,7 +15,7 @@
  *
  * @public
  */
-import { _NEXT, _PARENT, _PREV } from "./symbols.ts";
+import { _PARENT } from "./symbols.ts";
 export class ClapNode {
   /**
    * command/option name
@@ -30,13 +30,15 @@ export class ClapNode {
    * arguments for this node
    */
   argsList: string[];
+  /**
+   * As is verbatim CLI args that were consumbed by this node
+   */
+  argv: string[];
   argsMap: Record<string, string | string[]>;
   /**
    * Parent node (command -> sub command, option)
    */
   private [_PARENT]?: ClapNode;
-  private [_PREV]?: ClapNode;
-  private [_NEXT]?: ClapNode;
 
   private _errors: Error[];
   /**
@@ -46,17 +48,17 @@ export class ClapNode {
    * @param parent
    */
   constructor(name: string, alias: string, parent?: ClapNode) {
-    
     this.name = name;
     this.alias = alias;
     this.argsList = [];
+    this.argv = [];
     this.argsMap = {};
     if (parent) {
       Object.defineProperty(this, _PARENT, {
         value: parent,
-        configurable: true, 
+        configurable: true,
         enumerable: false,
-        writable: true,
+        writable: true
       });
     }
     this._errors = [];
@@ -69,6 +71,10 @@ export class ClapNode {
    */
   addArg(arg: string) {
     this.argsList.push(arg);
+  }
+
+  addVerbatimArg(arg: string) {
+    this.argv.push(arg);
   }
 
   addError(e: Error) {

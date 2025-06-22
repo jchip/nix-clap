@@ -161,6 +161,7 @@ export class ClapNodeGenerator {
       // can we take it as an argument to the command?
       // is it a valid argument?
       //
+      this.cmdNode.addVerbatimArg(arg);
       this.node.addArg(arg);
 
       if (cmd.expectArgs === this.node.argsList.length) {
@@ -228,6 +229,8 @@ export class ClapNodeGenerator {
       return [null].concat(this.parent.consumeNonOpt(arg));
     }
 
+    this.parent.cmdNode?.addVerbatimArg(arg);
+    this.node.addVerbatimArg(arg);
     this.node.addArg(arg);
 
     // if we have a node that remains open, then it must be expecting arguments
@@ -262,6 +265,7 @@ export class ClapNodeGenerator {
 
     if (this.cmdNode) {
       if (this.cmdNode.isGreedy) {
+        this.cmdNode.addVerbatimArg(arg);
         this.node.addArg(arg);
         return [];
       }
@@ -365,15 +369,19 @@ export class ClapNodeGenerator {
    * ```
    */
   consumeOpt(opt: string): ClapNodeGenerator[] {
-    if (this.cmdNode && (opt === "-#" || opt === "-")) {
+    // -# or - or --- enters greedy mode for the command
+    if (this.cmdNode && (opt === "-#" || opt === "-" || opt === "---")) {
+      // this.cmdNode.addVerbatimArg(opt);
       this.cmdNode.isGreedy = true;
       return [];
     }
 
     if (opt === "-." || opt === "--.") {
       if (this.optNode) {
+        // this.parent.cmdNode?.addVerbatimArg(opt);
         this.complete();
       } else {
+        // this.cmdNode.addVerbatimArg(opt);
         this.cmdNode.isGreedy = false; // stop greedy mode
         this.endArgGathering();
       }
@@ -415,6 +423,7 @@ export class ClapNodeGenerator {
       }
     }
 
+    this.node.addVerbatimArg(opt);
     return this.makeOptNode({ name, value, verbatim, dashes, arg: opt });
   }
 

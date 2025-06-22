@@ -33,6 +33,7 @@ export class CommandNode extends ClapNode {
 
   constructor(name: string, alias: string, cmdBase?: CommandBase) {
     super(name, alias);
+    this.argv.push(name);
     this.cmdBase = cmdBase;
     this.subCmdNodes = {};
     this.optNodes = {};
