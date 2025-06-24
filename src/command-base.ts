@@ -289,9 +289,10 @@ export class CommandBase extends CliBase<CommandSpec> {
   makeHelp(progName?: string) {
     if (progName) {
       progName = `${progName} `;
-    } else if (!isRootCommand(this.name)) {
+    } else if (!isRootCommand(this.alias[0])) {
       progName = `${this.name} `;
     } else {
+      // we want to skip showing the root command name
       progName = "";
     }
 

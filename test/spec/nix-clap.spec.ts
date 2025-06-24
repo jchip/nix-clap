@@ -1436,7 +1436,7 @@ describe("nix-clap", () => {
           }
         }
       )
-    ).to.throw("Command test option blah already used by parent command '~root-command~'");
+    ).to.throw("Command test option blah already used by parent command 'program'");
 
     expect(() =>
       new NixClap({ ...noOutputExit }).init(

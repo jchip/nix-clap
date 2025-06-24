@@ -5,7 +5,7 @@ import { Parser } from "./parser.ts";
 import { CommandBase, CommandSpec, unknownCommandBaseNoOptions } from "./command-base.ts";
 import { OptionSpec } from "./option-base.ts";
 import { CommandNode } from "./command-node.ts";
-import { rootCommandName } from "./base.ts";
+import { isRootCommand, rootCommandName } from "./base.ts";
 import { ClapNode } from "./clap-node.ts";
 import { unknownCommandBase } from "./command-base.ts";
 
@@ -231,11 +231,13 @@ export class NixClap extends EventEmitter {
   // private _defaults: any;
   private _config: NixClapConfig;
   _rootCommand?: CommandBase;
+  private _options?: Record<string, OptionSpec>;
+  private _commands?: Record<string, CommandSpec>;
 
   /**
    * Constructs a new instance of the NixClap class.
    *
-   * @param config - Optional configuration object for NixClap.
+   * @param _config - Optional configuration object for NixClap.
    *
    */
   constructor(_config?: NixClapConfig) {
@@ -368,12 +370,15 @@ export class NixClap extends EventEmitter {
       options["help"] = this._helpOpt;
     }
 
-    // this._commands = new Commands(commands);
+    this._options = options;
+    this._commands = commands;
+    this._name = this._config.name;
     this._rootCommand = new CommandBase(
-      rootCommandName,
+      this._name || "program",
       {
-        options,
-        subCommands: commands,
+        alias: rootCommandName,
+        options: this._options,
+        subCommands: this._commands,
         desc: "",
         allowUnknownOption: this._config.allowUnknownOption
       },
@@ -384,7 +389,6 @@ export class NixClap extends EventEmitter {
     unknownCommandBase.parent = this._rootCommand;
     unknownCommandBaseNoOptions.ncConfig = this._config;
     unknownCommandBaseNoOptions.parent = this._rootCommand;
-
     // this._verifyOptions();
     // this._defaults = makeDefaults(options);
 
@@ -503,7 +507,7 @@ export class NixClap extends EventEmitter {
       if (options && options.length) {
         return ["", "Options:"].concat(options);
       }
-      if (cmd.name && cmd.name !== "~root-command~") {
+      if (cmd.name && !isRootCommand(cmd.alias[0])) {
         return [`Command ${cmd.name} has no options`];
       }
       return [];
@@ -622,10 +626,12 @@ export class NixClap extends EventEmitter {
   parse2(argv: string[], start = 0) {
     if (argv === undefined) {
       argv = process.argv;
-      if (this._name === undefined) {
-        this._name = Path.basename(argv[1], ".js");
-      }
       start = 2;
+    }
+
+    if (start > 0 && this._name === undefined) {
+      this._name = Path.basename(argv[start - 1], ".js");
+      this._rootCommand.name = this._name;
     }
 
     const parser = new Parser(this);
