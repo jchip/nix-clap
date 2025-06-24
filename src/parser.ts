@@ -1,4 +1,3 @@
-import { rootCommandName } from "./base.ts";
 import { ClapNode } from "./clap-node.ts";
 import { NixClap } from "./nix-clap.ts";
 import { ClapNodeGenerator } from "./node-generator.ts";
@@ -192,7 +191,12 @@ export class Parser {
     this._argv = argv;
 
     const rootNode =
-      command || new CommandNode(rootCommandName, rootCommandName, this._nc._rootCommand);
+      command ||
+      new CommandNode(
+        this._nc._rootCommand.name,
+        this._nc._rootCommand.alias[0],
+        this._nc._rootCommand
+      );
 
     this._addNodeToList(rootNode);
 

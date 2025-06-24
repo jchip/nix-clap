@@ -382,7 +382,7 @@ describe("parser", () => {
     );
 
     // Check root command's
-    expect(node.argv).toEqual(["~root-command~"]);
+    expect(node.argv).toEqual(["program"]);
 
     // Get cmd1 command node
     const cmd1 = node.subCmdNodes.cmd1;

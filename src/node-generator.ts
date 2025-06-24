@@ -3,7 +3,7 @@ import {
   ArgInfo,
   BaseSpec,
   CliBase,
-  rootCommandName,
+  isRootCommand,
   UnknownCliArgError,
   UnknownOptionError
 } from "./base.ts";
@@ -46,7 +46,7 @@ const BUILDER_STATUS_COMPLETE = 2;
  *
  * @example
  * ```typescript
- * const rootNode = new CommandNode(rootCommandName, rootCommandName, nixClap._rootCommand);
+ * const rootNode = new CommandNode(name, alias, command);
  * const builder = new ClapNodeBuilder(rootNode);
  * const result = builder.consumeOpt("-v");
  * // Process the result...
@@ -167,7 +167,7 @@ export class ClapNodeGenerator {
       if (cmd.expectArgs === this.node.argsList.length) {
         this.endArgGathering();
       }
-    } else if (ncConfig?.allowUnknownCommand && this.cmdNode.name === rootCommandName) {
+    } else if (ncConfig?.allowUnknownCommand && isRootCommand(this.cmdNode.alias)) {
       // not allow unknown command to have sub commands
       // and unknown commands go as sub commands of the root command
       return createNewCommand({
