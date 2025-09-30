@@ -1772,6 +1772,57 @@ describe("nix-clap", () => {
     ]);
   });
 
+  it("should show two-line usage for root command with args and sub-commands", () => {
+    const nc = new NixClap({ name: "file-processor", ...noOutputExit })
+      .version("1.0.0")
+      .usage("$0 [options] <input-file> [additional-files...]")
+      .init2({
+        args: "[inputFile string] [additionalFiles string..]",
+        exec: () => {},
+        options: {
+          output: { alias: "o", desc: "Output file" }
+        },
+        subCommands: {
+          convert: {
+            desc: "Convert file",
+            args: "<input string> <output string>",
+            exec: () => {}
+          }
+        }
+      });
+
+    const help = nc.makeHelp();
+    expect(help[1]).toBe("Usage: file-processor [options] <input-file> [additional-files...]");
+    expect(help[2]).toBe("  file-processor <command> [command-args] [options]");
+    expect(help).toContain("Commands:");
+  });
+
+  it("should show single-line usage for root command with args but no sub-commands", () => {
+    const nc = new NixClap({ name: "process", ...noOutputExit })
+      .init2({
+        args: "<files string..>",
+        exec: () => {}
+      });
+
+    const help = nc.makeHelp();
+    expect(help[1]).toBe("Usage: process <files string..>");
+    expect(help).not.toContain("Commands:");
+  });
+
+  it("should show <command> for sub-commands without root args", () => {
+    const nc = new NixClap({ name: "mycli", ...noOutputExit })
+      .init2({
+        subCommands: {
+          build: { desc: "Build project", exec: () => {} },
+          test: { desc: "Run tests", exec: () => {} }
+        }
+      });
+
+    const help = nc.makeHelp();
+    expect(help[1]).toBe("Usage: mycli <command>");
+    expect(help).toContain("Commands:");
+  });
+
   it("should turn off version and help option", () => {
     const nc = new NixClap({ ...noOutputExit }).version("").usage("").help(false).init({}, {});
     const help = nc.makeHelp();

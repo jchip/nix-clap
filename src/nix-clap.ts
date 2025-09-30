@@ -563,8 +563,12 @@ export class NixClap extends EventEmitter {
 
     const usage = [""];
     let usageMsg: string;
+
+    // For root command showing help, prefer custom usage over cmdUsage
+    const isShowingRootHelp = !cmdName && isRootCommand(cmd.alias[0]);
+
     if (this._usage && cmd) {
-      usageMsg = cmd.usage || this._cmdUsage;
+      usageMsg = cmd.usage || (isShowingRootHelp ? this._usage : this._cmdUsage);
     }
 
     if (!usageMsg) {
@@ -572,8 +576,34 @@ export class NixClap extends EventEmitter {
     }
 
     if (usageMsg) {
-      usageMsg = usageMsg.replace("$0", this._name || "").replace("$1", cmdName || "<command>");
-      usage.push(`Usage: ${usageMsg}`.trim(), "");
+      const progName = this._name || "";
+
+      // Check if we need two-line usage (root command has both args and sub-commands)
+      const hasRootArgs = isRootCommand(cmd.alias[0]) && cmd.verbatimArgs;
+      const hasSubCommands = cmd.subCmdCount > 0;
+
+      if (hasRootArgs && hasSubCommands && !cmdName) {
+        // Two-line usage format: show both root command args and sub-command usage
+        // First line: use custom usage (for root command with args)
+        const rootUsage = usageMsg.replace("$0", progName);
+        // Don't replace $1 for root usage - it's meant for command name when showing sub-command help
+        usage.push(`Usage: ${rootUsage}`.trim());
+        // Second line: show sub-command usage pattern
+        usage.push(`  ${progName} <command> [command-args] [options]`, "");
+      } else if (hasRootArgs && !hasSubCommands && !cmdName && usageMsg === "$0") {
+        // Root command with args but no custom usage and no sub-commands
+        // Generate usage from args
+        usage.push(`Usage: ${progName} ${cmd.verbatimArgs}`.trim(), "");
+      } else if (!hasRootArgs && hasSubCommands && !cmdName && usageMsg === "$0") {
+        // Only sub-commands, no root args, no custom usage
+        // Show <command> placeholder
+        usage.push(`Usage: ${progName} <command>`.trim(), "");
+      } else {
+        // Standard single-line usage
+        usageMsg = usageMsg.replace("$0", progName).replace("$1", cmdName || "<command>");
+        usage.push(`Usage: ${usageMsg}`.trim(), "");
+      }
+
       if (cmd.desc) {
         usage.push(`  ${cmd.desc}`);
       }
