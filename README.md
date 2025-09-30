@@ -203,7 +203,7 @@ NixClap provides multiple ways to access parsed data:
 const parsed = nc.parse();
 
 // Access via jsonMeta (recommended)
-const opts = parsed.command.jsonMeta.opts; // { verbose: true }
+const opts = parsed.command.jsonMeta.opts; // { verbose: true, output: "file.txt" }
 const args = parsed.command.jsonMeta.args; // { files: ["a.js", "b.js"] }
 const source = parsed.command.jsonMeta.source; // { verbose: "cli" }
 
@@ -217,6 +217,92 @@ if (parsed.errorNodes && parsed.errorNodes.length > 0) {
     parsed.errorNodes.map(n => n.error.message)
   );
 }
+```
+
+**Understanding `opts` vs `optsFull`**
+
+NixClap provides two ways to access option values:
+
+**`opts` - Simplified Direct Values (Recommended)**
+
+The first/only argument value is stored directly on the option name:
+
+```js
+const nc = new NixClap().init2({
+  options: {
+    output: { args: "<path string>", desc: "Output file" },
+    count: { args: "<num number>", desc: "Item count" },
+    format: { args: "<fmt>", desc: "Output format" }
+  },
+  exec: (cmd) => {
+    const meta = cmd.jsonMeta;
+
+    // ✅ Correct - access values directly
+    const output = meta.opts.output;  // "file.txt"
+    const count = meta.opts.count;    // 42
+    const format = meta.opts.format;  // "json"
+  }
+});
+```
+
+**`optsFull` - Complete Objects with Argument Names**
+
+All arguments are stored with both positional index and their named arguments:
+
+```js
+const nc = new NixClap().init2({
+  options: {
+    output: { args: "<path string>" },
+    count: { args: "<num number>" }
+  },
+  exec: (cmd) => {
+    const meta = cmd.jsonMeta;
+
+    // Access by argument name
+    const path = meta.optsFull.output?.path;  // "file.txt"
+    const num = meta.optsFull.count?.num;     // 42
+
+    // Or by positional index
+    const first = meta.optsFull.output?.[0];  // "file.txt"
+  }
+});
+```
+
+**Structure comparison:**
+
+```js
+// Given: --output result.txt --count 42
+
+// meta.opts (simplified)
+{
+  output: "result.txt",   // Direct value
+  count: 42               // Direct value
+}
+
+// meta.optsFull (complete)
+{
+  output: {
+    0: "result.txt",      // Positional
+    path: "result.txt"    // Named from args: "<path string>"
+  },
+  count: {
+    0: 42,                // Positional
+    num: 42               // Named from args: "<num number>"
+  }
+}
+```
+
+**Common mistake:**
+
+```js
+// ❌ WRONG - trying to access argument name on simplified value
+const output = meta.opts.output?.path;  // undefined! (output is a string)
+
+// ✅ CORRECT - use optsFull for argument names
+const output = meta.optsFull.output?.path;  // "file.txt"
+
+// ✅ BETTER - use opts for simplicity
+const output = meta.opts.output;  // "file.txt"
 ```
 
 > See [examples/accessing-parsed-results.ts](./examples/accessing-parsed-results.ts)

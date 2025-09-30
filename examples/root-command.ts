@@ -62,8 +62,8 @@ const nc = new NixClap({
       const meta = cmd.jsonMeta;
       const inputFile = meta.args.inputFile;
       const additionalFiles = meta.args.additionalFiles || [];
-      const outputFile = meta.opts.output?.path || inputFile.replace(/\.[^.]+$/, ".out$&");
-      const format = meta.opts.format?.fmt || "text";
+      const outputFile = meta.opts.output || inputFile.replace(/\.[^.]+$/, ".out$&");
+      const format = meta.optsFull.format?.fmt || "text";
       const verbose = meta.opts.verbose || false;
 
       // Display processing information
