@@ -93,7 +93,7 @@ export class ClapNodeGenerator {
       return toBoolean(value);
     } else {
       const customType = (base.spec.customTypes ||
-        // @ts-ignore
+        // @ts-expect-error - coercions is deprecated legacy property name, kept for backward compatibility
         base.spec.coercions)?.[type];
       if (customType === undefined) {
         // no custom type, so just keep as string
@@ -185,7 +185,7 @@ export class ClapNodeGenerator {
 
       // unknown command or invalid argument
       throw new UnknownCliArgError(
-        `Encountered unknown CLI argument '${arg}' while parsing for command '${parsingCmd}'`,
+        `Encountered unknown CLI argument '${arg}' while parsing for command '${parsingCmd}'.`,
         arg
       );
     }

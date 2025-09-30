@@ -28,7 +28,7 @@ describe("parser", () => {
     expect(node.errors.map(x => x.message)).toEqual([
       "Encountered unknown CLI option 'cat'.",
       "Encountered unknown CLI option 'dog'.",
-      "Encountered unknown CLI argument '2' while parsing for command 'foo'",
+      "Encountered unknown CLI argument '2' while parsing for command 'foo'.",
       "Encountered unknown CLI option 'fox'."
     ]);
     const m = node.jsonMeta;

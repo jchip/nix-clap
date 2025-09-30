@@ -4,89 +4,452 @@
 
 # NixClap
 
-Simple, lightweight, flexible, and comprehensive Un\*x Command Line Argument Parsing for NodeJS.
+Simple, lightweight, flexible, and comprehensive Un\*x Command Line Argument Parsing for Node.js.
 
-# Features
+## Features
 
-- Lightweight with minimal dependencies.
-- Comprehensive and flexible parsing capabilities similar to conventional Un\*x parsing.
-- Flexible handling of options and commands that can take variadic params.
-- A simple and straightforward JSON interface for specifying options and commands.
-- Very informative result that tells you where each option came from.
-- Greedy mode for command arguments with -# flag to consume additional unknown arguments.
-- [Webpack] friendly - allows bundling your cli into a single JS file with webpack.
+- **Lightweight** - Minimal dependencies (only `strip-ansi` + `tslib`)
+- **Comprehensive** - Full Un\*x-style parsing with options, commands, sub-commands, and variadic arguments
+- **Root Command Support** - Define root command behavior directly in init2()
+- **Type-Safe** - Written in TypeScript with full type definitions
+- **Modern** - Dual ESM/CJS support, async/await support, Node.js 20+
+- **Flexible** - JSON-based configuration with support for custom type coercions
+- **Event-Driven** - Extensible event system for customizing behavior
+- **Informative** - Detailed parse results showing argument sources (`cli`, `default`, `user`)
+- **Greedy Mode** - Use `-#` flag to consume ambiguous arguments
+- **Auto-Generated Help** - Beautiful help text generated from your specs
+- **Bundler-Friendly** - Works with Webpack, Rollup, esbuild, etc.
 
-# Examples
+## Quick Start
 
-Options only:
-
-```js
-import { NixClap } from "nix-clap";
-
-const options = {
-  names: {
-    desc: "specify names",
-    alias: ["n", "m"],
-    args: "< string..1,Inf>"
-  }
-};
-
-const nc = new NixClap().version("1.0.0").usage("$0 [options]").init(options);
-const parsed = nc.parse();
-
-console.log("names", parsed.opts.names);
+```bash
+npm install nix-clap
 ```
 
-With commands:
+### Simple CLI with commands
 
 ```js
 import { NixClap } from "nix-clap";
 
-const options = {
-  verbose: {
-    desc: "enable verbose mode",
-    alias: "v",
-    args: "< boolean>",
-    argDefault: "false"
-  }
-};
-
-const commands = {
-  compile: {
-    desc: "run compile on the files",
-    args: "<files...>",
-    exec: parsed => {
-      console.log(
-        "compile",
-        parsed.command.jsonMeta.subCommands.compile.args.files,
-        "verbose",
-        parsed.opts.verbose
-      );
+new NixClap()
+  .version("1.0.0")
+  .init2({
+    subCommands: {
+      build: {
+        desc: "Build the project",
+        exec: () => console.log("Building...")
+      },
+      test: {
+        desc: "Run tests",
+        exec: () => console.log("Testing...")
+      }
     }
+  })
+  .parse();
+```
+
+```bash
+$ my-cli build        # "Building..."
+$ my-cli test         # "Testing..."
+$ my-cli --help       # Shows help
+$ my-cli --version    # Shows version
+```
+
+### CLI with options
+
+```js
+import { NixClap } from "nix-clap";
+
+const nc = new NixClap().init2({
+  options: {
+    name: { alias: "n", desc: "Your name", args: "<string>" }
   }
-};
+});
+
+// Access parsed options
+const parsed = nc.parse();
+const name = parsed.command.jsonMeta.opts.name;
+
+if (name) {
+  console.log(`Hello ${name}!`);
+}
+```
+
+```bash
+$ my-cli --name Alice    # "Hello Alice!"
+$ my-cli -n Bob          # "Hello Bob!"
+```
+
+### CLI with command arguments
+
+```js
+import { NixClap } from "nix-clap";
+
+new NixClap()
+  .init2({
+    subCommands: {
+      copy: {
+        desc: "Copy files",
+        args: "<source string> <dest string>",
+        exec: cmd => {
+          const { source, dest } = cmd.jsonMeta.args;
+          console.log(`Copying ${source} to ${dest}`);
+        }
+      }
+    }
+  })
+  .parse();
+```
+
+```bash
+$ my-cli copy file.txt backup.txt
+# "Copying file.txt to backup.txt"
+```
+
+### Root command with arguments
+
+```js
+import { NixClap } from "nix-clap";
+
+new NixClap({ name: "process" })
+  .init2({
+    args: "<files string..>",
+    exec: cmd => {
+      const files = cmd.jsonMeta.args.files;
+      console.log(`Processing: ${files.join(", ")}`);
+    }
+  })
+  .parse();
+```
+
+```bash
+$ process file.txt                    # "Processing: file.txt"
+$ process file1.txt file2.txt         # "Processing: file1.txt, file2.txt"
+```
+
+> **Note:** Root command only executes when:
+> 1. Arguments are provided on the command line, AND
+> 2. No sub-command matches those arguments
+>
+> This means sub-commands always take precedence. For CLIs that should run without any arguments, use a [default command](#defaultcommandname) instead.
+
+### With Commands and Options
+
+```js
+import { NixClap } from "nix-clap";
 
 const nc = new NixClap()
   .version("1.0.0")
   .usage("$0 [options] <command> [options]")
-  .init(options, commands);
+  .init2({
+    options: {
+      verbose: {
+        desc: "enable verbose mode",
+        alias: "v",
+        args: "<flag boolean>",
+        argDefault: "false"
+      }
+    },
+    subCommands: {
+      compile: {
+        desc: "run compile on the files",
+        args: "<files...>",
+        exec: cmd => {
+          const meta = cmd.jsonMeta;
+          console.log("compile", meta.args.files, "verbose", meta.opts.verbose);
+        }
+      }
+    }
+  });
 
-const parsed = nc.parse();
+nc.parse();
 ```
 
-> `version`, `help`, and `usage` must be called before `init`
+> **Important:** `version()`, `help()`, and `usage()` must be called **before** `init2()`.
 
-Usage:
+**Usage:**
 
 ```bash
 $ my-prog compile --verbose file1.jsx file2.jsx file3.jsx
 ```
 
+> See [examples/with-commands.ts](./examples/with-commands.ts)
+
+### Async/Await Support
+
+```js
+const nc = new NixClap().init2({
+  subCommands: {
+    deploy: {
+      desc: "Deploy to production",
+      exec: async cmd => {
+        await someAsyncOperation();
+        console.log("Deployed!");
+      }
+    }
+  }
+});
+
+await nc.parseAsync(); // Use parseAsync for async exec handlers
+```
+
+> See [examples/async-await.ts](./examples/async-await.ts)
+
+### Accessing Parsed Results
+
+NixClap provides multiple ways to access parsed data:
+
+```js
+const parsed = nc.parse();
+
+// Access via jsonMeta (recommended)
+const opts = parsed.command.jsonMeta.opts; // { verbose: true }
+const args = parsed.command.jsonMeta.args; // { files: ["a.js", "b.js"] }
+const source = parsed.command.jsonMeta.source; // { verbose: "cli" }
+
+// Access sub-commands
+const subCmd = parsed.command.jsonMeta.subCommands.compile;
+
+// Check for errors
+if (parsed.errorNodes && parsed.errorNodes.length > 0) {
+  console.error(
+    "Parse errors:",
+    parsed.errorNodes.map(n => n.error.message)
+  );
+}
+```
+
+> See [examples/accessing-parsed-results.ts](./examples/accessing-parsed-results.ts)
+
+## Understanding init() vs init2()
+
+NixClap provides two initialization methods. **`init2()` is the recommended primary API**, while `init()` is a convenience wrapper for simple cases.
+
+### Use `init2()` (Recommended)
+
+`init2()` is the modern, flexible API that allows you to define everything in one place:
+
+```js
+new NixClap().init2({
+  args: "[files string..]",        // Root command arguments
+  exec: cmd => { /* ... */ },      // Root command handler
+  options: { /* ... */ },          // Global options
+  subCommands: { /* ... */ }       // Sub-commands
+});
+```
+
+**Benefits:**
+- ✅ Define root command behavior (args + exec) directly
+- ✅ Single, declarative configuration object
+- ✅ More intuitive and consistent API
+- ✅ Full control over root command execution
+
+**When to use:**
+- You need root command to handle arguments directly (e.g., `mycli file.txt`)
+- You want a clean, declarative configuration
+- You're building any CLI (simple or complex)
+
+### Use `init()` (Legacy/Convenience)
+
+`init()` is a simpler wrapper that's useful for backwards compatibility or when you only need options and sub-commands:
+
+```js
+new NixClap().init(
+  { /* options */ },
+  { /* commands */ }
+);
+```
+
+This is equivalent to:
+```js
+new NixClap().init2({
+  options: { /* options */ },
+  subCommands: { /* commands */ }
+});
+```
+
+**When to use:**
+- Maintaining existing code that uses `init()`
+- Very simple CLIs with just options and commands
+- You prefer two separate parameters over one object
+
+> **Tip:** When in doubt, use `init2()` - it's more flexible and is the recommended approach going forward.
+
+**Complete Example:**
+
+```js
+import { NixClap } from "nix-clap";
+
+const nc = new NixClap({ name: "file-processor" })
+  .version("1.0.0")
+  .usage("$0 [options] <input-file> [additional-files...]")
+  .init2({
+    // Root command arguments
+    args: "[inputFile string] [additionalFiles string..]",
+    // Root command execution handler
+    exec: cmd => {
+      const meta = cmd.jsonMeta;
+      console.log("Processing:", meta.args.inputFile);
+      console.log("Additional files:", meta.args.additionalFiles);
+      console.log("Output:", meta.opts.output);
+    },
+    // Root-level options (available to root command and sub-commands)
+    options: {
+      output: { alias: "o", desc: "Output file path", args: "<path string>" },
+      verbose: { alias: "v", desc: "Enable verbose output" }
+    },
+    // Sub-commands (optional)
+    subCommands: {
+      convert: {
+        desc: "Convert file format",
+        args: "<input string> <output string>",
+        exec: cmd => console.log("Converting...")
+      }
+    }
+  });
+
+nc.parse();
+```
+
+**Usage examples:**
+
+```bash
+# Root command (direct file processing)
+$ file-processor input.txt --output result.txt
+$ file-processor file1.txt file2.txt file3.txt --verbose
+
+# Sub-commands still work
+$ file-processor convert input.txt output.txt
+$ file-processor --help
+```
+
+**Important notes:**
+
+- Root command arguments should typically be **optional** (`[arg]`) rather than required (`<arg>`) to avoid parsing ambiguity with sub-command names
+- Sub-commands always take precedence during parsing
+- The root command only executes when:
+  - Arguments are provided on the command line, AND
+  - No sub-commands match those arguments
+- All options defined in `init2()` are available to both the root command and sub-commands
+
+### Root Command Execution Decision Tree
+
+When you configure a root command with `exec` and `args`, NixClap determines whether to execute it based on this logic:
+
+```
+Parse CLI arguments
+   ↓
+Does a sub-command match?
+   ├─ YES → Execute matched sub-command (root command skipped)
+   └─ NO → Continue to next check
+       ↓
+   Are arguments provided?
+       ├─ NO → Check for default command
+       │        ├─ Default command configured? → Execute default command
+       │        └─ No default? → Emit 'no-action' event
+       └─ YES → Execute root command
+```
+
+**Key Points:**
+1. **Sub-commands always win**: If any argument matches a sub-command name, that sub-command executes
+2. **Root needs arguments**: Root command only executes when non-option arguments are provided
+3. **Default command fallback**: Executes when no args provided and no sub-command matches
+4. **Execution order**: Sub-commands → Root command → Default command
+
+**Example Scenarios:**
+
+```bash
+# CLI defined with: init2({ args: "[file]", exec: rootHandler, subCommands: { build: {...} } })
+
+$ mycli file.txt          # ✅ Executes root command (no sub-command match, args provided)
+$ mycli build             # ✅ Executes 'build' sub-command (sub-command match)
+$ mycli                   # ❌ No execution (no args, no default command)
+$ mycli --help            # ⚠️  Shows help (--help is handled before execution logic)
+```
+
+> **Try the examples above:** [simple-cli.ts](./examples/simple-cli.ts), [cli-with-options.ts](./examples/cli-with-options.ts), [cli-command-args.ts](./examples/cli-command-args.ts), [simple-root-command.ts](./examples/simple-root-command.ts)
+
 ## More Examples
 
-See [examples](./examples) folder for more working samples.
+See [examples](./examples) folder for more working samples:
+
+**Getting Started:**
+- [quick-start.ts](./examples/quick-start.ts) - Minimal quick start example
+- [simple-cli.ts](./examples/simple-cli.ts) - Simple CLI with commands
+- [cli-with-options.ts](./examples/cli-with-options.ts) - CLI with options
+- [cli-command-args.ts](./examples/cli-command-args.ts) - Commands with arguments
+
+**Root Commands:**
+- [simple-root-command.ts](./examples/simple-root-command.ts) - Simple root command
+- [root-command.ts](./examples/root-command.ts) - Comprehensive root command example
+
+**Options and Arguments:**
+- [options.ts](./examples/options.ts) - Various option patterns
+- [options-only.ts](./examples/options-only.ts) - Options without commands
+- [with-commands.ts](./examples/with-commands.ts) - Commands with options and arguments
+- [value-coercion.ts](./examples/value-coercion.ts) - Custom value coercion
+- [numbers.ts](./examples/numbers.ts) - Numeric arguments and operations
+
+**Advanced Features:**
+- [async-await.ts](./examples/async-await.ts) - Async command handlers
+- [default-command.ts](./examples/default-command.ts) - Using default commands
+- [accessing-parsed-results.ts](./examples/accessing-parsed-results.ts) - Working with parsed data
+- [unknowns.ts](./examples/unknowns.ts) - Handling unknown options
+- [unknowns-cmd-only.ts](./examples/unknowns-cmd-only.ts) - Unknown commands only
+- [unknown-multi-cmds.ts](./examples/unknown-multi-cmds.ts) - Multiple unknown commands
+
+**TypeScript:**
+- [typescript-usage.ts](./examples/typescript-usage.ts) - TypeScript integration
 
 # Parsing Capabilities
+
+NixClap implements comprehensive Un\*x-style CLI parsing with several unique design principles:
+
+**Core Philosophy:**
+
+- **Command-Centric Architecture**: Everything revolves around commands - they own their arguments, options, and execution logic
+  - Commands are first-class entities, not just strings that trigger functions
+  - Each command maintains its own parse state, arguments, and options context
+  - Options and arguments are scoped to and processed within their command context
+- **Flexibility First**: Commands, options, and arguments can be freely mixed and composed
+- **Intuitive Un\*x Conventions**: Follows traditional Unix CLI patterns that users expect
+- **Explicit Over Implicit**: Uses terminators (`-.`, `--.`, `--`) to resolve ambiguity rather than guessing
+- **Type Safety**: Built-in type coercion with custom type support
+- **Non-Greedy by Default**: Respects command/option boundaries unless explicitly told otherwise (greedy mode)
+
+**Unique Aspects:**
+
+1. **Command-Centric Parsing & Execution**: Unlike option-centric parsers, NixClap treats commands as the organizing principle
+   - Options belong to commands (not the other way around)
+   - Parse results are structured as a command tree with nested contexts
+   - Each command has its own `jsonMeta` containing its args, options, and state
+   - This enables complex command hierarchies with clean separation of concerns
+
+2. **Multiple Commands in One Invocation**: Execute multiple commands in a single CLI call
+   - Example: `prog add 1 2 -. mult 3 4` executes both `add` and `mult` commands
+   - Each command maintains its own arguments and options context
+   - Results accessible as a flat list or via command tree traversal
+
+3. **Flexible Command Hierarchies**: Commands can have sub-commands, sub-sub-commands, and each level can have its own options
+   - Options can be bound to specific commands or available globally
+   - Options can appear before or after commands
+   - Each command level is parsed independently with its own context
+
+4. **Smart Argument Termination**: Variadic arguments are automatically terminated by:
+   - The next option flag (e.g., `-x` or `--foo`)
+   - The next command name
+   - Explicit terminators (`-.` or `--.`)
+   - This eliminates ambiguity without requiring special syntax
+
+5. **Greedy Mode Control**: When you need to pass arbitrary strings that look like commands/options as arguments
+   - Use `-#`, `-`, or `---` to enter greedy mode
+   - Everything after becomes an argument until terminator
+
+6. **Execution Model**: NixClap separates parsing from execution
+   - Parse once, access results multiple times via command tree
+   - Control when/if commands execute (via `skipExec`)
+   - Async execution support with proper ordering and command context
+   - Each command's exec handler receives its own CommandNode with full context
 
 ## Options
 
@@ -149,19 +512,31 @@ Example: `prog calc add 1 2 3 4 -. mult 4 5 6 7`
 
 ## Greedy Mode
 
-Commands can enter "greedy mode" using the `-#` flag, which allows them to consume additional arguments that would otherwise be treated as new commands.
+Commands can enter "greedy mode" using the `-#`, `-`, or `---` flags, which allows them to consume all remaining arguments blindly, even if they look like commands or options.
 
-Example: `prog compile file1.js file2.js -# command other arguments`
+**Example:**
 
-In this example, without the `-#` flag, "command" would be parsed as a new command. With `-#`, it's treated as another argument to the "compile" command.
+```bash
+# Without greedy mode - "command" is parsed as a new command
+$ prog compile file1.js file2.js command other arguments
+
+# With greedy mode - everything after -# is an argument to "compile"
+$ prog compile file1.js file2.js -# command other arguments
+```
 
 Greedy mode continues until a terminator token (`-.` or `--.`) is encountered:
 
 ```bash
 $ prog compile file1.js -# some-command-name more-args -. actual-command
+#                        ↑                            ↑   ↑
+#                  Start greedy            Stop greedy   New command
 ```
 
-This is useful when your command might need to accept arguments that could be interpreted as command names.
+**Use cases:**
+
+- Passing arbitrary strings that might look like commands/options
+- Building proxy CLIs that forward args to other programs
+- Accepting user-provided command names as data
 
 ## Terminating and Resuming
 
@@ -169,11 +544,16 @@ This is useful when your command might need to accept arguments that could be in
 - Parsing can be resumed after it's terminated.
 - `-.` or `--.` can terminate variadic params for commands and options.
 
-# Install
+## Installation
 
 ```bash
-npm i nix-clap --save
+npm install nix-clap
 ```
+
+**Requirements:**
+
+- Node.js >= 20
+- ESM or CommonJS (both supported)
 
 # Interface
 
@@ -188,13 +568,11 @@ const options = {
   "some-option": {
     alias: ["s", "so"],
     desc: "description",
-    args: "[number cans] [enum] [boolean diet] [string..]",
+    args: "[number cans] [beverage] [boolean diet] [string..]",
     argDefault: ["6", "coke", "true", "foo"],
-    custom: {
-      enum: /^(coke|pepsi)$/
-    },
-    customDefault: {
-      enum: "coke"
+    // customTypes defines custom type validators/coercers
+    customTypes: {
+      beverage: /^(coke|pepsi)$/  // beverage must match this RegExp
     },
     allowCmd: ["cmd1", "cmd2"]
   },
@@ -204,19 +582,18 @@ const options = {
 
 Where:
 
-| field           | description                                                                                                                          |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `alias`         | Specify aliases for the option, as a single string or an array of strings.                                                           |
-| `args`          | Arguments for the option. `<type name>` means it's required and `[type name]` optional.                                              |
-| `desc`          | Description for the option - a string or a function that returns string.                                                             |
-| `argDefault`    | Default values to use _when all args are optional_.                                                                                  |
-| `require`       | `true`/`false` whether this option must be specified.                                                                                |
-| `requireArg`    | `true`/`false` whether argument for the option is required.                                                                          |
-| `allowCmd`      | list of command names this option is allow to follow only.                                                                           |
-| `custom`        | - specify [value coercion](#value-coercion) for custom types.                                                                        |
-| `customDefault` | - default values to use for each [value coercion](#value-coercion) if user specified something but the coercion returns `undefined`. |
-|                 | \* Coercion returning `undefined` will cause failure if no default is specified.                                                     |
-| `counting`      | Maximum count value for counting options. Use `Infinity` for unlimited counting.                                                     |
+| field         | description                                                                                             |
+| ------------- | ------------------------------------------------------------------------------------------------------- |
+| `alias`       | Specify aliases for the option, as a single string or an array of strings.                              |
+| `args`        | Arguments for the option. `<type name>` means it's required and `[type name]` optional.                 |
+| `desc`        | Description for the option - a string or a function that returns string.                                |
+| `argDefault`  | Default values to use _when all args are optional_.                                                     |
+| `required`    | `true`/`false` whether this option must be specified.                                                   |
+| `allowCmd`    | list of command names this option is allow to follow only.                                              |
+| `customTypes` | Specify [value coercion](#value-coercion) for custom types. Keys are type names, values are converters. |
+| `counting`    | Maximum count value for counting options. Use `Infinity` for unlimited counting.                        |
+
+> **Note:** Options with kebab-case names (like `some-option`) are automatically accessible in camelCase (`someOption`) in the parsed results.
 
 ## `commands spec`
 
@@ -231,20 +608,23 @@ Command supports a few more properties: `usage`, `exec`, and `options`.
 
 ```js
 const commands = {
+  // Regular sub-commands
   cmd1: {
     alias: ["c"],
     desc: "description",
     args: "[number cans] [enum] [boolean diet] [string..]",
     argDefault: ["6", "coke", "true", "foo"],
-    custom: {
+    customTypes: {
       enum: /^(coke|pepsi)$/
     },
-    customDefault: {
-      enum: "coke"
-    },
     usage: "$0 $1",
-    exec: argv => {},
-    options: {}
+    exec: cmd => {
+      // cmd is the CommandNode instance
+      const meta = cmd.jsonMeta;
+      console.log(meta.args, meta.opts);
+    },
+    options: {},
+    subCommands: {}
   },
   cmd2: {}
 };
@@ -252,29 +632,112 @@ const commands = {
 
 Where:
 
-| field            | description                                                                                                                        |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `alias`          | Specify aliases for the command, as a single string or an array of strings.                                                        |
-| `args`           | Specify arguments for the command. `<>` means it's required and `[]` optional. See [rules](#rules-for-command-args) for more info. |
-| `usage`          | usage message when help for the command is invoked - a string or a function that returns a string.                                 |
-|                  | `$0` will be replaced with program name and `$1` with command name.                                                                |
-| `desc`           | Description for the command - can be a string or a function that returns a string.                                                 |
-| `exec`           | The callback handler for the command - see [here](#command-exec-handler) for more details.                                         |
-| `defaultCommand` | If `true`, set the command as default, which is invoked when no command was given in command line.                                 |
-|                  | - Only one command can be default.                                                                                                 |
-|                  | - Default command cannot have required args and must have the `exec` handler                                                       |
-| `defaultValues`  | - If set, specify the default values for value coercions, with a default value for each custom type name.                          |
-| `options`        | List of options arguments private to the command. Follows the same spec as [top level options](#options-spec)                      |
+| field                | description                                                                                                                        |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `alias`              | Specify aliases for the command, as a single string or an array of strings.                                                        |
+| `args`               | Specify arguments for the command. `<>` means it's required and `[]` optional. See [rules](#rules-for-command-args) for more info. |
+| `usage`              | Usage message when help for the command is invoked - a string or a function that returns a string.                                 |
+|                      | `$0` will be replaced with program name and `$1` with command name.                                                                |
+| `desc`               | Description for the command - can be a string or a function that returns a string.                                                 |
+| `exec`               | The callback handler for the command. Receives `CommandNode` as first arg. Can be async.                                           |
+| `options`            | Options private to this command only. Follows the same spec as [top level options](#options-spec)                                  |
+| `subCommands`        | Nested sub-commands under this command. Follows the same spec as commands.                                                         |
+| `allowUnknownOption` | If `true`, allows unknown options for this command.                                                                                |
+
+> **Note:** Set a default command via the `defaultCommand` config option in the NixClap constructor, not in the command spec.
 
 ### Rules for Command `args`
 
-Rules for when specifying `args` for the command:
+The `args` string uses a specific format to define command and option arguments:
 
-- all required args must be before optional args
-- last one can specify variadic args with `..`, like `<names..>` or `[names..]`
-- If you just want to get the list of args without naming it, you can specify with `<..>` or `[..]`
-- named args can have an optional type like `<number value>` or `[number values..]`
-  - supported types are `number`, `float`, `string`, `boolean`, or [coercion](#value-coercion)
+**Basic Format:**
+
+- `<arg>` - Required argument
+- `[arg]` - Optional argument
+- All required args must come before optional args
+- Multiple arguments separated by spaces: `"<first> <second> [third]"`
+
+**Naming and Types:**
+
+- Named with type: `<name type>` or `[name type]`
+- Named without type (defaults to string): `<name>` or `[name]`
+- Unnamed with type: `<type>` or `[type]`
+- Unnamed without type: `<>` or `[]`
+- Supported types: `string`, `number`, `float`, `boolean`, `count` (options only), or custom types via [coercion](#value-coercion)
+
+**Built-in Type Behaviors:**
+
+| Type | Coercion Behavior | Example Input | Parsed Value | Notes |
+|------|-------------------|---------------|--------------|-------|
+| `string` | No coercion | `"hello"` | `"hello"` | Default type if not specified |
+| `number` | `parseInt(val, 10)` | `"42"` | `42` | Parses as integer |
+| `float` | `parseFloat(val)` | `"3.14"` | `3.14` | Parses as floating point |
+| `boolean` | Checks for truthy values | `"true"`, `"1"`, `"yes"` | `true` | `"false"`, `"0"`, `"no"` → `false` |
+| `count` | Increments on each use | `-vvv` | `3` | Only for options, counts occurrences |
+
+**Type Coercion Failures:**
+
+When a value cannot be coerced to the specified type:
+- String values that fail number/float parsing return `NaN`
+- Values that fail custom type validation trigger `regex-unmatch` event
+- If `argDefault` is specified, the default value is used
+- Otherwise, the original string value is returned
+
+**Examples:**
+
+```js
+args: "<filename string>"; // Required named string arg
+args: "<count number>"; // Required named number arg (parsed as integer)
+args: "<price float>"; // Required named float arg (parsed as decimal)
+args: "[enabled boolean]"; // Optional named boolean arg
+args: "[output]"; // Optional named string arg (default type)
+args: "<input> [output]"; // Required + optional args
+args: "<value boolean> <name>"; // Multiple typed args
+```
+
+**Array Arguments:**
+
+Use `..` suffix to specify array arguments (must be the last argument):
+
+- **Unlimited variadic**: `<args..>` or `[args..]`
+  - Consumes 0 or more arguments
+  - Example: `"<files..>"` accepts any number of files
+
+- **Fixed size**: `<args..N>`
+  - Exactly N arguments required
+  - Example: `"<coords..3>"` requires exactly 3 coordinates
+
+- **Range with minimum**: `<args..N,>` or `<args..N,Inf>`
+  - At least N arguments required, unlimited maximum
+  - Example: `"<files..1,>"` requires 1+ files
+  - Example: `"<names..2,Inf>"` requires 2+ names
+
+- **Range with min and max**: `<args..N,M>`
+  - Between N and M arguments (inclusive)
+  - Example: `"<items..1,3>"` accepts 1-3 items
+  - Example: `"<values..2,5>"` accepts 2-5 values
+
+**Array Examples:**
+
+```js
+args: "<files string..>"; // 0+ files (variadic)
+args: "<coords number..3>"; // Exactly 3 numbers
+args: "<names..1,>"; // 1+ arguments (at least one required)
+args: "<items string..1,5>"; // 1-5 string items
+args: "[files..]"; // 0+ optional files
+args: "<input> [extras..2,]"; // Required input + 2+ optional extras
+```
+
+**Special Cases:**
+
+- Unnamed arrays: `<..>`, `<..3>`, `<..1,>`, `<..1,5>`
+- Typed unnamed: `<string..>`, `<number..3>`, `<boolean..1,3>`
+
+**Rules:**
+
+- Only the last argument can be an array/variadic argument
+- All required arguments must appear before optional arguments
+- Array arguments are accessible as JavaScript arrays in `jsonMeta.args`
 
 ## Value Coercion
 
@@ -291,29 +754,37 @@ For example:
 ```js
 const options = {
   customFn: {
-    type: "fnval",
-    fnval: value => {
-      return value.substr(0, 1);
+    args: "<val fnval>",
+    customTypes: {
+      fnval: value => value.substring(0, 1)
     }
   },
   customRegex: {
-    type: "rx",
-    rx: /^test$/i
+    args: "<val rx>",
+    customTypes: {
+      rx: /^test$/i
+    }
   },
-  customAny: {
-    type: "foo",
-    foo: "bar"
+  customValue: {
+    args: "<val foo>",
+    customTypes: {
+      foo: "bar" // Always returns "bar"
+    }
   }
 };
 
 const commands = {
   foo: {
-    args: "<type1 value1> <type2 value2>",
-    type1: value => `test-${value}`,
-    type2: /^test$/i
+    args: "<value1 type1> <value2 type2>",
+    customTypes: {
+      type1: value => `test-${value}`,
+      type2: /^test$/i
+    }
   }
 };
 ```
+
+> See [examples/value-coercion.ts](./examples/value-coercion.ts) for a working example.
 
 ## Parse Result
 
@@ -352,6 +823,78 @@ Where:
 
 If any command with [`exec` handlers](#command-exec-handler) were specified, then `parse` will invoke them before returning the parse result object.
 
+### Error Handling
+
+NixClap provides comprehensive error tracking during parsing. Errors are collected in `parsed.errorNodes`:
+
+**Checking for Errors:**
+
+```js
+const parsed = nc.parse();
+
+if (parsed.errorNodes && parsed.errorNodes.length > 0) {
+  console.error("Parsing errors occurred:");
+  parsed.errorNodes.forEach(node => {
+    console.error(`  - ${node.error.message}`);
+  });
+  process.exit(1);
+}
+```
+
+**Common Error Types:**
+
+| Error Type | When It Occurs | Example |
+|------------|----------------|---------|
+| `InvalidArgSpecifierError` | Invalid args spec format | `args: "<required> [optional]"` (required after optional) |
+| `UnknownOptionError` | Unknown option encountered | `--unknown` when `allowUnknownOption: false` |
+| `UnknownCliArgError` | Unknown argument provided | Extra args when strict mode enabled |
+| Missing required argument | Required arg not provided | `<file>` not provided |
+| Type coercion failure | Value doesn't match custom type | `--port abc` when expecting number |
+| RegExp validation failure | Value doesn't match RegExp | `--env prod` when only `/(dev\|test)/` allowed |
+
+**Error Handling Patterns:**
+
+```js
+// Pattern 1: Let default handlers work (shows help + exits)
+const nc = new NixClap().init(options, commands);
+nc.parse(); // Errors trigger help automatically
+
+// Pattern 2: Custom error handling (disable default handlers)
+const nc = new NixClap({ noDefaultHandlers: true }).init(options, commands);
+const parsed = nc.parse();
+
+if (parsed.errorNodes?.length) {
+  // Handle errors your way
+  logErrors(parsed.errorNodes);
+  showCustomHelp();
+  process.exit(1);
+}
+
+// Pattern 3: Selective error handling
+const nc = new NixClap()
+  .removeDefaultHandlers("parse-fail")
+  .init(options, commands);
+
+const parsed = nc.parse();
+if (parsed.errorNodes?.length) {
+  // Custom handling for parse errors only
+}
+```
+
+**Accessing Error Details:**
+
+```js
+parsed.errorNodes.forEach(node => {
+  console.log("Error message:", node.error.message);
+  console.log("Error type:", node.error.constructor.name);
+  console.log("Node type:", node.type); // "option", "command", etc.
+
+  if (node.type === "option") {
+    console.log("Option name:", node.name);
+  }
+});
+```
+
 ### Parse Result Command Object
 
 The command.jsonMeta object contains the following information:
@@ -362,11 +905,11 @@ The command.jsonMeta object contains the following information:
   alias: "~root-command~",
   argList: [],
   args: {},
-  opts: {}, // contains the actual values for each option
-  optsFull: {}, // contains the detailed values for each option, including array indices
+  opts: {}, // contains the parsed values for each option (coerced to proper types)
+  optsFull: {}, // contains the full string/array values for each option (before coercion)
   optsCount: {}, // contains the count for counting options
   source: {}, // contains info about where the option value came from
-  verbatim: {}, // contains original unprocessed value
+  verbatim: {}, // contains original unprocessed values as provided on command line
   subCommands: {} // contains parsed sub-commands
 }
 ```
@@ -381,41 +924,119 @@ The `source` field can have the following values:
 
 ### Command `exec` handler
 
-If the command has an `exec` handler, then it will be called with one argument:
+If the command has an `exec` handler, it receives two arguments:
 
 ```js
-exec(result);
+exec(cmd, breadcrumb);
 ```
 
-- `result` is the parse result object, which includes the command information in `result.command.jsonMeta`
+- `cmd` - The `CommandNode` instance for this command
+- `breadcrumb` - Array of parent CommandNodes leading to this command (optional)
 
-You can access command-specific arguments through the jsonMeta structure:
+You can access command-specific arguments and options through the `jsonMeta` property:
 
 ```js
-exec(result) {
-  const commandArgs = result.command.jsonMeta.subCommands.myCommand.args;
-  const commandOptions = result.command.jsonMeta.subCommands.myCommand.opts;
-  // Process command...
+exec(cmd) {
+  const meta = cmd.jsonMeta;
+  console.log("Args:", meta.args);         // { filename: "test.js", count: 5 }
+  console.log("Options:", meta.opts);      // { verbose: true }
+  console.log("Source:", meta.source);     // { verbose: "cli" }
+  console.log("Sub-commands:", meta.subCommands);
 }
 ```
 
-> You can turn this off with the `skipExec` config flag passed to [`NixClap` constructor](#constructorconfig)
+**Async handlers:**
+
+```js
+exec: async cmd => {
+  await someAsyncTask();
+  // Use parseAsync() to ensure this completes before parse returns
+};
+```
+
+> You can turn off automatic exec invocation with the `skipExec` config flag passed to [`NixClap` constructor](#constructorconfig)
 
 ## Events
 
-`NixClap` emits these events:
+`NixClap` extends `EventEmitter` and emits various events during the parsing and execution lifecycle.
 
-- `help` - when `--help` is invoked, emitted with the parse result object.
-- `pre-help` - before output for `--help`
-- `post-help` - after output for `--help`
-- `version` - when `--version` is invoked, emitted with the parse result object.
-- `parsed` - when all parsing is done but before command `exec` are invoked, emitted with `{ nixClap, parsed }` where `nixClap` is the NixClap instance.
-- `parse-fail` - when parse failed, emitted with parse result object, which has `error` field.
-- `unknown-option` - when an unknown option is found, emitted with option name
-- `unknown-command` - when an unknown command is found, emitted with command context, which has `name` field.
-- `no-action` - when you have commands with `exec` and user specified no command that triggered an `exec` call.
-- `regex-unmatch` - when you have [value coercion](#value-coercion) using a RegExp but the user specified a value that didn't match the RegEx.
-- `exit` - When program is expected to terminate, emit with exit code.
+### Event Reference
+
+| Event | When Emitted | Parameters | Common Use Case |
+|-------|--------------|------------|-----------------|
+| `pre-help` | Before help output is displayed | `{ self: NixClap }` | Modify help display, add headers |
+| `help` | When `--help` is requested | `ParseResult` | Custom help formatting |
+| `post-help` | After help output is displayed | `{ self: NixClap }` | Add footer, cleanup |
+| `parsed` | After parsing, before exec handlers | `{ nixClap: NixClap, parsed: ParseResult }` | Validation, logging, transformations |
+| `parse-fail` | When parsing encounters errors | `ParseResult` (with `errorNodes`) | Custom error reporting |
+| `unknown-option` | Unknown option encountered | `string` (option name) | Dynamic option handling |
+| `unknown-command` | Unknown command encountered | `{ name: string, ... }` | Dynamic command routing |
+| `no-action` | No command with exec was invoked | none | Show help or default behavior |
+| `regex-unmatch` | Value doesn't match RegExp validator | `{ value: string, name: string, ... }` | Custom validation messages |
+| `exit` | Program should terminate | `number` (exit code) | Cleanup, logging before exit |
+
+### Event Lifecycle
+
+```
+User runs CLI
+   ↓
+parse() called
+   ↓
+Argument parsing
+   ↓
+emit('parsed')  ← After parsing, before execution
+   ↓
+Parse errors? ──YES→ emit('parse-fail') → emit('exit', 1)
+   ↓ NO
+Execute commands
+   ↓
+--help flag? ──YES→ emit('pre-help') → emit('help') → emit('post-help') → emit('exit', 0)
+   ↓ NO
+No exec invoked? ──YES→ emit('no-action') → emit('exit', 1)
+   ↓ NO
+Return parse result
+```
+
+### Using Events
+
+**Basic Event Listening:**
+
+```js
+const nc = new NixClap().init(options, commands);
+
+nc.on('parsed', ({ parsed }) => {
+  console.log('Parsed successfully:', parsed.command.name);
+});
+
+nc.on('parse-fail', (parsed) => {
+  console.error('Parse failed with', parsed.errorNodes.length, 'errors');
+});
+
+nc.parse();
+```
+
+**Custom Help Handling:**
+
+```js
+nc.on('pre-help', ({ self }) => {
+  console.log('╔═══════════════════╗');
+  console.log('║   My Awesome CLI   ║');
+  console.log('╚═══════════════════╝\n');
+});
+
+nc.on('post-help', () => {
+  console.log('\nFor more info: https://example.com/docs');
+});
+```
+
+**Dynamic Command Handling:**
+
+```js
+nc.on('unknown-command', (ctx) => {
+  console.log(`Did you mean: ${suggestCommand(ctx.name)}?`);
+  process.exit(1);
+});
+```
 
 ### Default Event Handlers
 
@@ -462,17 +1083,15 @@ if (parsed.error) {
 
 These are methods `NixClap` class supports.
 
-- [NixClap](#nixclap)
-- [Features](#features)
-- [Examples](#examples)
-  - [More Examples](#more-examples)
+- [Quick Start](#quick-start)
 - [Parsing Capabilities](#parsing-capabilities)
   - [Options](#options)
   - [Commands](#commands)
     - [Multiple Commands](#multiple-commands)
     - [Sub Commands](#sub-commands)
+  - [Greedy Mode](#greedy-mode)
   - [Terminating and Resuming](#terminating-and-resuming)
-- [Install](#install)
+- [Installation](#installation)
 - [Interface](#interface)
   - [`options spec`](#options-spec)
   - [`commands spec`](#commands-spec)
@@ -484,46 +1103,58 @@ These are methods `NixClap` class supports.
   - [Events](#events)
     - [Default Event Handlers](#default-event-handlers)
       - [Skip Default Event Behaviors](#skip-default-event-behaviors)
-  - [APIs](#apis)
-    - [`constructor(config)`](#constructorconfig)
-    - [`version(v)`](#versionv)
-    - [`help(setting)`](#helpsetting)
-    - [`usage(msg)`, `cmdUsage(msg)`](#usagemsg-cmdusagemsg)
-    - [`init(options, commands)`](#initoptions-commands)
-    - [`defaultCommand(name)`](#defaultcommandname)
-    - [`parse(argv, start, parsed)`](#parseargv-start-parsed)
-    - [`parseAsync(argv, start, parsed)`](#parseasyncargv-start-parsed)
-    - [`showHelp(err, cmdName)`](#showhelperr-cmdname)
-    - [`removeDefaultHandlers()`](#removedefaulthandlers)
-    - [`applyConfig(config, parsed, src)`](#applyconfigconfig-parsed-src)
-    - [`runExec(parsed, skipDefault)`](#runexecparsed-skipdefault)
-    - [`runExecAsync(parsed, skipDefault)`](#runexecasyncparsed-skipdefault)
-- [Others](#others)
+- [API Methods](#api-methods)
+  - [`constructor(config)`](#constructorconfig)
+  - [`version(v)`](#versionv)
+  - [`help(setting)`](#helpsetting)
+  - [`usage(msg)`, `cmdUsage(msg)`](#usagemsg-cmdusagemsg)
+  - [`init(options, commands)`](#initoptions-commands)
+  - [`init2(rootCommandSpec)`](#init2rootcommandspec)
+  - [`defaultCommand(name)`](#defaultcommandname)
+  - [`parse(argv, start, parsed)`](#parseargv-start-parsed)
+  - [`parseAsync(argv, start, parsed)`](#parseasyncargv-start-parsed)
+  - [`showHelp(err, cmdName)`](#showhelperr-cmdname)
+  - [`removeDefaultHandlers()`](#removedefaulthandlers)
+  - [`applyConfig(config, parsed, src)`](#applyconfigconfig-parsed-src)
+  - [`runExec(parsed, skipDefault)`](#runexecparsed-skipdefault)
+  - [`runExecAsync(parsed, skipDefault)`](#runexecasyncparsed-skipdefault)
+- [TypeScript Support](#typescript-support)
+- [Best Practices](#best-practices)
+- [Alternatives](#alternatives)
 
 ### `constructor(config)`
 
-`config` is object with:
+`config` is an object with:
 
-- `name` - set the program name. Will auto detect from `process.argv` if not specified.
-- `version` - set the program version. Can also set with [`version`](#versionv) method.
-- `help` - custom help option setting. Can also set with [`help`](#helpsetting) method.
-- `usage` - usage message. Can also set with [`usage`](#usagemsg-cmdusagemsg) method.
-- `cmdUsage` - generic usage message for commands. Can also set with [`cmdUsage`](#usagemsg-cmdusagemsg) method.
-- `skipExec` - If true, will not call command `exec` handlers after parse.
-- `skipExecDefault` - if true, will not call default command `exec` handler after parse.
-  - In case you need to do something before invoking the `exec` handlers, you can set these flags and call the [`runExec(parsed, skipDefault)`](#runexecparsed-skipdefault) method yourself.
-- `output` - callback for printing to console. Should take string as param. Default to calling `process.stdout.write`
-- `handlers` - custom event handlers.
+| Property              | Type               | Description                                                                                         |
+| --------------------- | ------------------ | --------------------------------------------------------------------------------------------------- |
+| `name`                | `string`           | Program name. Auto-detected from `process.argv` if not specified.                                   |
+| `version`             | `string \| number` | Program version. Can also set with [`version()`](#versionv) method.                                 |
+| `help`                | `object \| false`  | Custom help option setting. Can also set with [`help()`](#helpsetting) method.                      |
+| `usage`               | `string`           | Usage message. Can also set with [`usage()`](#usagemsg-cmdusagemsg) method.                         |
+| `cmdUsage`            | `string`           | Generic usage message for commands. Can also set with [`cmdUsage()`](#usagemsg-cmdusagemsg) method. |
+| `defaultCommand`      | `string`           | Name of the default command to invoke when no command is given.                                     |
+| `allowUnknownCommand` | `boolean`          | Allow unknown commands to be parsed without error.                                                  |
+| `allowUnknownOption`  | `boolean`          | Allow unknown options to be parsed without error.                                                   |
+| `skipExec`            | `boolean`          | If true, will not call command `exec` handlers after parse.                                         |
+| `skipExecDefault`     | `boolean`          | If true, will not call default command `exec` handler after parse.                                  |
+| `output`              | `function`         | Callback for printing to console. Defaults to `process.stdout.write`.                               |
+| `exit`                | `function`         | Custom exit function. Defaults to emitting the `exit` event.                                        |
+| `handlers`            | `object`           | Custom event handlers (see below).                                                                  |
+| `noDefaultHandlers`   | `boolean`          | If true, skip installing all default handlers. You must handle errors yourself.                     |
 
-The `handlers` object can specify a function for each of the [events](#events) or set it to `false` to turn off the default handler.
+**Handlers Example:**
 
-For example, this config will replace handler for `parse-fail` and turn off the default `unknown-option` handler.
+The `handlers` object can specify a function for each [event](#events) or set it to `false` to turn off the default handler.
 
 ```js
 const nc = new NixClap({
   handlers: {
-    "parse-fail": (parsed) => { ... },
-    "unknown-option": false
+    "parse-fail": parsed => {
+      console.error("Parse failed:", parsed.errorNodes[0].error.message);
+      process.exit(1);
+    },
+    "unknown-option": false // Disable default handler
   }
 });
 ```
@@ -534,7 +1165,7 @@ Set program version with a string. ie: `1.0.0`
 
 Return: The `NixClap` instance itself.
 
-> Must be called before the [`init`](#initoptions-commands) method.
+> Must be called before the [`init`](#initoptions-commands) or [`init2`](#init2rootcommandspec) method.
 
 ### `help(setting)`
 
@@ -551,7 +1182,7 @@ Return: The `NixClap` instance itself.
 
 Option name is always `help`. Call `help(false)` to turn off the default `--help` option.
 
-> Must be called before the [`init`](#initoptions-commands) method.
+> Must be called before the [`init`](#initoptions-commands) or [`init2`](#init2rootcommandspec) method.
 
 ### `usage(msg)`, `cmdUsage(msg)`
 
@@ -561,20 +1192,192 @@ Set usage message for the program or command, which can be override by individua
 
 Return: The `NixClap` instance itself.
 
-> Must be called before the [`init`](#initoptions-commands) method.
+> Must be called before the [`init`](#initoptions-commands) or [`init2`](#init2rootcommandspec) method.
 
-### `init(options, commands)`
+### `init(options, commands)` - Legacy/Convenience Wrapper
 
-Initialize your options and commands
+**Note:** `init()` is a convenience wrapper around `init2()`. **Consider using [`init2()`](#init2rootcommandspec) directly** for a more flexible and consistent API.
+
+Initialize your options and commands using separate parameters.
+
+**Parameters:**
+
+- `options` - Top-level options available globally (or to specific commands via `allowCmd`)
+- `commands` - Sub-commands under the root command
 
 Return: The `NixClap` instance itself.
+
+**What this does internally:**
+
+```js
+// init(options, commands) is equivalent to:
+init2({
+  options: options,
+  subCommands: commands
+})
+```
+
+**Example:**
+
+```js
+import { NixClap } from "nix-clap";
+
+// Using init()
+const nc = new NixClap().init(
+  { verbose: { alias: "v" } },
+  { build: { desc: "Build project", exec: () => {} } }
+);
+
+// Equivalent using init2() (recommended)
+const nc = new NixClap().init2({
+  options: { verbose: { alias: "v" } },
+  subCommands: { build: { desc: "Build project", exec: () => {} } }
+});
+```
+
+**Limitations:**
+- Cannot define root command arguments or exec handler directly
+- Less flexible than `init2()`
+- Primarily exists for backwards compatibility
+
+> **Recommendation:** Use [`init2()`](#init2rootcommandspec) for new code - it's more powerful and provides a cleaner API.
+
+### `init2(rootCommandSpec)` - Primary API (Recommended)
+
+Initialize your CLI by defining the root command directly. **This is the recommended primary API for setting up NixClap.**
+
+**Parameters:**
+
+- `rootCommandSpec` - A command spec object that defines the root command, including:
+  - `args` - Arguments for the root command (optional)
+  - `exec` - Execution handler for the root command (optional)
+  - `options` - Top-level options available to root and sub-commands (optional)
+  - `subCommands` - Sub-commands under the root command (optional)
+  - All other fields from [command spec](#commands-spec)
+
+Return: The `NixClap` instance itself.
+
+**Basic Example:**
+
+```js
+import { NixClap } from "nix-clap";
+
+// Root command with arguments
+const nc = new NixClap({ name: "process" })
+  .init2({
+    args: "<files string..>",
+    exec: cmd => {
+      const files = cmd.jsonMeta.args.files;
+      console.log("Processing:", files);
+    }
+  });
+```
+
+**Complete Example with Options and Sub-commands:**
+
+```js
+const nc = new NixClap({ name: "file-processor" })
+  .init2({
+    // Root command arguments
+    args: "[input string] [files string..]",
+    // Root command exec
+    exec: cmd => {
+      const meta = cmd.jsonMeta;
+      console.log("Root command:", meta.args);
+      console.log("Options:", meta.opts);
+    },
+    // Top-level options
+    options: {
+      verbose: { alias: "v", desc: "Verbose output" },
+      output: { alias: "o", desc: "Output file", args: "<path string>" }
+    },
+    // Sub-commands
+    subCommands: {
+      build: {
+        desc: "Build the project",
+        exec: cmd => console.log("Building...")
+      },
+      convert: {
+        desc: "Convert files",
+        args: "<input string> <output string>",
+        exec: cmd => console.log("Converting...")
+      }
+    }
+  });
+```
+
+**Advantages over init():**
+
+- ✅ Define root command behavior (args + exec) directly
+- ✅ Single, declarative configuration object
+- ✅ More flexible and powerful
+- ✅ Cleaner, more consistent API
+
+See the [Understanding init() vs init2()](#understanding-init-vs-init2) section for detailed comparison.
 
 ### `defaultCommand(name)`
 
 Set the default command which is invoked when no command was given in command line.
 
-- Only one command can be default.
-- Default command cannot have required args and must have the `exec` handler
+**Requirements:**
+
+- Only one command can be default
+- Default command cannot have required args
+- Default command must have the `exec` handler
+
+**Example with init2():**
+
+```js
+// Make 'build' the default command
+const nc = new NixClap({ defaultCommand: "build" })
+  .version("1.0.0")
+  .init2({
+    subCommands: {
+      build: {
+        desc: "Build the project",
+        exec: cmd => console.log("Building...")
+      },
+      test: {
+        desc: "Run tests",
+        exec: cmd => console.log("Testing...")
+      }
+    }
+  });
+
+// These are equivalent:
+// $ my-prog          # Runs 'build' (default)
+// $ my-prog build    # Explicitly runs 'build'
+```
+
+**How it interacts with root command:**
+
+When using `init2()` with both a root command and a default command:
+
+```js
+const nc = new NixClap({ defaultCommand: "serve" }).init2({
+  args: "[files string..]",  // Root command args
+  exec: cmd => console.log("Root:", cmd.jsonMeta.args.files),
+  subCommands: {
+    serve: { desc: "Start server", exec: () => console.log("Serving...") },
+    build: { desc: "Build project", exec: () => console.log("Building...") }
+  }
+});
+```
+
+**Execution priority:**
+1. **Sub-command match** → Executes matched sub-command
+2. **Arguments provided** → Executes root command
+3. **No arguments** → Executes default command
+
+```bash
+$ my-prog build           # 1. Executes 'build' sub-command
+$ my-prog file.txt        # 2. Executes root command with args
+$ my-prog                 # 3. Executes 'serve' (default command)
+```
+
+> **Tip:** Use default command when you have a primary action for your CLI (e.g., `serve` for a server, `build` for a build tool)
+
+> See [examples/default-command.ts](./examples/default-command.ts)
 
 ### `parse(argv, start, parsed)`
 
@@ -619,22 +1422,33 @@ ie:
 nc.removeDefaultHandlers("parse-fail", "unknown-option", "unknown-command");
 ```
 
-### `applyConfig(config, parsed, src)`
+### `applyConfig(config, src)`
 
-Allow you to apply extra config to the parsed object, overriding any `opts` with `source` not start with `cli`.
+Apply configuration from external sources (e.g., config files) to a parsed command.
 
-For example, you can allow user to specify options in their `package.json` file, and apply those after the command line is parsed.
+**Note:** This method is called **on a CommandNode instance**, not on the NixClap instance.
 
-- `config` - Config object containing user options config
-- `parsed` - The parse result object from NixClap.
-- `src` - String, source to set if override. Default to `user`
+**Parameters:**
 
-Example on applying user config from `package.json`:
+- `config` - Object containing option values to apply
+- `src` - Source name for tracking. Should be one of: `"cli"`, `"cli-default"`, `"cli-unmatch"`, `"default"`, or `"user"` (default: `"user"`)
+
+This method only overrides options whose `source` does **not** start with `"cli"`, ensuring command-line arguments always take precedence.
+
+**Example:** Load options from `package.json`:
 
 ```js
-const pkg = require(path.resolve("package.json"));
+import { readFileSync } from "fs";
+
+const pkg = JSON.parse(readFileSync("./package.json", "utf-8"));
 const parsed = nc.parse();
-nc.applyConfig(pkg.cliConfig, parsed);
+
+// Apply config from package.json
+// Use "user" as the source type (standard practice for external configs)
+parsed.command.applyConfig(pkg.myCliConfig, "user");
+
+console.log(parsed.command.jsonMeta.opts);
+console.log(parsed.command.jsonMeta.source); // Shows where each option came from
 ```
 
 ### `runExec(parsed, skipDefault)`
@@ -654,14 +1468,215 @@ async version of [runExec](#runexecparsed-skipdefault)
 
 Return: A promise that resolve with the number of commands with `exec` invoked.
 
-# Others
+## TypeScript Support
 
-- [argparse]
-- [yargs]
-- [commander]
-- [optimist]
-- [clap]
-- [clap.js]
+NixClap is written in TypeScript and provides full type definitions out of the box.
+
+### Basic TypeScript Usage
+
+```typescript
+import { NixClap, CommandSpec, OptionSpec, ParseResult } from "nix-clap";
+
+const options: Record<string, OptionSpec> = {
+  verbose: {
+    alias: "v",
+    desc: "Enable verbose output",
+    args: "<boolean>"
+  }
+};
+
+const commands: Record<string, CommandSpec> = {
+  build: {
+    desc: "Build the project",
+    exec: cmd => {
+      // cmd is typed as CommandNode
+      const meta = cmd.jsonMeta;
+      console.log(meta.opts.verbose); // Type-safe access
+    }
+  }
+};
+
+const nc = new NixClap().init(options, commands);
+const parsed: ParseResult = nc.parse();
+```
+
+### Using init2() with TypeScript
+
+```typescript
+import { NixClap, CommandSpec } from "nix-clap";
+
+// Define root command spec with full type safety
+const rootSpec: CommandSpec = {
+  args: "[input string] [files string..]",
+  desc: "Process input files",
+  exec: (cmd) => {
+    const { input, files } = cmd.jsonMeta.args;
+    console.log("Processing:", input, files);
+  },
+  options: {
+    verbose: { alias: "v", desc: "Verbose output" }
+  },
+  subCommands: {
+    build: {
+      desc: "Build the project",
+      exec: () => console.log("Building...")
+    }
+  }
+};
+
+const nc = new NixClap().init2(rootSpec);
+```
+
+### Type-Safe Command Specs
+
+```typescript
+import { NixClap, CommandSpec, OptionSpec } from "nix-clap";
+
+// Define options with full types
+const options: Record<string, OptionSpec> = {
+  output: {
+    alias: "o",
+    desc: "Output file path",
+    args: "<path string>"
+  },
+  verbose: {
+    alias: "v",
+    desc: "Enable verbose output"
+  }
+};
+
+// Define commands with full types
+const commands: Record<string, CommandSpec> = {
+  process: {
+    args: "<files string..>",
+    desc: "Process files",
+    exec: (cmd) => {
+      const { files } = cmd.jsonMeta.args;
+      const { output, verbose } = cmd.jsonMeta.opts;
+      console.log("Files:", files);
+      console.log("Output:", output);
+      console.log("Verbose:", verbose);
+    }
+  }
+};
+
+// Use with init2() for root command
+const nc = new NixClap().init2({
+  args: "[input string]",
+  exec: (cmd) => {
+    const { input } = cmd.jsonMeta.args;
+    console.log("Input:", input);
+  },
+  options,
+  subCommands: commands
+});
+```
+
+**Type Safety Benefits:**
+
+- ✅ Full IntelliSense/autocomplete support
+- ✅ Compile-time checking of command specs
+- ✅ Type-safe access to parsed arguments and options
+- ✅ Self-documenting API through types
+
+> See [examples/typescript-usage.ts](./examples/typescript-usage.ts)
+
+## Best Practices
+
+### 1. Prefer `init2()` over `init()`
+
+```js
+// ✅ Recommended - modern, flexible API
+const nc = new NixClap()
+  .version("1.0.0")
+  .init2({
+    args: "[files string..]",
+    exec: cmd => console.log(cmd.jsonMeta.args.files),
+    options: { verbose: { alias: "v" } },
+    subCommands: { build: { desc: "Build", exec: () => {} } }
+  });
+
+// ⚠️  Older approach - works but less flexible
+const nc = new NixClap().init(
+  { verbose: { alias: "v" } },
+  { build: { desc: "Build", exec: () => {} } }
+);
+```
+
+### 2. Call configuration methods before `init2()`
+
+```js
+// ✅ Correct order
+const nc = new NixClap()
+  .version("1.0.0")
+  .usage("$0 [cmd]")
+  .init2({ options, subCommands });
+
+// ❌ Wrong - version/usage/help must come before init2()
+const nc = new NixClap()
+  .init2({ options, subCommands })
+  .version("1.0.0");  // Too late!
+```
+
+### 3. Use `jsonMeta` for accessing parsed data
+
+```js
+// ✅ Recommended - clean and typed
+const opts = parsed.command.jsonMeta.opts;
+const args = parsed.command.jsonMeta.args;
+
+// ⚠️  Avoid - raw node access is more complex
+const opts = parsed.command.optNodes;
+```
+
+### 4. Handle errors properly
+
+```js
+const nc = new NixClap({ noDefaultHandlers: true })
+  .init2({ options, subCommands });
+const parsed = nc.parse();
+
+if (parsed.errorNodes?.length > 0) {
+  for (const node of parsed.errorNodes) {
+    console.error(`Error: ${node.error.message}`);
+  }
+  process.exit(1);
+}
+```
+
+### 5. Use async handlers with `parseAsync()`
+
+```js
+const nc = new NixClap().init2({
+  subCommands: {
+    deploy: {
+      exec: async cmd => {
+        await deployToServer();
+      }
+    }
+  }
+});
+
+await nc.parseAsync(); // Waits for all async exec handlers
+```
+
+## Alternatives
+
+Other popular CLI parsers you might consider:
+
+- [yargs] - Feature-rich, larger footprint
+- [commander] - Imperative API, widely used
+- [argparse] - Python's argparse port
+- [clap] - Declarative configuration
+- [clap.js] - TypeScript-first
+
+**Why NixClap?**
+
+- Smaller and faster than yargs/commander
+- More Unix-like parsing semantics
+- Better support for complex command structures
+- Type-safe TypeScript support
+- Detailed parse results with source tracking
 
 [optimist]: https://www.npmjs.com/package/optimist
 [clap]: https://github.com/lahmatiy/clap

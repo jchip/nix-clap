@@ -73,7 +73,7 @@ export type NixClapConfig = {
    * Can also set with the `help` method.
    *
    */
-  help?: any;
+  help?: OptionSpec | false;
   /**
    * Alias for the help option
    *
@@ -130,11 +130,11 @@ export type NixClapConfig = {
    *
    * Default is write the stdout.
    */
-  output?: any;
+  output?: (text: string) => void;
   /**
    * Custom event handlers
    */
-  handlers?: any;
+  handlers?: Record<string, ((parsed?: ParseResult) => void | Promise<void>) | false>;
   /**
    * Custom exit function.
    *
@@ -217,7 +217,7 @@ export class NixClap extends EventEmitter {
   private _name: string;
   private _version: string | number | false;
   private _versionAlias: string;
-  private _helpOpt: OptionSpec;
+  private _helpOpt: OptionSpec | false;
   private _usage: string;
   private _cmdUsage: string;
   private exit: (code: number) => void;
@@ -225,8 +225,8 @@ export class NixClap extends EventEmitter {
    * Represents the output of the process.
    */
   output: (s: string) => void;
-  private _evtHandlers: any;
-  private _skipExec: any;
+  private _evtHandlers: Record<string, ((parsed?: ParseResult) => void | Promise<void>) | false>;
+  private _skipExec: boolean;
   private _skipExecDefault: boolean;
   // private _defaults: any;
   private _config: NixClapConfig;
@@ -251,7 +251,7 @@ export class NixClap extends EventEmitter {
 
     this._helpOpt = config.hasOwnProperty("help")
       ? config.help
-      : {
+      : ({
           [HELP]: true,
           alias: config.helpAlias || ["?", "h"],
           args: "[cmd string]",
@@ -260,7 +260,7 @@ export class NixClap extends EventEmitter {
               this._rootCommand.subCmdCount > 0 ? " Add a command to show its help" : "";
             return `Show help.${cmdText}`;
           }
-        };
+        } as OptionSpec);
 
     this._usage = config.usage || "$0";
     this._cmdUsage = config.cmdUsage || "$0 $1";
@@ -270,7 +270,12 @@ export class NixClap extends EventEmitter {
       ? {}
       : {
           "pre-help": noop,
-          help: parsed => this.showHelp(parsed.error, parsed.command.optNodes.help.argsMap.cmd),
+          help: parsed => {
+            const errorNode = parsed.errorNodes?.[0];
+            const helpCmd = parsed.command.optNodes?.help?.argsMap?.cmd;
+            /* c8 ignore next */
+            this.showHelp(errorNode?.error, helpCmd);
+          },
           "post-help": noop,
           // version: () => this.showVersion(),
           "parse-fail": parsed => this.showHelp(parsed.command.getErrorNodes()[0].error),
@@ -282,10 +287,14 @@ export class NixClap extends EventEmitter {
           // "unknown-command": ctx => {
           //   throw new Error(`Unknown command ${ctx.name}`);
           // },
-          "no-action": () => this.showHelp(new Error("No command given")),
+          "no-action": () => this.showHelp(new Error("No command given"))
           // "new-command": noop,
-          exit: defaultExit
         };
+
+    // Handle exit separately since it has a different signature
+    if (!config.noDefaultHandlers) {
+      this.on("exit", defaultExit);
+    }
     const handlers = config.handlers || {};
     objEach(this._evtHandlers, (handler, name) => {
       handler = handlers.hasOwnProperty(name) ? handlers[name] : handler;
@@ -325,7 +334,10 @@ export class NixClap extends EventEmitter {
     const evts = events[0] === "*" ? Object.keys(this._evtHandlers) : events;
     for (let i = 0; i < evts.length; i++) {
       const evtName = evts[i];
-      this.removeListener(evtName, this._evtHandlers[evtName]);
+      const handler = this._evtHandlers[evtName];
+      if (typeof handler === "function") {
+        this.removeListener(evtName, handler);
+      }
     }
     return this;
   }
@@ -344,19 +356,48 @@ export class NixClap extends EventEmitter {
   // }
 
   /**
-   * Initializes the command-line interface with the provided options and commands.
+   * Initialize NixClap with a single root command spec (clean API).
    *
-   * @param options - An optional record of option specifications. Each key represents an option name,
-   * and the value is an `OptionSpec` object that defines the option's properties.
-   * @param commands - An optional record of command specifications. Each key represents a command name,
-   * and the value is a `CommandSpec` object that defines the command's properties.
+   * This is the architecturally clean way to initialize NixClap - the root command
+   * is just a CommandSpec like any other, with its options and subCommands defined inline.
    *
-   * @returns The current instance of the class for method chaining.
+   * @param rootCommandSpec - Complete specification for the root command including options and subCommands
+   * @returns this
+   *
+   * @example
+   * ```typescript
+   * new NixClap()
+   *   .init2({
+   *     desc: "My CLI tool",
+   *     args: "[files..]",
+   *     options: {
+   *       verbose: { alias: "v", desc: "Verbose output" }
+   *     },
+   *     subCommands: {
+   *       build: {
+   *         desc: "Build the project",
+   *         exec: (cmd) => { ... }
+   *       },
+   *       test: {
+   *         desc: "Run tests",
+   *         exec: (cmd) => { ... }
+   *       }
+   *     },
+   *     exec: (cmd) => {
+   *       // Root command handler (optional)
+   *       // Only runs when args are provided
+   *     }
+   *   })
+   *   .parse();
+   * ```
    */
-  init(options?: Record<string, OptionSpec>, commands?: Record<string, CommandSpec>) {
-    options = { ...options };
+  init2(rootCommandSpec: CommandSpec) {
+    let options = rootCommandSpec.options || {};
+    const commands = rootCommandSpec.subCommands || {};
 
+    // Add version option if version is set
     if (this._version) {
+      options = { ...options };
       let verAlias = ["V", "v"];
       Object.keys(options).forEach(k => {
         const opt = options[k];
@@ -365,7 +406,9 @@ export class NixClap extends EventEmitter {
       options.version = this._getVersionOpt(verAlias);
     }
 
+    // Add help option if configured
     if (this._helpOpt) {
+      options = { ...options };
       // eslint-disable-next-line dot-notation
       options["help"] = this._helpOpt;
     }
@@ -373,15 +416,24 @@ export class NixClap extends EventEmitter {
     this._options = options;
     this._commands = commands;
     this._name = this._config.name;
+
+    // Build root command spec from the provided spec
+    const rootCommandSpecFinal: CommandSpec = {
+      alias: rootCommandName,
+      desc: rootCommandSpec.desc || "",
+      args: rootCommandSpec.args,
+      argDefault: rootCommandSpec.argDefault,
+      exec: rootCommandSpec.exec,
+      usage: rootCommandSpec.usage,
+      customTypes: rootCommandSpec.customTypes,
+      options: options,
+      subCommands: commands,
+      allowUnknownOption: rootCommandSpec.allowUnknownOption ?? this._config.allowUnknownOption
+    };
+
     this._rootCommand = new CommandBase(
       this._name || "program",
-      {
-        alias: rootCommandName,
-        options: this._options,
-        subCommands: this._commands,
-        desc: "",
-        allowUnknownOption: this._config.allowUnknownOption
-      },
+      rootCommandSpecFinal,
       this._config
     );
 
@@ -389,10 +441,35 @@ export class NixClap extends EventEmitter {
     unknownCommandBase.parent = this._rootCommand;
     unknownCommandBaseNoOptions.ncConfig = this._config;
     unknownCommandBaseNoOptions.parent = this._rootCommand;
-    // this._verifyOptions();
-    // this._defaults = makeDefaults(options);
 
     return this;
+  }
+
+  /**
+   * Convenience method to initialize with separate options and commands parameters.
+   *
+   * This is a wrapper around init2() for backward compatibility and convenience.
+   *
+   * @param options - An optional record of option specifications for the root command
+   * @param commands - An optional record of command specifications (sub-commands)
+   * @returns The current instance of the class for method chaining.
+   *
+   * @example
+   * ```typescript
+   * new NixClap().init(
+   *   { verbose: { alias: "v" } },
+   *   { build: { desc: "Build project", exec: ... } }
+   * );
+   * ```
+   */
+  init(
+    options?: Record<string, OptionSpec>,
+    commands?: Record<string, CommandSpec>
+  ) {
+    return this.init2({
+      options: options || {},
+      subCommands: commands || {}
+    });
   }
 
   /**
@@ -470,6 +547,12 @@ export class NixClap extends EventEmitter {
    */
   makeHelp(cmdName?: string) {
     let cmd = this._rootCommand;
+
+    // Guard against uninitialized CLI
+    if (!cmd) {
+      return ["Error: CLI not initialized. Call init() or init2() first."];
+    }
+
     if (cmdName) {
       const matched = this._rootCommand.matchSubCommand(cmdName);
       if (!matched.cmd) {
@@ -513,10 +596,7 @@ export class NixClap extends EventEmitter {
       return [];
     };
 
-    // console.log(usage, commandsHelp, optionHelp);
-
     const helpText = usage.concat(commandsHelp, makeOptionsHelp());
-    // console.log(helpText);
     return helpText;
   }
 
@@ -657,56 +737,153 @@ export class NixClap extends EventEmitter {
   }
 
   /**
+   * Determines if the root command should be executed based on parsing results.
+   *
+   * This is part of the root command execution logic that spans three locations:
+   * 1. CommandNode.getExecCommands() - filters out root command from auto-execution
+   * 2. This method (_shouldExecuteRootCommand) - determines if root should execute
+   * 3. runExec/runExecAsync methods - performs the actual execution
+   *
+   * Root command executes when ALL of the following conditions are met:
+   * - No other commands were executed (count === 0)
+   * - Root command has an exec handler defined
+   * - At least one argument was provided (root command requires args)
+   * - No sub-commands were matched
+   *
+   * @param command - The parsed command node
+   * @param count - Number of commands already executed
+   * @returns true if root command should execute, false otherwise
+   *
+   * @remarks
+   * The null checks provide robustness for edge cases during parsing.
+   * If either command or _rootCommand is null/undefined, it indicates
+   * the CLI was not properly initialized or parsing failed catastrophically.
+   *
+   * @private
+   */
+  private _shouldExecuteRootCommand(command: CommandNode, count: number): boolean {
+    // Defensive checks for robustness - these should rarely be null in practice
+    if (!command || !this._rootCommand) {
+      return false;
+    }
+
+    return (
+      count === 0 &&
+      this._rootCommand.exec != null &&
+      command.argsList.length > 0 &&
+      Object.keys(command.subCmdNodes).length === 0
+    );
+  }
+
+  /**
    * Go through the commands in parsed and call their `exec` handler.
+   *
+   * Root command execution logic (see _shouldExecuteRootCommand and CommandNode.getExecCommands):
+   * - Execution priority: sub-commands → root command → defaultCommand
+   * - Root command only executes when args are provided and no sub-commands matched
+   * - This ensures sub-commands always take precedence over root command
    *
    * The `parse` method call this at the end unless `skipExec` flag is set.
    *
    * @param parsed -  The parse result object.
    * @returns The number of commands with `exec` was invoked.
+   *
+   * @remarks
+   * **Immutability Note**: Command exec handlers should NOT modify the command structure
+   * (e.g., argsList, subCmdNodes, optNodes) during execution. The parsed command tree is
+   * considered read-only after parsing completes. Modifying it may cause unexpected behavior
+   * if runExec is called multiple times on the same parsed result.
    */
   runExec(parsed: ParseResult): number {
     const command = parsed.command;
 
     let count = command.invokeExec(true);
+
+    // Check if root command should execute FIRST (before defaultCommand)
+    // This gives priority to root command when arguments are provided
+    // See _shouldExecuteRootCommand() for execution conditions
+    if (this._shouldExecuteRootCommand(command, count)) {
+      command.cmdBase.exec(command, command.getBreadCrumb());
+      count = 1;
+    }
+
+    // Then check defaultCommand (only if root command didn't execute)
     if (count === 0 && command.cmdBase.getExecCount() > 0) {
       const defaultCmd = this._makeDefaultExecCommand(parsed);
       if (defaultCmd) {
         count = defaultCmd.invokeExec(true);
       }
-      if (count === 0) {
-        this.emit("no-action");
-      }
+    }
+
+    // Emit no-action only if truly no command was executed
+    if (count === 0 && command.cmdBase.getExecCount() > 0) {
+      this.emit("no-action");
     }
 
     return count;
   }
 
   /**
+   * Async version of runExec - waits for all async exec handlers to complete.
    *
-   * @param parsed
-   * @returns
+   * @param parsed - The parse result object.
+   * @returns Promise resolving to the number of commands executed.
+   *
+   * @remarks
+   * **Immutability Note**: Command exec handlers should NOT modify the command structure
+   * (e.g., argsList, subCmdNodes, optNodes) during execution. The parsed command tree is
+   * considered read-only after parsing completes. Modifying it may cause unexpected behavior
+   * if runExec is called multiple times on the same parsed result.
    */
   async runExecAsync(parsed: ParseResult): Promise<number> {
     const command = parsed.command;
 
     let count = await command.invokeExecAsync(true);
+
+    // Check if root command should execute FIRST (before defaultCommand)
+    // This gives priority to root command when arguments are provided
+    if (this._shouldExecuteRootCommand(command, count)) {
+      await command.cmdBase.exec(command, command.getBreadCrumb());
+      count = 1;
+    }
+
+    // Then check defaultCommand (only if root command didn't execute)
     if (count === 0 && command.cmdBase.getExecCount() > 0) {
       const defaultCmd = this._makeDefaultExecCommand(parsed);
       if (defaultCmd) {
         count = await defaultCmd.invokeExecAsync(true);
       }
-      if (count === 0) {
-        this.emit("no-action");
-      }
+    }
+
+    // Emit no-action only if truly no command was executed
+    if (count === 0 && command.cmdBase.getExecCount() > 0) {
+      this.emit("no-action");
     }
 
     return count;
   }
 
   /**
+   * Creates and adds a default command node to the parsed result if configured.
    *
-   * @param parsed
-   * @returns
+   * This method is called during command execution (not parsing) when no other commands
+   * were executed. It creates a new CommandNode for the default command and adds it to
+   * the command tree.
+   *
+   * @param parsed - The parse result object
+   * @returns The created default CommandNode, or undefined if no default command should be created
+   *
+   * @remarks
+   * **Mutation Behavior**: This method INTENTIONALLY mutates the parsed result by:
+   * 1. Adding a new CommandNode to the command tree (line: command.addCommandNode(defaultCmd))
+   * 2. Adding errors to the command if default command is not found
+   * 3. Updating parsed.errorNodes if errors occur
+   *
+   * This mutation happens during execution (not parsing) and is part of the default command
+   * feature design. The default command is lazily added only when needed, rather than during
+   * initial parsing. This is an exception to the general immutability guideline for exec handlers.
+   *
+   * @private
    */
   _makeDefaultExecCommand(parsed: ParseResult): CommandNode {
     const command = parsed.command;
@@ -716,18 +893,15 @@ export class NixClap extends EventEmitter {
       this._config.defaultCommand &&
       command.getExecCommands([], true).length === 0
     ) {
-      // trigger default command?
-      // console.log("checking default command", this._config.defaultCommand);
-
       const matched = command.cmdBase.matchSubCommand(this._config.defaultCommand);
       if (matched.cmd) {
         const defaultCmd = new CommandNode(matched.name, matched.alias, matched.cmd);
         defaultCmd.applyDefaults();
-        command.addCommandNode(defaultCmd);
+        command.addCommandNode(defaultCmd); // Intentional mutation for default command feature
         return defaultCmd;
       } else {
         command.addError(new Error(`default command ${this._config.defaultCommand} not found`));
-        parsed.errorNodes = command.getErrorNodes();
+        parsed.errorNodes = command.getErrorNodes(); // Intentional mutation for error tracking
       }
     }
 

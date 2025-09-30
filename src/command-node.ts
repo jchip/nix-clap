@@ -5,6 +5,7 @@ import { OptionNode } from "./option-node.ts";
 import { ClapNodeGenerator, OptionSource } from "./node-generator.ts";
 import { camelCase } from "./xtil.ts";
 import { _PARENT } from "./symbols.ts";
+import { isRootCommand } from "./base.ts";
 
 /**
  * Object representation for an instance of a command on the CLI
@@ -68,11 +69,21 @@ export class CommandNode extends ClapNode {
   /**
    * Get array of all commands that have exec callback
    *
-   * @param cmds
-   * @returns
+   * Root command execution is handled specially:
+   * - This method filters out the root command (returns false for isRootCommand)
+   * - Root command execution is determined by _shouldExecuteRootCommand() in nix-clap.ts
+   * - Root command is executed in runExec/runExecAsync methods when conditions are met
+   *
+   * @param cmds - Array to accumulate command nodes with exec handlers
+   * @param includeSubCommands - Whether to recursively include sub-commands
+   * @returns Array of command nodes that have exec handlers (excluding root command)
    */
   getExecCommands(cmds: CommandNode[], includeSubCommands: boolean): CommandNode[] {
-    if (this.cmdBase.exec) {
+    // Don't include root command exec in automatic execution list
+    // Root command exec is handled separately in:
+    // - NixClap._shouldExecuteRootCommand() - determines if root should execute
+    // - NixClap.runExec() / runExecAsync() - performs the actual execution
+    if (this.cmdBase.exec && !isRootCommand(this.alias)) {
       cmds.push(this);
     }
     if (includeSubCommands) {

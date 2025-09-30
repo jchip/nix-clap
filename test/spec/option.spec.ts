@@ -118,7 +118,7 @@ describe("option args", () => {
           alias: ["t"],
           desc: "test option 1"
         })
-    ).toThrow(`unknown type 'foo' for argument`);
+    ).toThrow(`Unknown type 'foo' for argument`);
   });
 
   it("should parse variadic args", () => {

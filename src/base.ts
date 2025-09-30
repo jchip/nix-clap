@@ -63,8 +63,9 @@ export type BaseSpec = {
 
   /**
    * Description of the option or command.
+   * Can be a string or a function that returns a string.
    */
-  desc?: string;
+  desc?: string | (() => string);
 
   /**
    * Indicates whether the command/option is required.
@@ -208,7 +209,7 @@ export class CliBase<TSpec extends BaseSpec> {
       const xm = xname.match(/([^\. ]+)?( +)?([^\.]+)?(\.\.+)?([^\.,]*)?( *, *)?([^\.]+)?$/);
       assert(
         xm,
-        new InvalidArgSpecifierError(`Invalid args specifier '${xname}' for '${this.name}'`)
+        new InvalidArgSpecifierError(`Invalid args specifier '${xname}' for '${this.name}'.`)
       );
 
       let variadic: boolean;
@@ -220,11 +221,11 @@ export class CliBase<TSpec extends BaseSpec> {
         SUPPORT_TYPES.indexOf(type) >= 0 ||
           (
             spec.customTypes ||
-            // @ts-ignore
+            // @ts-expect-error - coercions is deprecated legacy property name, kept for backward compatibility
             spec.coercions
           )?.hasOwnProperty(type),
         new InvalidArgSpecifierError(
-          `${this.cliType} ${this.name} - unknown type '${type}' for argument '${a}'`,
+          `${this.cliType} ${this.name} - Unknown type '${type}' for argument '${a}'.`,
           args
         )
       );
@@ -250,7 +251,7 @@ export class CliBase<TSpec extends BaseSpec> {
         assert(
           !seenOptional,
           new InvalidArgSpecifierError(
-            `Required arg '${xname}' cannot follow optional arg '${seenOptional}'`
+            `Required arg '${xname}' cannot follow optional arg '${seenOptional}'.`
           )
         );
         this.needArgs += min;
@@ -269,7 +270,7 @@ export class CliBase<TSpec extends BaseSpec> {
       assert(
         !SUPPORT_TYPES.includes(name),
         new InvalidArgSpecifierError(
-          `For args of ${this.name} - its name is using a type name: ${name}`
+          `For args of ${this.name} - Its name is using a type name: ${name}.`
         )
       );
 
@@ -286,7 +287,7 @@ export class CliBase<TSpec extends BaseSpec> {
 
     assert(
       !(args && this.args.length === 0),
-      new InvalidArgSpecifierError(`Invalid args specifier '${args}' for '${this.name}'`)
+      new InvalidArgSpecifierError(`Invalid args specifier '${args}' for '${this.name}'.`)
     );
   }
 }

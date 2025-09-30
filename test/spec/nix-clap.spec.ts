@@ -26,6 +26,12 @@ describe("nix-clap", () => {
     return new NixClap().init();
   });
 
+  it("should handle makeHelp without initialization", () => {
+    const nc = new NixClap({ ...noOutputExit });
+    const help = nc.makeHelp();
+    expect(help).toEqual(["Error: CLI not initialized. Call init() or init2() first."]);
+  });
+
   it("should provide default output and exit setup", () => {
     defaultOutput("\ntesting defaultOutput to stdout - you should see this\n");
     let called: number = 0;
@@ -1094,7 +1100,7 @@ describe("nix-clap", () => {
           args: "< blah>"
         }
       })
-    ).to.throw("option foo - unknown type 'blah' for argument '< blah>'");
+    ).to.throw("option foo - Unknown type 'blah' for argument '< blah>'.");
 
     expect(() =>
       new NixClap({ ...noOutputExit }).init({
@@ -1102,7 +1108,7 @@ describe("nix-clap", () => {
           args: "< blah..1,>"
         }
       })
-    ).to.throw("option foo - unknown type 'blah' for argument '< blah..1,>'");
+    ).to.throw("option foo - Unknown type 'blah' for argument '< blah..1,>'.");
   });
 
   it("should handle requireArg option missing arg", () => {
@@ -1610,7 +1616,7 @@ describe("nix-clap", () => {
           }
         }
       );
-    }).to.throw("command cmd - unknown type 'foo  blah' for argument '<woo foo  blah>'");
+    }).to.throw("command cmd - Unknown type 'foo  blah' for argument '<woo foo  blah>'.");
   });
 
   it("should fail if command specify invalid arg type", () => {
@@ -1623,7 +1629,7 @@ describe("nix-clap", () => {
           }
         }
       );
-    }).to.throw("command cmd - unknown type 'foo' for argument '<woo foo>'");
+    }).to.throw("command cmd - Unknown type 'foo' for argument '<woo foo>'.");
   });
 
   it("should fail if arg specifier is invalid", () => {
@@ -1650,7 +1656,7 @@ describe("nix-clap", () => {
     expect(parsed.errorNodes.length, "error expected").to.equal(1);
     expect(parsed.errorNodes[0].name).to.equal("cmd1");
     expect(parsed.errorNodes[0].error.message).equal(
-      `Encountered unknown CLI argument '3' while parsing for command 'cmd1'`
+      `Encountered unknown CLI argument '3' while parsing for command 'cmd1'.`
     );
   });
 

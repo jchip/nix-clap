@@ -4,34 +4,6 @@ import { ClapNodeGenerator } from "./node-generator.ts";
 import { CommandNode } from "./command-node.ts";
 import { _NEXT, _PREV } from "./symbols.ts";
 
-/**
- * Represents the result of parsing command-line arguments.
- *
- *
- * @property {any} source - The source of the parsed arguments.
- * @property {any[]} commands - An array of parsed commands.
- * @property {any} opts - The parsed options.
- * @property {any} optCmd - The parsed optional command.
- * @property {any} verbatim - The verbatim arguments.
- * @property {NixClap} nixClap - The NixClap instance used for parsing.
- * @property {any} [_] - Remaining arguments that were not consumed due to the `--` terminating option.
- * @property {any} [error] - Any error encountered during parsing.
- * @property {number} [index] - The index at which parsing stopped.
- */
-export type ParsedResult = {
-  source: any;
-  commands: any[];
-  opts: any;
-  optCmd: any;
-  verbatim: any;
-  nixClap: NixClap;
-  /**
-   * Remaining argv that were not consumed due to the `--` terminating option
-   */
-  _?: any;
-  error?: any;
-  index?: number;
-};
 
 /**
  * The `Parser` class is responsible for parsing command-line arguments

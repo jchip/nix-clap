@@ -5,15 +5,14 @@ import { GroupOptionSpec, Options } from "./options.ts";
 import { cbOrVal, dup, fitLines, objEach } from "./xtil.ts";
 
 /**
- * The execution function you provide for a command.  It is called with an array of command nodes.
+ * The execution function you provide for a command. It is called with an array of command nodes.
  *
+ * IMPORTANT: Exec handlers should not modify the command structure (e.g., argsList, subCmdNodes)
+ * during execution. The command structure is considered immutable after parsing is complete.
  */
 export type CommandExecFunc = (cmd: CommandNode, cmdNodes?: CommandNode[]) => void;
 export type CommandExecAsyncFunc = (cmd: CommandNode, cmdNodes?: CommandNode[]) => Promise<void>;
 
-/**
- *
- */
 /**
  * Represents the specification for a command.
  *
