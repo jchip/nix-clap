@@ -277,7 +277,7 @@ export class NixClap extends EventEmitter {
             this.showHelp(errorNode?.error, helpCmd);
           },
           "post-help": noop,
-          // version: () => this.showVersion(),
+          version: () => this.showVersion(),
           "parse-fail": parsed => this.showHelp(parsed.command.getErrorNodes()[0].error),
           // parsed: () => undefined,
           // "unknown-option": name => {
@@ -462,10 +462,7 @@ export class NixClap extends EventEmitter {
    * );
    * ```
    */
-  init(
-    options?: Record<string, OptionSpec>,
-    commands?: Record<string, CommandSpec>
-  ) {
+  init(options?: Record<string, OptionSpec>, commands?: Record<string, CommandSpec>) {
     return this.init2({
       options: options || {},
       subCommands: commands || {}
@@ -717,6 +714,12 @@ export class NixClap extends EventEmitter {
     // check if user specified --help, to show help and exit
     if (this._helpOpt && this._helpOpt[HELP] && parsed.command.optNodes.help?.source === "cli") {
       this.emit("help", parsed);
+      return true;
+    }
+
+    // check if user specified --version, to show version and exit
+    if (this._version && parsed.command.optNodes.version?.source === "cli") {
+      this.emit("version");
       return true;
     }
 

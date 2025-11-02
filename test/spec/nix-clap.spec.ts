@@ -1798,11 +1798,10 @@ describe("nix-clap", () => {
   });
 
   it("should show single-line usage for root command with args but no sub-commands", () => {
-    const nc = new NixClap({ name: "process", ...noOutputExit })
-      .init2({
-        args: "<files string..>",
-        exec: () => {}
-      });
+    const nc = new NixClap({ name: "process", ...noOutputExit }).init2({
+      args: "<files string..>",
+      exec: () => {}
+    });
 
     const help = nc.makeHelp();
     expect(help[1]).toBe("Usage: process <files string..>");
@@ -1810,13 +1809,12 @@ describe("nix-clap", () => {
   });
 
   it("should show <command> for sub-commands without root args", () => {
-    const nc = new NixClap({ name: "mycli", ...noOutputExit })
-      .init2({
-        subCommands: {
-          build: { desc: "Build project", exec: () => {} },
-          test: { desc: "Run tests", exec: () => {} }
-        }
-      });
+    const nc = new NixClap({ name: "mycli", ...noOutputExit }).init2({
+      subCommands: {
+        build: { desc: "Build project", exec: () => {} },
+        test: { desc: "Run tests", exec: () => {} }
+      }
+    });
 
     const help = nc.makeHelp();
     expect(help[1]).toBe("Usage: mycli <command>");
@@ -2527,5 +2525,53 @@ Options:
 
     const result = nc.parse(["node", "test.js", "--unknown"]);
     expect(exitCalled).toBe(false);
+  });
+
+  it("should show version for --version", () => {
+    let exited = -1;
+    const outputed: any[] = [];
+    const nc = new NixClap({
+      name: "test",
+      version: "2.0.0",
+      exit: n => (exited = n),
+      output: o => outputed.push(o)
+    }).init({}, {});
+
+    const result = nc.parse(["--version"]);
+
+    expect(exited).toBe(0);
+    expect(outputed).toEqual(["2.0.0\n"]);
+  });
+
+  it("should show version for -v", () => {
+    let exited = -1;
+    const outputed: any[] = [];
+    const nc = new NixClap({
+      name: "test",
+      version: "2.1.0",
+      exit: n => (exited = n),
+      output: o => outputed.push(o)
+    }).init({}, {});
+
+    const result = nc.parse(["-v"]);
+
+    expect(exited).toBe(0);
+    expect(outputed).toEqual(["2.1.0\n"]);
+  });
+
+  it("should show version for -V", () => {
+    let exited = -1;
+    const outputed: any[] = [];
+    const nc = new NixClap({
+      name: "test",
+      version: "2.2.0",
+      exit: n => (exited = n),
+      output: o => outputed.push(o)
+    }).init({}, {});
+
+    const result = nc.parse(["-V"]);
+
+    expect(exited).toBe(0);
+    expect(outputed).toEqual(["2.2.0\n"]);
   });
 });
