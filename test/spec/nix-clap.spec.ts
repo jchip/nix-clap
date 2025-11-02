@@ -2289,6 +2289,21 @@ Options:
     });
   });
 
+  it("should apply config via NixClap.applyConfig method", () => {
+    const nc = new NixClap({ ...noOutputExit }).init({
+      verbose: { alias: "v" },
+      timeout: { args: "< number>" }
+    });
+    const parsed = nc.parse(["--verbose"]);
+    nc.applyConfig({ verbose: false, timeout: 5000 }, parsed);
+    const m = parsed.command.jsonMeta;
+
+    expect(m.opts.verbose).to.equal(true); // CLI takes precedence
+    expect(m.opts.timeout).to.equal(5000); // Config applied
+    expect(m.source.verbose).to.equal("cli");
+    expect(m.source.timeout).to.equal("user");
+  });
+
   it("should skip exec if skipExec flag is set", () => {
     let called;
     const commands = {

@@ -173,31 +173,6 @@ export type ParseResult = {
  * This class allows you to define commands and options, handle various events, and parse command-line arguments.
  * It also provides methods to display help and version information.
  *
- * @example
- * ```typescript
- * const nc = new NixClap({
- *   name: "my-cli",
- *   version: "1.0.0",
- *   help: {
- *     alias: ["?", "h"],
- *     desc: "Show help"
- *   }
- * });
- *
- * nc.init({
- *   verbose: {
- *     alias: "v",
- *     desc: "Enable verbose mode"
- *   }
- * }, {
- *   start: {
- *     desc: "Start the application"
- *   }
- * });
- *
- * nc.parse(process.argv);
- * ```
- *
  * @param config - Configuration object for initializing the `NixClap` instance.
  *
  * @event pre-help - Emitted before displaying help.
@@ -279,14 +254,6 @@ export class NixClap extends EventEmitter {
           "post-help": noop,
           version: () => this.showVersion(),
           "parse-fail": parsed => this.showHelp(parsed.command.getErrorNodes()[0].error),
-          // parsed: () => undefined,
-          // "unknown-option": name => {
-          //   throw new Error(`Unknown option ${name}`);
-          // },
-          // "unknown-options-v2": noop,
-          // "unknown-command": ctx => {
-          //   throw new Error(`Unknown command ${ctx.name}`);
-          // },
           "no-action": () => this.showHelp(new Error("No command given"))
           // "new-command": noop,
         };
@@ -342,18 +309,40 @@ export class NixClap extends EventEmitter {
     return this;
   }
 
-  // applyConfig(config: any, parsed: any, src?: string) {
-  //   const source = parsed.source;
-
-  //   for (const x in config) {
-  //     if (!source.hasOwnProperty(x) || !source[x].startsWith("cli")) {
-  //       parsed.opts[x] = config[x];
-  //       source[x] = src || "user";
-  //     }
-  //   }
-
-  //   return this;
-  // }
+  /**
+   * Apply extra config to the parsed result, allowing user config from files or settings to override defaults,
+   * but not override options explicitly specified on the command line (which has highest priority).
+   *
+   * This method enables configuration hierarchy where:
+   * 1. Command line arguments have the highest priority (source: "cli")
+   * 2. User config (from files/settings) has medium priority (source: "user")
+   * 3. Defaults have the lowest priority (source: "default")
+   *
+   * For example, you can load options from package.json or user config files and apply them after CLI parsing,
+   * but they won't override any options the user explicitly provided on the command line.
+   *
+   * @param config - Config object containing user options config (e.g., from package.json, config files)
+   * @param parsed - The parsed result from parse() or parse2()
+   * @param src - Name of the source that provided the config. Default to 'user'
+   * @returns The NixClap instance for method chaining
+   *
+   * @example
+   * ```typescript
+   * const nc = new NixClap().init({ verbose: { alias: 'v' } });
+   * const parsed = nc.parse(['--verbose']);
+   * nc.applyConfig({ verbose: false, timeout: 5000 }, parsed);
+   * // parsed.command.jsonMeta.opts.verbose is still true (from CLI)
+   * // parsed.command.jsonMeta.opts.timeout is 5000 (from config)
+   * ```
+   */
+  applyConfig(
+    config: Record<string, any>,
+    parsed: ParseResult,
+    src: "cli" | "user" | "default" = "user"
+  ) {
+    parsed.command.applyConfig(config, src);
+    return this;
+  }
 
   /**
    * Initialize NixClap with a single root command spec (clean API).
@@ -363,33 +352,6 @@ export class NixClap extends EventEmitter {
    *
    * @param rootCommandSpec - Complete specification for the root command including options and subCommands
    * @returns this
-   *
-   * @example
-   * ```typescript
-   * new NixClap()
-   *   .init2({
-   *     desc: "My CLI tool",
-   *     args: "[files..]",
-   *     options: {
-   *       verbose: { alias: "v", desc: "Verbose output" }
-   *     },
-   *     subCommands: {
-   *       build: {
-   *         desc: "Build the project",
-   *         exec: (cmd) => { ... }
-   *       },
-   *       test: {
-   *         desc: "Run tests",
-   *         exec: (cmd) => { ... }
-   *       }
-   *     },
-   *     exec: (cmd) => {
-   *       // Root command handler (optional)
-   *       // Only runs when args are provided
-   *     }
-   *   })
-   *   .parse();
-   * ```
    */
   init2(rootCommandSpec: CommandSpec) {
     let options = rootCommandSpec.options || {};
@@ -453,14 +415,6 @@ export class NixClap extends EventEmitter {
    * @param options - An optional record of option specifications for the root command
    * @param commands - An optional record of command specifications (sub-commands)
    * @returns The current instance of the class for method chaining.
-   *
-   * @example
-   * ```typescript
-   * new NixClap().init(
-   *   { verbose: { alias: "v" } },
-   *   { build: { desc: "Build project", exec: ... } }
-   * );
-   * ```
    */
   init(options?: Record<string, OptionSpec>, commands?: Record<string, CommandSpec>) {
     return this.init2({
@@ -507,15 +461,6 @@ export class NixClap extends EventEmitter {
   /**
    * Set a custom option setting for invoking help.
    *
-   * Default is:
-   *
-   * ```js
-   * {
-   *   alias: "h",
-   *   desc: "Show help"
-   * }
-   * ```
-   *
    * Option name is always `help`. Call `help(false)` to turn off the default `--help` option.
    *
    * > Must be called before the `init` method.
@@ -528,6 +473,7 @@ export class NixClap extends EventEmitter {
   }
 
   /**
+   * Shows the version information and exits.
    *
    * @returns
    */
@@ -628,9 +574,10 @@ export class NixClap extends EventEmitter {
   }
 
   /**
+   * Shows help information for the specified command or the root command.
    *
-   * @param err
-   * @param cmdName
+   * @param err - Optional error to display along with help
+   * @param cmdName - Optional command name to show help for
    * @returns
    */
   showHelp(err, cmdName?) {
@@ -681,10 +628,11 @@ export class NixClap extends EventEmitter {
   }
 
   /**
+   * Parses the given command-line arguments asynchronously.
    *
-   * @param argv
-   * @param start
-   * @returns
+   * @param argv - Optional array of arguments to parse
+   * @param start - Optional starting index for parsing
+   * @returns Promise resolving to the parse result
    */
   async parseAsync(argv?: string[], start?: number): Promise<ParseResult> {
     const parsed = this.parse2(argv, start);

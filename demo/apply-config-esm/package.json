@@ -1,0 +1,15 @@
+{
+  "name": "apply-config-esm-demo",
+  "version": "1.0.0",
+  "description": "Demo of NixClap applyConfig feature using ESM",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx apply-config.ts"
+  },
+  "dependencies": {
+    "nix-clap": "../.."
+  },
+  "devDependencies": {
+    "tsx": "^4.19.4"
+  }
+}
