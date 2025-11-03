@@ -19,7 +19,7 @@ const options = {
   }
 };
 
-const nc = new NixClap().version("1.0.0").usage("$0 [options]").init(options);
+const nc = new NixClap().version("1.0.0").usage("$0 [options]").init2({ options });
 const parsed = nc.parse();
 
 console.log("names", parsed.command.jsonMeta.opts.names);

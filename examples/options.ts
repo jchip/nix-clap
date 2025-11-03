@@ -5,15 +5,17 @@ import { NixClap, CommandExecFunc } from "../src/index.ts";
 const nc = new NixClap({
   allowUnknownCommand: true,
   allowUnknownOption: true
-}).init({
-  a: {
-    alias: "a",
-    args: "< string>"
-  },
-  l: {
-    alias: "l",
-    args: "< string>",
-    argDefault: null
+}).init2({
+  options: {
+    a: {
+      alias: "a",
+      args: "< string>"
+    },
+    l: {
+      alias: "l",
+      args: "< string>",
+      argDefault: null
+    }
   }
 });
 

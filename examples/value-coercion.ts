@@ -34,14 +34,14 @@ const commands = {
         args: "<val foo>",
         desc: "Custom constant coercion (always returns 'bar')",
         customTypes: {
-          foo: "bar"  // Always returns "bar"
+          foo: "bar" // Always returns "bar"
         }
       }
     },
-    exec: (cmd) => {
+    exec: cmd => {
       const meta = cmd.jsonMeta;
       console.log("\n=== Custom Value Coercion ===\n");
-      console.log("customFn result:", meta.opts.customFn);      // First char only
+      console.log("customFn result:", meta.opts.customFn); // First char only
       console.log("customRegex result:", meta.opts.customRegex); // 'test' or undefined
       console.log("customValue result:", meta.opts.customValue); // Always 'bar'
     }
@@ -53,7 +53,7 @@ const commands = {
       type1: value => `test-${value}`,
       type2: /^test$/i
     },
-    exec: (cmd) => {
+    exec: cmd => {
       const meta = cmd.jsonMeta;
       console.log("\n=== Command Argument Coercion ===\n");
       console.log("value1:", meta.args.value1); // Prefixed with 'test-'
@@ -62,8 +62,6 @@ const commands = {
   }
 };
 
-const nc = new NixClap()
-  .version("1.0.0")
-  .init({}, commands);
+const nc = new NixClap().version("1.0.0").init2({ subCommands: commands });
 
 nc.parse();

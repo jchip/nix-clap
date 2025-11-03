@@ -9,7 +9,7 @@ const nc = new NixClap({
 
 const args = ["node", "xrun", "task1", "task2"];
 
-const r = nc.init({}).parse();
+const r = nc.init2({}).parse();
 
 console.log(Object.keys(r.command.subCmdNodes));
 

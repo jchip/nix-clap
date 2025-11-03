@@ -41,11 +41,11 @@ new NixClap({
 })
   .version("1.0.0")
   .usage("$0 <command> Num [Num ..]")
-  .init(
+  .init2({
     // No top level options
-    {},
+    options: {},
     // Commands
-    {
+    subCommands: {
       // command sum
       sum: {
         alias: "s",
@@ -114,5 +114,5 @@ new NixClap({
         }
       }
     }
-  )
+  })
   .parse();

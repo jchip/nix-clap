@@ -11,13 +11,17 @@
 
 import { NixClap } from "../src/index.ts";
 
-new NixClap().init({}, {
-  copy: {
-    desc: "Copy files",
-    args: "<source string> <dest string>",
-    exec: (cmd) => {
-      const { source, dest } = cmd.jsonMeta.args;
-      console.log(`Copying ${source} to ${dest}`);
+new NixClap()
+  .init2({
+    subCommands: {
+      copy: {
+        desc: "Copy files",
+        args: "<source string> <dest string>",
+        exec: cmd => {
+          const { source, dest } = cmd.jsonMeta.args;
+          console.log(`Copying ${source} to ${dest}`);
+        }
+      }
     }
-  }
-}).parse();
+  })
+  .parse();

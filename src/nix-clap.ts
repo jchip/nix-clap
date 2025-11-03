@@ -215,7 +215,12 @@ export class NixClap extends EventEmitter {
    * @param _config - Optional configuration object for NixClap.
    *
    */
-  constructor(_config?: NixClapConfig) {
+  constructor(
+    _config: NixClapConfig = {
+      allowUnknownOption: true,
+      noDefaultHandlers: true
+    }
+  ) {
     super();
     const config = { ..._config };
     this._config = config;
@@ -353,7 +358,7 @@ export class NixClap extends EventEmitter {
    * @param rootCommandSpec - Complete specification for the root command including options and subCommands
    * @returns this
    */
-  init2(rootCommandSpec: CommandSpec) {
+  init2(rootCommandSpec: CommandSpec = {}) {
     let options = rootCommandSpec.options || {};
     const commands = rootCommandSpec.subCommands || {};
 

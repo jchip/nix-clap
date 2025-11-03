@@ -67,6 +67,18 @@ export class CommandNode extends ClapNode {
   }
 
   /**
+   * Get the root command by traversing up the parent chain until no more parent exists.
+   * @returns The root CommandNode
+   */
+  get rootCmd(): CommandNode {
+    let current: CommandNode = this;
+    while (current.getParent()) {
+      current = current.getParent();
+    }
+    return current;
+  }
+
+  /**
    * Get array of all commands that have exec callback
    *
    * Root command execution is handled specially:

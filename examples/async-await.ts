@@ -13,7 +13,7 @@ import { NixClap } from "../src/index.ts";
 
 // Simulate an async operation
 function someAsyncOperation(): Promise<void> {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     console.log("Starting deployment...");
     setTimeout(() => {
       console.log("Deployment in progress...");
@@ -34,7 +34,7 @@ const options = {
 const commands = {
   deploy: {
     desc: "Deploy to specified target",
-    exec: async (cmd) => {
+    exec: async cmd => {
       const meta = cmd.jsonMeta;
       const target = meta.opts.target || "production";
       console.log(`Deploying to ${target}...`);
@@ -44,5 +44,5 @@ const commands = {
   }
 };
 
-const nc = new NixClap().init(options, commands);
+const nc = new NixClap().init2({ options, subCommands: commands });
 await nc.parseAsync(); // Use parseAsync for async exec handlers

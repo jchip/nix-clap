@@ -28,15 +28,15 @@ const commands = {
   compile: {
     desc: "Compile files",
     args: "<files string..>",
-    exec: (cmd) => {
+    exec: cmd => {
       const meta = cmd.jsonMeta;
 
       console.log("\n=== Accessing Parsed Data ===\n");
 
       // Access via jsonMeta (recommended)
-      console.log("Options:", meta.opts);        // { verbose: true, format: 'text' }
-      console.log("Arguments:", meta.args);      // { files: ['file1.js', 'file2.js'] }
-      console.log("Source:", meta.source);       // { verbose: 'cli', format: 'default' }
+      console.log("Options:", meta.opts); // { verbose: true, format: 'text' }
+      console.log("Arguments:", meta.args); // { files: ['file1.js', 'file2.js'] }
+      console.log("Source:", meta.source); // { verbose: 'cli', format: 'default' }
 
       console.log("\n=== Detailed Information ===\n");
       console.log("Files to compile:", meta.args.files);
@@ -47,10 +47,13 @@ const commands = {
   }
 };
 
-const nc = new NixClap().init(options, commands);
+const nc = new NixClap().init2({ options, subCommands: commands });
 const parsed = nc.parse();
 
 // Check for errors
 if (parsed.errorNodes && parsed.errorNodes.length > 0) {
-  console.error("Parse errors:", parsed.errorNodes.map(n => n.error.message));
+  console.error(
+    "Parse errors:",
+    parsed.errorNodes.map(n => n.error.message)
+  );
 }

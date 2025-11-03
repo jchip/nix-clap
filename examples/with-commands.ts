@@ -10,7 +10,7 @@
  *   npx tsx examples/with-commands.ts --help
  */
 
-import { NixClap } from "../src/index.ts";
+import { CommandSpec, NixClap } from "../src/index.ts";
 
 const options = {
   verbose: {
@@ -21,7 +21,7 @@ const options = {
   }
 };
 
-const commands = {
+const commands: Record<string, CommandSpec> = {
   compile: {
     desc: "run compile on the files",
     args: "<files...>",
@@ -35,6 +35,6 @@ const commands = {
 const nc = new NixClap()
   .version("1.0.0")
   .usage("$0 [options] <command> [options]")
-  .init(options, commands);
+  .init2({ options, subCommands: commands });
 
 nc.parse();

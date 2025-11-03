@@ -14,14 +14,16 @@ import { NixClap } from "../src/index.ts";
 
 new NixClap()
   .version("1.0.0")
-  .init({}, {
-    build: {
-      desc: "Build the project",
-      exec: () => console.log("Building...")
-    },
-    test: {
-      desc: "Run tests",
-      exec: () => console.log("Testing...")
+  .init2({
+    subCommands: {
+      build: {
+        desc: "Build the project",
+        exec: () => console.log("Building...")
+      },
+      test: {
+        desc: "Run tests",
+        exec: () => console.log("Testing...")
+      }
     }
   })
   .parse();

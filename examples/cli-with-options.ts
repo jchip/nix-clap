@@ -11,10 +11,11 @@
 
 import { NixClap } from "../src/index.ts";
 
-const nc = new NixClap()
-  .init({
+const nc = new NixClap().init2({
+  options: {
     name: { alias: "n", desc: "Your name", args: "<val string>" }
-  });
+  }
+});
 
 // Access parsed options
 const parsed = nc.parse();

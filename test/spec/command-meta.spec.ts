@@ -9,14 +9,14 @@ describe("CommandMeta", () => {
   };
 
   it("should properly initialize and populate all CommandMeta properties", () => {
-    const nc = new NixClap({ ...noOutputExit }).init(
-      {
+    const nc = new NixClap({ ...noOutputExit }).init2({
+      options: {
         strOpt: { args: "< string>" },
         numOpt: { args: "< number>" },
         boolOpt: { args: "< boolean>" },
         arrayOpt: { args: "< string..1,Inf>" }
       },
-      {
+      subCommands: {
         cmd1: {
           desc: "test command",
           alias: ["c1", "command1"],
@@ -25,7 +25,7 @@ describe("CommandMeta", () => {
           }
         }
       }
-    );
+    });
 
     const result = nc.parse([
       "node",
@@ -76,9 +76,8 @@ describe("CommandMeta", () => {
   });
 
   it("should handle nested subcommands with metadata", () => {
-    const nc = new NixClap({ ...noOutputExit }).init(
-      {},
-      {
+    const nc = new NixClap({ ...noOutputExit }).init2({
+      subCommands: {
         parent: {
           desc: "parent command",
           subCommands: {
@@ -96,7 +95,7 @@ describe("CommandMeta", () => {
           }
         }
       }
-    );
+    });
 
     const result = nc.parse(
       ["node", "test.js", "parent", "child", "grandchild", "--gc-opt", "value"],
@@ -118,7 +117,7 @@ describe("CommandMeta", () => {
     const nc = new NixClap({
       ...noOutputExit,
       allowUnknownCommand: true
-    }).init({}, {});
+    }).init2({});
     const result = nc.parse(["node", "test.js", "unknown"], 2);
 
     const meta = result.command.jsonMeta;
@@ -136,12 +135,11 @@ describe("CommandMeta", () => {
   });
 
   it("should handle camelCase conversion for long options", () => {
-    const nc = new NixClap({ ...noOutputExit }).init(
-      {
+    const nc = new NixClap({ ...noOutputExit }).init2({
+      options: {
         "kebab-case-opt": { args: "< string>" }
-      },
-      {}
-    );
+      }
+    });
 
     const result = nc.parse(["node", "test.js", "--kebab-case-opt", "value"], 2);
 
@@ -157,13 +155,12 @@ describe("CommandMeta", () => {
   });
 
   it("should track option sources", () => {
-    const nc = new NixClap({ ...noOutputExit }).init(
-      {
+    const nc = new NixClap({ ...noOutputExit }).init2({
+      options: {
         opt1: { args: "< string>", argDefault: "default" },
         opt2: { args: "< string>" }
-      },
-      {}
-    );
+      }
+    });
 
     const result = nc.parse(["--opt1", "cliValue"]);
 
@@ -183,12 +180,34 @@ describe("CommandMeta", () => {
         ...noOutputExit,
         allowUnknownCommand: true,
         allowUnknownOption: true
-      }).init({}, {});
+      }).init2({});
 
       const result = nc.parse(["node", "test.js", "unknown", "--foo", "bar"], 2);
       expect(result.command.subCmdNodes.unknown).toBeDefined();
       expect(result.command.subCmdNodes.unknown.name).toBe("unknown");
       expect(result.command.subCmdNodes.unknown.optNodes.foo).toBeDefined();
+    });
+
+    it("should get root command using getRootCmd method", () => {
+      const nc = new NixClap({ ...noOutputExit }).init2({
+        subCommands: {
+          parent: {
+            desc: "parent command",
+            subCommands: {
+              child: {
+                desc: "child command"
+              }
+            }
+          }
+        }
+      });
+
+      const result = nc.parse(["node", "test.js", "parent", "child"], 2);
+      const childCmd = result.command.subCmdNodes.parent.subCmdNodes.child;
+      const rootCmd = childCmd.rootCmd;
+
+      expect(rootCmd).toBe(result.command);
+      expect(rootCmd.name).toBe("test");
     });
   });
 });
