@@ -1,4 +1,4 @@
-import stripAnsi from "strip-ansi";
+import { stripAnsi } from "./strip-ansi.ts";
 
 /**
  * Converts a kebab-case string to camelCase.

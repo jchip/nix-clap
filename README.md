@@ -8,7 +8,7 @@ Simple, lightweight, flexible, and comprehensive Un\*x Command Line Argument Par
 
 ## Features
 
-- **Lightweight** - Minimal dependencies (only `strip-ansi` + `tslib`)
+- **Lightweight** - Minimal dependencies (`tslib`)
 - **Comprehensive** - Full Un\*x-style parsing with options, commands, sub-commands, and variadic arguments
 - **Root Command Support** - Define root command behavior directly in init2()
 - **Type-Safe** - Written in TypeScript with full type definitions
@@ -128,6 +128,7 @@ $ process file1.txt file2.txt         # "Processing: file1.txt, file2.txt"
 ```
 
 > **Note:** Root command only executes when:
+>
 > 1. Arguments are provided on the command line, AND
 > 2. No sub-command matches those arguments
 >
@@ -234,13 +235,13 @@ const nc = new NixClap().init2({
     count: { args: "<num number>", desc: "Item count" },
     format: { args: "<fmt>", desc: "Output format" }
   },
-  exec: (cmd) => {
+  exec: cmd => {
     const meta = cmd.jsonMeta;
 
     // ✅ Correct - access values directly
-    const output = meta.opts.output;  // "file.txt"
-    const count = meta.opts.count;    // 42
-    const format = meta.opts.format;  // "json"
+    const output = meta.opts.output; // "file.txt"
+    const count = meta.opts.count; // 42
+    const format = meta.opts.format; // "json"
   }
 });
 ```
@@ -255,15 +256,15 @@ const nc = new NixClap().init2({
     output: { args: "<path string>" },
     count: { args: "<num number>" }
   },
-  exec: (cmd) => {
+  exec: cmd => {
     const meta = cmd.jsonMeta;
 
     // Access by argument name
-    const path = meta.optsFull.output?.path;  // "file.txt"
-    const num = meta.optsFull.count?.num;     // 42
+    const path = meta.optsFull.output?.path; // "file.txt"
+    const num = meta.optsFull.count?.num; // 42
 
     // Or by positional index
-    const first = meta.optsFull.output?.[0];  // "file.txt"
+    const first = meta.optsFull.output?.[0]; // "file.txt"
   }
 });
 ```
@@ -296,13 +297,13 @@ const nc = new NixClap().init2({
 
 ```js
 // ❌ WRONG - trying to access argument name on simplified value
-const output = meta.opts.output?.path;  // undefined! (output is a string)
+const output = meta.opts.output?.path; // undefined! (output is a string)
 
 // ✅ CORRECT - use optsFull for argument names
-const output = meta.optsFull.output?.path;  // "file.txt"
+const output = meta.optsFull.output?.path; // "file.txt"
 
 // ✅ BETTER - use opts for simplicity
-const output = meta.opts.output;  // "file.txt"
+const output = meta.opts.output; // "file.txt"
 ```
 
 > See [examples/accessing-parsed-results.ts](./examples/accessing-parsed-results.ts)
@@ -317,20 +318,28 @@ NixClap provides two initialization methods. **`init2()` is the recommended prim
 
 ```js
 new NixClap().init2({
-  args: "[files string..]",        // Root command arguments
-  exec: cmd => { /* ... */ },      // Root command handler
-  options: { /* ... */ },          // Global options
-  subCommands: { /* ... */ }       // Sub-commands
+  args: "[files string..]", // Root command arguments
+  exec: cmd => {
+    /* ... */
+  }, // Root command handler
+  options: {
+    /* ... */
+  }, // Global options
+  subCommands: {
+    /* ... */
+  } // Sub-commands
 });
 ```
 
 **Benefits:**
+
 - ✅ Define root command behavior (args + exec) directly
 - ✅ Single, declarative configuration object
 - ✅ More intuitive and consistent API
 - ✅ Full control over root command execution
 
 **When to use:**
+
 - You need root command to handle arguments directly (e.g., `mycli file.txt`)
 - You want a clean, declarative configuration
 - You're building any CLI (simple or complex)
@@ -341,20 +350,30 @@ new NixClap().init2({
 
 ```js
 new NixClap().init(
-  { /* options */ },
-  { /* commands */ }
+  {
+    /* options */
+  },
+  {
+    /* commands */
+  }
 );
 ```
 
 This is equivalent to:
+
 ```js
 new NixClap().init2({
-  options: { /* options */ },
-  subCommands: { /* commands */ }
+  options: {
+    /* options */
+  },
+  subCommands: {
+    /* commands */
+  }
 });
 ```
 
 **When to use:**
+
 - Maintaining existing code that uses `init()`
 - Very simple CLIs with just options and commands
 - You prefer two separate parameters over one object
@@ -437,6 +456,7 @@ Does a sub-command match?
 ```
 
 **Key Points:**
+
 1. **Sub-commands always win**: If any argument matches a sub-command name, that sub-command executes
 2. **Root needs arguments**: Root command only executes when non-option arguments are provided
 3. **Default command fallback**: Executes when no args provided and no sub-command matches
@@ -460,16 +480,19 @@ $ mycli --help            # ⚠️  Shows help (--help is handled before executi
 See [examples](./examples) folder for more working samples:
 
 **Getting Started:**
+
 - [quick-start.ts](./examples/quick-start.ts) - Minimal quick start example
 - [simple-cli.ts](./examples/simple-cli.ts) - Simple CLI with commands
 - [cli-with-options.ts](./examples/cli-with-options.ts) - CLI with options
 - [cli-command-args.ts](./examples/cli-command-args.ts) - Commands with arguments
 
 **Root Commands:**
+
 - [simple-root-command.ts](./examples/simple-root-command.ts) - Simple root command
 - [root-command.ts](./examples/root-command.ts) - Comprehensive root command example
 
 **Options and Arguments:**
+
 - [options.ts](./examples/options.ts) - Various option patterns
 - [options-only.ts](./examples/options-only.ts) - Options without commands
 - [with-commands.ts](./examples/with-commands.ts) - Commands with options and arguments
@@ -477,6 +500,7 @@ See [examples](./examples) folder for more working samples:
 - [numbers.ts](./examples/numbers.ts) - Numeric arguments and operations
 
 **Advanced Features:**
+
 - [async-await.ts](./examples/async-await.ts) - Async command handlers
 - [default-command.ts](./examples/default-command.ts) - Using default commands
 - [accessing-parsed-results.ts](./examples/accessing-parsed-results.ts) - Working with parsed data
@@ -485,6 +509,7 @@ See [examples](./examples) folder for more working samples:
 - [unknown-multi-cmds.ts](./examples/unknown-multi-cmds.ts) - Multiple unknown commands
 
 **TypeScript:**
+
 - [typescript-usage.ts](./examples/typescript-usage.ts) - TypeScript integration
 
 # Parsing Capabilities
@@ -658,7 +683,7 @@ const options = {
     argDefault: ["6", "coke", "true", "foo"],
     // customTypes defines custom type validators/coercers
     customTypes: {
-      beverage: /^(coke|pepsi)$/  // beverage must match this RegExp
+      beverage: /^(coke|pepsi)$/ // beverage must match this RegExp
     },
     allowCmd: ["cmd1", "cmd2"]
   },
@@ -753,17 +778,18 @@ The `args` string uses a specific format to define command and option arguments:
 
 **Built-in Type Behaviors:**
 
-| Type | Coercion Behavior | Example Input | Parsed Value | Notes |
-|------|-------------------|---------------|--------------|-------|
-| `string` | No coercion | `"hello"` | `"hello"` | Default type if not specified |
-| `number` | `parseInt(val, 10)` | `"42"` | `42` | Parses as integer |
-| `float` | `parseFloat(val)` | `"3.14"` | `3.14` | Parses as floating point |
-| `boolean` | Checks for truthy values | `"true"`, `"1"`, `"yes"` | `true` | `"false"`, `"0"`, `"no"` → `false` |
-| `count` | Increments on each use | `-vvv` | `3` | Only for options, counts occurrences |
+| Type      | Coercion Behavior        | Example Input            | Parsed Value | Notes                                |
+| --------- | ------------------------ | ------------------------ | ------------ | ------------------------------------ |
+| `string`  | No coercion              | `"hello"`                | `"hello"`    | Default type if not specified        |
+| `number`  | `parseInt(val, 10)`      | `"42"`                   | `42`         | Parses as integer                    |
+| `float`   | `parseFloat(val)`        | `"3.14"`                 | `3.14`       | Parses as floating point             |
+| `boolean` | Checks for truthy values | `"true"`, `"1"`, `"yes"` | `true`       | `"false"`, `"0"`, `"no"` → `false`   |
+| `count`   | Increments on each use   | `-vvv`                   | `3`          | Only for options, counts occurrences |
 
 **Type Coercion Failures:**
 
 When a value cannot be coerced to the specified type:
+
 - String values that fail number/float parsing return `NaN`
 - Values that fail custom type validation trigger `regex-unmatch` event
 - If `argDefault` is specified, the default value is used
@@ -929,14 +955,14 @@ if (parsed.errorNodes && parsed.errorNodes.length > 0) {
 
 **Common Error Types:**
 
-| Error Type | When It Occurs | Example |
-|------------|----------------|---------|
-| `InvalidArgSpecifierError` | Invalid args spec format | `args: "<required> [optional]"` (required after optional) |
-| `UnknownOptionError` | Unknown option encountered | `--unknown` when `allowUnknownOption: false` |
-| `UnknownCliArgError` | Unknown argument provided | Extra args when strict mode enabled |
-| Missing required argument | Required arg not provided | `<file>` not provided |
-| Type coercion failure | Value doesn't match custom type | `--port abc` when expecting number |
-| RegExp validation failure | Value doesn't match RegExp | `--env prod` when only `/(dev\|test)/` allowed |
+| Error Type                 | When It Occurs                  | Example                                                   |
+| -------------------------- | ------------------------------- | --------------------------------------------------------- |
+| `InvalidArgSpecifierError` | Invalid args spec format        | `args: "<required> [optional]"` (required after optional) |
+| `UnknownOptionError`       | Unknown option encountered      | `--unknown` when `allowUnknownOption: false`              |
+| `UnknownCliArgError`       | Unknown argument provided       | Extra args when strict mode enabled                       |
+| Missing required argument  | Required arg not provided       | `<file>` not provided                                     |
+| Type coercion failure      | Value doesn't match custom type | `--port abc` when expecting number                        |
+| RegExp validation failure  | Value doesn't match RegExp      | `--env prod` when only `/(dev\|test)/` allowed            |
 
 **Error Handling Patterns:**
 
@@ -957,9 +983,7 @@ if (parsed.errorNodes?.length) {
 }
 
 // Pattern 3: Selective error handling
-const nc = new NixClap()
-  .removeDefaultHandlers("parse-fail")
-  .init(options, commands);
+const nc = new NixClap().removeDefaultHandlers("parse-fail").init(options, commands);
 
 const parsed = nc.parse();
 if (parsed.errorNodes?.length) {
@@ -1048,18 +1072,18 @@ exec: async cmd => {
 
 ### Event Reference
 
-| Event | When Emitted | Parameters | Common Use Case |
-|-------|--------------|------------|-----------------|
-| `pre-help` | Before help output is displayed | `{ self: NixClap }` | Modify help display, add headers |
-| `help` | When `--help` is requested | `ParseResult` | Custom help formatting |
-| `post-help` | After help output is displayed | `{ self: NixClap }` | Add footer, cleanup |
-| `parsed` | After parsing, before exec handlers | `{ nixClap: NixClap, parsed: ParseResult }` | Validation, logging, transformations |
-| `parse-fail` | When parsing encounters errors | `ParseResult` (with `errorNodes`) | Custom error reporting |
-| `unknown-option` | Unknown option encountered | `string` (option name) | Dynamic option handling |
-| `unknown-command` | Unknown command encountered | `{ name: string, ... }` | Dynamic command routing |
-| `no-action` | No command with exec was invoked | none | Show help or default behavior |
-| `regex-unmatch` | Value doesn't match RegExp validator | `{ value: string, name: string, ... }` | Custom validation messages |
-| `exit` | Program should terminate | `number` (exit code) | Cleanup, logging before exit |
+| Event             | When Emitted                         | Parameters                                  | Common Use Case                      |
+| ----------------- | ------------------------------------ | ------------------------------------------- | ------------------------------------ |
+| `pre-help`        | Before help output is displayed      | `{ self: NixClap }`                         | Modify help display, add headers     |
+| `help`            | When `--help` is requested           | `ParseResult`                               | Custom help formatting               |
+| `post-help`       | After help output is displayed       | `{ self: NixClap }`                         | Add footer, cleanup                  |
+| `parsed`          | After parsing, before exec handlers  | `{ nixClap: NixClap, parsed: ParseResult }` | Validation, logging, transformations |
+| `parse-fail`      | When parsing encounters errors       | `ParseResult` (with `errorNodes`)           | Custom error reporting               |
+| `unknown-option`  | Unknown option encountered           | `string` (option name)                      | Dynamic option handling              |
+| `unknown-command` | Unknown command encountered          | `{ name: string, ... }`                     | Dynamic command routing              |
+| `no-action`       | No command with exec was invoked     | none                                        | Show help or default behavior        |
+| `regex-unmatch`   | Value doesn't match RegExp validator | `{ value: string, name: string, ... }`      | Custom validation messages           |
+| `exit`            | Program should terminate             | `number` (exit code)                        | Cleanup, logging before exit         |
 
 ### Event Lifecycle
 
@@ -1090,12 +1114,12 @@ Return parse result
 ```js
 const nc = new NixClap().init(options, commands);
 
-nc.on('parsed', ({ parsed }) => {
-  console.log('Parsed successfully:', parsed.command.name);
+nc.on("parsed", ({ parsed }) => {
+  console.log("Parsed successfully:", parsed.command.name);
 });
 
-nc.on('parse-fail', (parsed) => {
-  console.error('Parse failed with', parsed.errorNodes.length, 'errors');
+nc.on("parse-fail", parsed => {
+  console.error("Parse failed with", parsed.errorNodes.length, "errors");
 });
 
 nc.parse();
@@ -1104,21 +1128,21 @@ nc.parse();
 **Custom Help Handling:**
 
 ```js
-nc.on('pre-help', ({ self }) => {
-  console.log('╔═══════════════════╗');
-  console.log('║   My Awesome CLI   ║');
-  console.log('╚═══════════════════╝\n');
+nc.on("pre-help", ({ self }) => {
+  console.log("╔═══════════════════╗");
+  console.log("║   My Awesome CLI   ║");
+  console.log("╚═══════════════════╝\n");
 });
 
-nc.on('post-help', () => {
-  console.log('\nFor more info: https://example.com/docs');
+nc.on("post-help", () => {
+  console.log("\nFor more info: https://example.com/docs");
 });
 ```
 
 **Dynamic Command Handling:**
 
 ```js
-nc.on('unknown-command', (ctx) => {
+nc.on("unknown-command", ctx => {
   console.log(`Did you mean: ${suggestCommand(ctx.name)}?`);
   process.exit(1);
 });
@@ -1300,7 +1324,7 @@ Return: The `NixClap` instance itself.
 init2({
   options: options,
   subCommands: commands
-})
+});
 ```
 
 **Example:**
@@ -1322,6 +1346,7 @@ const nc = new NixClap().init2({
 ```
 
 **Limitations:**
+
 - Cannot define root command arguments or exec handler directly
 - Less flexible than `init2()`
 - Primarily exists for backwards compatibility
@@ -1349,47 +1374,45 @@ Return: The `NixClap` instance itself.
 import { NixClap } from "nix-clap";
 
 // Root command with arguments
-const nc = new NixClap({ name: "process" })
-  .init2({
-    args: "<files string..>",
-    exec: cmd => {
-      const files = cmd.jsonMeta.args.files;
-      console.log("Processing:", files);
-    }
-  });
+const nc = new NixClap({ name: "process" }).init2({
+  args: "<files string..>",
+  exec: cmd => {
+    const files = cmd.jsonMeta.args.files;
+    console.log("Processing:", files);
+  }
+});
 ```
 
 **Complete Example with Options and Sub-commands:**
 
 ```js
-const nc = new NixClap({ name: "file-processor" })
-  .init2({
-    // Root command arguments
-    args: "[input string] [files string..]",
-    // Root command exec
-    exec: cmd => {
-      const meta = cmd.jsonMeta;
-      console.log("Root command:", meta.args);
-      console.log("Options:", meta.opts);
+const nc = new NixClap({ name: "file-processor" }).init2({
+  // Root command arguments
+  args: "[input string] [files string..]",
+  // Root command exec
+  exec: cmd => {
+    const meta = cmd.jsonMeta;
+    console.log("Root command:", meta.args);
+    console.log("Options:", meta.opts);
+  },
+  // Top-level options
+  options: {
+    verbose: { alias: "v", desc: "Verbose output" },
+    output: { alias: "o", desc: "Output file", args: "<path string>" }
+  },
+  // Sub-commands
+  subCommands: {
+    build: {
+      desc: "Build the project",
+      exec: cmd => console.log("Building...")
     },
-    // Top-level options
-    options: {
-      verbose: { alias: "v", desc: "Verbose output" },
-      output: { alias: "o", desc: "Output file", args: "<path string>" }
-    },
-    // Sub-commands
-    subCommands: {
-      build: {
-        desc: "Build the project",
-        exec: cmd => console.log("Building...")
-      },
-      convert: {
-        desc: "Convert files",
-        args: "<input string> <output string>",
-        exec: cmd => console.log("Converting...")
-      }
+    convert: {
+      desc: "Convert files",
+      args: "<input string> <output string>",
+      exec: cmd => console.log("Converting...")
     }
-  });
+  }
+});
 ```
 
 **Advantages over init():**
@@ -1415,20 +1438,18 @@ Set the default command which is invoked when no command was given in command li
 
 ```js
 // Make 'build' the default command
-const nc = new NixClap({ defaultCommand: "build" })
-  .version("1.0.0")
-  .init2({
-    subCommands: {
-      build: {
-        desc: "Build the project",
-        exec: cmd => console.log("Building...")
-      },
-      test: {
-        desc: "Run tests",
-        exec: cmd => console.log("Testing...")
-      }
+const nc = new NixClap({ defaultCommand: "build" }).version("1.0.0").init2({
+  subCommands: {
+    build: {
+      desc: "Build the project",
+      exec: cmd => console.log("Building...")
+    },
+    test: {
+      desc: "Run tests",
+      exec: cmd => console.log("Testing...")
     }
-  });
+  }
+});
 
 // These are equivalent:
 // $ my-prog          # Runs 'build' (default)
@@ -1441,7 +1462,7 @@ When using `init2()` with both a root command and a default command:
 
 ```js
 const nc = new NixClap({ defaultCommand: "serve" }).init2({
-  args: "[files string..]",  // Root command args
+  args: "[files string..]", // Root command args
   exec: cmd => console.log("Root:", cmd.jsonMeta.args.files),
   subCommands: {
     serve: { desc: "Start server", exec: () => console.log("Serving...") },
@@ -1451,6 +1472,7 @@ const nc = new NixClap({ defaultCommand: "serve" }).init2({
 ```
 
 **Execution priority:**
+
 1. **Sub-command match** → Executes matched sub-command
 2. **Arguments provided** → Executes root command
 3. **No arguments** → Executes default command
@@ -1595,7 +1617,7 @@ import { NixClap, CommandSpec } from "nix-clap";
 const rootSpec: CommandSpec = {
   args: "[input string] [files string..]",
   desc: "Process input files",
-  exec: (cmd) => {
+  exec: cmd => {
     const { input, files } = cmd.jsonMeta.args;
     console.log("Processing:", input, files);
   },
@@ -1636,7 +1658,7 @@ const commands: Record<string, CommandSpec> = {
   process: {
     args: "<files string..>",
     desc: "Process files",
-    exec: (cmd) => {
+    exec: cmd => {
       const { files } = cmd.jsonMeta.args;
       const { output, verbose } = cmd.jsonMeta.opts;
       console.log("Files:", files);
@@ -1649,7 +1671,7 @@ const commands: Record<string, CommandSpec> = {
 // Use with init2() for root command
 const nc = new NixClap().init2({
   args: "[input string]",
-  exec: (cmd) => {
+  exec: cmd => {
     const { input } = cmd.jsonMeta.args;
     console.log("Input:", input);
   },
@@ -1673,14 +1695,12 @@ const nc = new NixClap().init2({
 
 ```js
 // ✅ Recommended - modern, flexible API
-const nc = new NixClap()
-  .version("1.0.0")
-  .init2({
-    args: "[files string..]",
-    exec: cmd => console.log(cmd.jsonMeta.args.files),
-    options: { verbose: { alias: "v" } },
-    subCommands: { build: { desc: "Build", exec: () => {} } }
-  });
+const nc = new NixClap().version("1.0.0").init2({
+  args: "[files string..]",
+  exec: cmd => console.log(cmd.jsonMeta.args.files),
+  options: { verbose: { alias: "v" } },
+  subCommands: { build: { desc: "Build", exec: () => {} } }
+});
 
 // ⚠️  Older approach - works but less flexible
 const nc = new NixClap().init(
@@ -1693,15 +1713,10 @@ const nc = new NixClap().init(
 
 ```js
 // ✅ Correct order
-const nc = new NixClap()
-  .version("1.0.0")
-  .usage("$0 [cmd]")
-  .init2({ options, subCommands });
+const nc = new NixClap().version("1.0.0").usage("$0 [cmd]").init2({ options, subCommands });
 
 // ❌ Wrong - version/usage/help must come before init2()
-const nc = new NixClap()
-  .init2({ options, subCommands })
-  .version("1.0.0");  // Too late!
+const nc = new NixClap().init2({ options, subCommands }).version("1.0.0"); // Too late!
 ```
 
 ### 3. Use `jsonMeta` for accessing parsed data
@@ -1718,8 +1733,7 @@ const opts = parsed.command.optNodes;
 ### 4. Handle errors properly
 
 ```js
-const nc = new NixClap({ noDefaultHandlers: true })
-  .init2({ options, subCommands });
+const nc = new NixClap({ noDefaultHandlers: true }).init2({ options, subCommands });
 const parsed = nc.parse();
 
 if (parsed.errorNodes?.length > 0) {
