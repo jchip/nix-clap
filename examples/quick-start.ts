@@ -23,7 +23,7 @@ const nc = new NixClap()
         desc: "Build the project",
         exec: (cmd, breadcrumb) => {
           // Access verbose from root command using rootCmd property
-          const verbose = cmd.rootCmd.jsonMeta.opts.verbose;
+          const verbose = cmd.rootCmd.opts.verbose;
           console.log("Building...");
           console.log("Verbose flag", verbose);
           if (verbose) {

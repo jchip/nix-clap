@@ -15,8 +15,8 @@ import { NixClap } from "../src/index.ts";
 new NixClap({ name: "process" })
   .init2({
     args: "<files string..>",
-    exec: (cmd) => {
-      const files = cmd.jsonMeta.args.files;
+    exec: cmd => {
+      const files = cmd.args.files;
       console.log(`Processing ${files.length} file(s):`);
       files.forEach(f => console.log(`  - ${f}`));
     }

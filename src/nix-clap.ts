@@ -152,10 +152,10 @@ export type NixClapConfig = {
  * Represents the result of parsing command-line arguments.
  *
  * @property {ClapNode[]} [errorNodes] - Optional array of nodes that encountered errors during parsing.
- * @property {CommandNode} command - The command node that was parsed.
- * @property {string[]} _ - Array of non-option arguments.
+ * @property {CommandNode} command - The root command of the parsed CLI args structure.
+ * @property {string[]} _ - Remaining args after `--` if it was specified.
  * @property {string[]} argv - Array of all arguments passed to the command.
- * @property {number} index - The current index in the argument list.
+ * @property {number} index - The current index in the argument list, in case not everything was consumed.
  */
 export type ParseResult = {
   errorNodes?: ClapNode[];
@@ -350,10 +350,9 @@ export class NixClap extends EventEmitter {
   }
 
   /**
-   * Initialize NixClap with a single root command spec (clean API).
+   * Initialize NixClap with a single root command spec.
    *
-   * This is the architecturally clean way to initialize NixClap - the root command
-   * is just a CommandSpec like any other, with its options and subCommands defined inline.
+   * The root command is a CommandSpec, with its options and subCommands defined inline.
    *
    * @param rootCommandSpec - Complete specification for the root command including options and subCommands
    * @returns this

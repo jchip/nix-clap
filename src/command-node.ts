@@ -42,12 +42,19 @@ export class CommandNode extends ClapNode {
     this.isGreedy = false;
   }
 
+  /** get the options with full values for this command */
   get options() {
     return this.jsonMeta.optsFull;
   }
 
+  /** get the options for this command */
   get opts() {
     return this.jsonMeta.opts;
+  }
+
+  /** get the arguments for this command */
+  get args() {
+    return this.jsonMeta.args;
   }
 
   get source() {

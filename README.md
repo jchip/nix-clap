@@ -37,11 +37,11 @@ new NixClap()
     subCommands: {
       build: {
         desc: "Build the project",
-        exec: () => console.log("Building...")
+        exec: cmd => console.log("Building...", cmd.opts, cmd.args)
       },
       test: {
         desc: "Run tests",
-        exec: () => console.log("Testing...")
+        exec: cmd => console.log("Testing...", cmd.opts, cmd.args)
       }
     }
   })
@@ -60,15 +60,16 @@ $ my-cli --version    # Shows version
 ```js
 import { NixClap } from "nix-clap";
 
-const nc = new NixClap().init2({
-  options: {
-    name: { alias: "n", desc: "Your name", args: "<string>" }
-  }
-});
+const parsed = new NixClap()
+  .init2({
+    options: {
+      name: { alias: "n", desc: "Your name", args: "<string>" }
+    }
+  })
+  .parse();
 
 // Access parsed options
-const parsed = nc.parse();
-const name = parsed.command.jsonMeta.opts.name;
+const name = parsed.command.opts.name;
 
 if (name) {
   console.log(`Hello ${name}!`);
@@ -92,7 +93,7 @@ new NixClap()
         desc: "Copy files",
         args: "<source string> <dest string>",
         exec: cmd => {
-          const { source, dest } = cmd.jsonMeta.args;
+          const { source, dest } = cmd.args;
           console.log(`Copying ${source} to ${dest}`);
         }
       }
@@ -115,7 +116,7 @@ new NixClap({ name: "process" })
   .init2({
     args: "<files string..>",
     exec: cmd => {
-      const files = cmd.jsonMeta.args.files;
+      const files = cmd.args.files;
       console.log(`Processing: ${files.join(", ")}`);
     }
   })

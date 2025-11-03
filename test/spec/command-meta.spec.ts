@@ -209,5 +209,21 @@ describe("CommandMeta", () => {
       expect(rootCmd).toBe(result.command);
       expect(rootCmd.name).toBe("test");
     });
+
+    it("should return args via CommandNode.args getter", () => {
+      const nc = new NixClap({ ...noOutputExit }).init2({
+        subCommands: {
+          cmd1: {
+            desc: "test command",
+            args: "<files string..>"
+          }
+        }
+      });
+
+      const result = nc.parse(["node", "test.js", "cmd1", "arg1", "arg2"]);
+
+      const cmd = result.command.subCmdNodes.cmd1;
+      expect(cmd.args).toEqual({ "0": ["arg1", "arg2"], files: ["arg1", "arg2"] });
+    });
   });
 });
