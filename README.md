@@ -582,6 +582,58 @@ Example: `prog -xazvf=hello --foo-option hello bar -. --enable-blah`
   - ie: `cmd1 arg1 arg2 --some-array abc def ghi -. cmd2 arg1 arg2`.
 - Allow arbitrary unknown options but with arguments specified through `=` only.
   - Since it's ambiguous whether to take a non-option arg following an unknown option as an argument or a command.
+
+### Unknown Options Behavior
+
+When `allowUnknownOption` is enabled, unknown options follow a specific resolution pattern:
+
+**Option Resolution: Unknown options bubble up to parent commands**
+
+Unknown options are first attempted to be resolved on the current command. If not found, they bubble up to parent commands until reaching the root command. This allows sub-commands to inherit options from their parents while still allowing command-specific overrides.
+
+**Root Command Storage: The root command stores unknown options**
+
+If an unknown option cannot be resolved on any command in the hierarchy, it gets stored on the root command (when `allowUnknownOption: true`). This makes the root command the central repository for all unrecognized options.
+
+**Access Pattern: Use `cmd.rootCmd.opts` to access parent/root command options**
+
+To access options that may be stored on parent commands or the root:
+
+```js
+const nc = new NixClap({ allowUnknownOption: true }).init2({
+  subCommands: {
+    build: {
+      exec: cmd => {
+        // Access options from current command
+        const localOpts = cmd.opts;
+
+        // Access options from root command (includes bubbled up unknown options)
+        const rootOpts = cmd.rootCmd.opts;
+
+        // Combine or prioritize as needed
+        const verbose = localOpts.verbose || rootOpts.verbose;
+        console.log("Verbose:", verbose);
+      }
+    }
+  }
+});
+```
+
+**Example:**
+
+```bash
+# Unknown option --custom-flag bubbles up to root command
+$ my-cli build --custom-flag=value
+
+# In the build command exec handler:
+exec: cmd => {
+  console.log(cmd.opts.customFlag);        // undefined (not on build command)
+  console.log(cmd.rootCmd.opts.customFlag); // "value" (stored on root)
+}
+```
+
+This behavior enables flexible option inheritance while maintaining command-specific option isolation.
+
 - Counting number of option occurrences.
 - Boolean option can be negated with `--no-` prefix.
 - Allow custom value type coercions with a function or RegExp.
