@@ -1,17 +1,22 @@
 import { BaseSpec, CliBase, isRootCommand } from "./base.ts";
 import { CommandNode } from "./command-node.ts";
-import { NixClapConfig } from "./nix-clap.ts";
+import { NixClapConfig, ParseResult } from "./nix-clap.ts";
 import { GroupOptionSpec, Options } from "./options.ts";
 import { cbOrVal, dup, fitLines, objEach } from "./xtil.ts";
 
 /**
- * The execution function you provide for a command. It is called with an array of command nodes.
+ * The execution function you provide for a command.
  *
  * IMPORTANT: Exec handlers should not modify the command structure (e.g., argsList, subCmdNodes)
  * during execution. The command structure is considered immutable after parsing is complete.
+ *
+ * @param cmd - The CommandNode instance for this command
+ * @param parsed - The parsed result containing remaining args after -- (optional)
+ *
+ * The command chain (sequence from root to this command) is accessible via `cmd.cmdChain`
  */
-export type CommandExecFunc = (cmd: CommandNode, cmdNodes?: CommandNode[]) => void;
-export type CommandExecAsyncFunc = (cmd: CommandNode, cmdNodes?: CommandNode[]) => Promise<void>;
+export type CommandExecFunc = (cmd: CommandNode, parsed?: ParseResult) => void;
+export type CommandExecAsyncFunc = (cmd: CommandNode, parsed?: ParseResult) => Promise<void>;
 
 /**
  * Represents the specification for a command.

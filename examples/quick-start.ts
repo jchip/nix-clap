@@ -21,7 +21,7 @@ const nc = new NixClap()
     subCommands: {
       build: {
         desc: "Build the project",
-        exec: (cmd, breadcrumb) => {
+        exec: (cmd) => {
           // Access verbose from root command using rootCmd property
           const verbose = cmd.rootCmd.opts.verbose;
           console.log("Building...");

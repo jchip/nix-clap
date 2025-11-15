@@ -971,6 +971,7 @@ Use the method [`parse`](#parseargv-start-parsed) to parse command line argument
       subCommands: {}
     }
   },
+  execCmd: undefined, // Set after runExec/runExecAsync - the command that was executed
   index: 5,
   error,
   _: [],
@@ -981,6 +982,7 @@ Use the method [`parse`](#parseargv-start-parsed) to parse command line argument
 Where:
 
 - `command` - The parsed command object with a `jsonMeta` property containing detailed information
+- `execCmd` - The command that was executed (set after `runExec`/`runExecAsync`). This is the primary command that ran, useful for accessing the executed command directly without traversing the command tree.
 - `index` - the index in `argv` parse stopped
 - `error` - If parse failed and your `parse-fail` event handler throws, then this will contain the parse error. See [skip default event behaviors](#skip-default-event-behaviors) for more details.
 - `argv` - original array of argv
@@ -1087,14 +1089,14 @@ The `source` field can have the following values:
 
 ### Command `exec` handler
 
-If the command has an `exec` handler, it receives two arguments:
+If the command has an `exec` handler, it receives the following arguments:
 
 ```js
-exec(cmd, breadcrumb);
+exec(cmd, parsed);
 ```
 
 - `cmd` - The `CommandNode` instance for this command
-- `breadcrumb` - Array of parent CommandNodes leading to this command (optional)
+- `parsed` - The parsed result containing remaining args after `--` (optional)
 
 You can access command-specific arguments and options through the `jsonMeta` property:
 
@@ -1105,13 +1107,30 @@ exec(cmd) {
   console.log("Options:", meta.opts);      // { verbose: true }
   console.log("Source:", meta.source);     // { verbose: "cli" }
   console.log("Sub-commands:", meta.subCommands);
+  
+  // Access command chain (sequence from root to this command)
+  const cmdChain = cmd.cmdChain;  // Array of CommandNodes from root to this command
+}
+```
+
+**Accessing remaining args after `--`:**
+
+```js
+exec(cmd, parsed) {
+  // Regular command arguments
+  console.log("Args:", cmd.jsonMeta.argList);  // ["a", "b", "c"]
+  
+  // Remaining args after --
+  if (parsed && parsed._.length > 0) {
+    console.log("Remaining:", parsed._);  // ["d", "e", "f", "--blah"]
+  }
 }
 ```
 
 **Async handlers:**
 
 ```js
-exec: async cmd => {
+exec: async (cmd, parsed) => {
   await someAsyncTask();
   // Use parseAsync() to ensure this completes before parse returns
 };

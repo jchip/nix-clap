@@ -6,6 +6,7 @@ import { ClapNodeGenerator, OptionSource } from "./node-generator.ts";
 import { camelCase } from "./xtil.ts";
 import { _PARENT } from "./symbols.ts";
 import { isRootCommand } from "./base.ts";
+import { ParseResult } from "./nix-clap.ts";
 
 /**
  * Object representation for an instance of a command on the CLI
@@ -113,7 +114,11 @@ export class CommandNode extends ClapNode {
     return cmds;
   }
 
-  getBreadCrumb() {
+  /**
+   * Get the command chain (sequence from root to this command, including itself)
+   * @returns Array of CommandNodes from root to this command
+   */
+  get cmdChain(): CommandNode[] {
     let parent = this;
     const nodes = [];
     while (parent && (parent = parent.getParent())) {
@@ -126,13 +131,17 @@ export class CommandNode extends ClapNode {
    * Invoke the command's exec handler
    *
    * @param includeSubCommands - if true, then also do sub commands
+   * @param parsed - The parsed result containing remaining args after --
    */
-  invokeExec(includeSubCommands: boolean) {
+  invokeExec(includeSubCommands: boolean, parsed?: ParseResult) {
     let count = 0;
     const cmds = this.getExecCommands([], includeSubCommands);
 
     for (const cmd of cmds) {
-      cmd.cmdBase.exec(cmd, cmd.getBreadCrumb());
+      cmd.cmdBase.exec(cmd, parsed);
+      if (parsed && !parsed.execCmd) {
+        parsed.execCmd = cmd;
+      }
       count++;
     }
 
@@ -142,14 +151,18 @@ export class CommandNode extends ClapNode {
   /**
    *
    * @param includeSubCommands
+   * @param parsed - The parsed result containing remaining args after --
    * @returns
    */
-  async invokeExecAsync(includeSubCommands: boolean): Promise<number> {
+  async invokeExecAsync(includeSubCommands: boolean, parsed?: ParseResult): Promise<number> {
     let count = 0;
     const cmds = this.getExecCommands([], includeSubCommands);
 
     for (const cmd of cmds) {
-      await cmd.cmdBase.exec(cmd, cmd.getBreadCrumb());
+      await cmd.cmdBase.exec(cmd, parsed);
+      if (parsed && !parsed.execCmd) {
+        parsed.execCmd = cmd;
+      }
       count++;
     }
 

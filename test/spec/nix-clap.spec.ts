@@ -933,6 +933,42 @@ describe("nix-clap", () => {
     expect(x3.command.jsonMeta.subCommands.cmd7.argList).deep.eq(["a", "b", "c"]);
   });
 
+  it("should pass parsed result to exec handler with remaining args after --", () => {
+    const nc = new NixClap({ ...noOutputExit, skipExec: true }).init({}, {
+      cmd: {
+        args: "[args string..]",
+        exec: (cmd: CommandNode, parsed?: ParseResult) => {
+          invoked = cmd;
+          expect(parsed).to.be.ok;
+          expect(parsed._).to.deep.eq(["d", "e", "f", "--blah"]);
+          expect(cmd.jsonMeta.argList).deep.eq(["a", "b", "c"]);
+        }
+      }
+    });
+
+    const parsed = nc.parse(getArgv("cmd a b c -- d e f --blah"));
+    nc.runExec(parsed);
+    expect(invoked).to.be.ok;
+    expect(invoked.name).to.equal("cmd");
+    expect(parsed.execCmd).to.be.ok;
+    expect(parsed.execCmd.name).to.equal("cmd");
+  });
+
+  it("should set execCmd on parsed result after execution", () => {
+    const nc = new NixClap({ ...noOutputExit, skipExec: true }).init({}, {
+      build: {
+        desc: "Build command",
+        exec: () => {}
+      }
+    });
+
+    const parsed = nc.parse(getArgv("build"));
+    expect(parsed.execCmd).to.be.undefined;
+    nc.runExec(parsed);
+    expect(parsed.execCmd).to.be.ok;
+    expect(parsed.execCmd.name).to.equal("build");
+  });
+
   it("should terminate command array and parsing with --", () => {
     const nc = initParser();
     const x = nc.parse(getArgv("cmd1 -- d --1f=xyz"));
@@ -1662,11 +1698,11 @@ describe("nix-clap", () => {
 
   it("should invoke cmd exec", async () => {
     let execed = false;
-    const exec: CommandExecFunc = (cmd: CommandNode, cmdNodes?: CommandNode[]) => {
+    const exec: CommandExecFunc = (cmd: CommandNode) => {
       execed = true;
     };
 
-    const execAsync: CommandExecFunc = async (cmd: CommandNode, cmdNodes?: CommandNode[]) => {
+    const execAsync: CommandExecFunc = async (cmd: CommandNode) => {
       execed = true;
     };
 
@@ -2128,8 +2164,8 @@ Options:
   it("should invoke default command handler with its default options applied", async () => {
     const verify = async (a: boolean) => {
       let cmd: CommandNode | undefined;
-      const exec = (cmdX: CommandNode, nodes: CommandNode[]) => (cmd = nodes.at(-1));
-      const execAsync = async (cmdX: CommandNode, nodes: CommandNode[]) => (cmd = nodes.at(-1));
+      const exec = (cmdX: CommandNode) => (cmd = cmdX.cmdChain.at(-1));
+      const execAsync = async (cmdX: CommandNode) => (cmd = cmdX.cmdChain.at(-1));
       const nc = new NixClap({ ...noOutputExit, defaultCommand: "foo" }).init(
         {},
         {

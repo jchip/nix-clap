@@ -153,6 +153,7 @@ export type NixClapConfig = {
  *
  * @property {ClapNode[]} [errorNodes] - Optional array of nodes that encountered errors during parsing.
  * @property {CommandNode} command - The root command of the parsed CLI args structure.
+ * @property {CommandNode} [execCmd] - The command that was executed (set after runExec/runExecAsync).
  * @property {string[]} _ - Remaining args after `--` if it was specified.
  * @property {string[]} argv - Array of all arguments passed to the command.
  * @property {number} index - The current index in the argument list, in case not everything was consumed.
@@ -160,6 +161,7 @@ export type NixClapConfig = {
 export type ParseResult = {
   errorNodes?: ClapNode[];
   command: CommandNode;
+  execCmd?: CommandNode;
   _: string[];
   argv: string[];
   index: number;
@@ -782,13 +784,16 @@ export class NixClap extends EventEmitter {
   runExec(parsed: ParseResult): number {
     const command = parsed.command;
 
-    let count = command.invokeExec(true);
+    let count = command.invokeExec(true, parsed);
 
     // Check if root command should execute FIRST (before defaultCommand)
     // This gives priority to root command when arguments are provided
     // See _shouldExecuteRootCommand() for execution conditions
     if (this._shouldExecuteRootCommand(command, count)) {
-      command.cmdBase.exec(command, command.getBreadCrumb());
+      command.cmdBase.exec(command, parsed);
+      if (!parsed.execCmd) {
+        parsed.execCmd = command;
+      }
       count = 1;
     }
 
@@ -796,7 +801,8 @@ export class NixClap extends EventEmitter {
     if (count === 0 && command.cmdBase.getExecCount() > 0) {
       const defaultCmd = this._makeDefaultExecCommand(parsed);
       if (defaultCmd) {
-        count = defaultCmd.invokeExec(true);
+        count = defaultCmd.invokeExec(true, parsed);
+        // execCmd is set by invokeExec if a command executed
       }
     }
 
@@ -823,12 +829,15 @@ export class NixClap extends EventEmitter {
   async runExecAsync(parsed: ParseResult): Promise<number> {
     const command = parsed.command;
 
-    let count = await command.invokeExecAsync(true);
+    let count = await command.invokeExecAsync(true, parsed);
 
     // Check if root command should execute FIRST (before defaultCommand)
     // This gives priority to root command when arguments are provided
     if (this._shouldExecuteRootCommand(command, count)) {
-      await command.cmdBase.exec(command, command.getBreadCrumb());
+      await command.cmdBase.exec(command, parsed);
+      if (!parsed.execCmd) {
+        parsed.execCmd = command;
+      }
       count = 1;
     }
 
@@ -836,7 +845,8 @@ export class NixClap extends EventEmitter {
     if (count === 0 && command.cmdBase.getExecCount() > 0) {
       const defaultCmd = this._makeDefaultExecCommand(parsed);
       if (defaultCmd) {
-        count = await defaultCmd.invokeExecAsync(true);
+        count = await defaultCmd.invokeExecAsync(true, parsed);
+        // execCmd is set by invokeExecAsync if a command executed
       }
     }
 
