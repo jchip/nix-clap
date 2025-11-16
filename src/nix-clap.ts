@@ -8,6 +8,8 @@ import { CommandNode } from "./command-node.ts";
 import { isRootCommand, rootCommandName } from "./base.ts";
 import { ClapNode } from "./clap-node.ts";
 import { unknownCommandBase } from "./command-base.ts";
+import { _PARENT } from "./symbols.ts";
+import { OptionNode } from "./option-node.ts";
 
 const HELP = Symbol("help");
 
@@ -40,6 +42,8 @@ export const defaultExit = (code: number) => {
  * @property {string} [defaultCommand] - Name of the default command. It can be only one of the top level commands.
  * Sub commands cannot be the default command.
  * @property {boolean} [allowUnknownCommand] - When encounter an unknown command, take it and continue processing.
+ * @property {string} [unknownCommandFallback] - When encounter an unknown command at root level, treat it as arguments to this command.
+ * For example, with `unknownCommandFallback: "run"`, `prog unknown` becomes `prog run unknown`.
  * @property {string} [usage] - Usage message. Can also set with the `usage` method.
  * @property {string} [cmdUsage] - Generic usage message for commands. Can also set with the `cmdUsage` method.
  * @property {boolean} [skipExec] - Set to `true` to skip calling command `exec` handlers after parse.
@@ -93,6 +97,11 @@ export type NixClapConfig = {
    * When encounter an unknown command, take it and continue processing.
    */
   allowUnknownCommand?: boolean;
+  /**
+   * When encounter an unknown command at root level, treat it as arguments to this command.
+   * For example, with `unknownCommandFallback: "run"`, `prog unknown` becomes `prog run unknown`.
+   */
+  unknownCommandFallback?: string;
 
   /**
    * When encounter an unknown option, take it without creating an error.
@@ -380,6 +389,7 @@ export class NixClap extends EventEmitter {
       // eslint-disable-next-line dot-notation
       options["help"] = this._helpOpt;
     }
+
 
     this._options = options;
     this._commands = commands;
@@ -797,15 +807,6 @@ export class NixClap extends EventEmitter {
       count = 1;
     }
 
-    // Then check defaultCommand (only if root command didn't execute)
-    if (count === 0 && command.cmdBase.getExecCount() > 0) {
-      const defaultCmd = this._makeDefaultExecCommand(parsed);
-      if (defaultCmd) {
-        count = defaultCmd.invokeExec(true, parsed);
-        // execCmd is set by invokeExec if a command executed
-      }
-    }
-
     // Emit no-action only if truly no command was executed
     if (count === 0 && command.cmdBase.getExecCount() > 0) {
       this.emit("no-action");
@@ -841,14 +842,6 @@ export class NixClap extends EventEmitter {
       count = 1;
     }
 
-    // Then check defaultCommand (only if root command didn't execute)
-    if (count === 0 && command.cmdBase.getExecCount() > 0) {
-      const defaultCmd = this._makeDefaultExecCommand(parsed);
-      if (defaultCmd) {
-        count = await defaultCmd.invokeExecAsync(true, parsed);
-        // execCmd is set by invokeExecAsync if a command executed
-      }
-    }
 
     // Emit no-action only if truly no command was executed
     if (count === 0 && command.cmdBase.getExecCount() > 0) {
@@ -858,48 +851,4 @@ export class NixClap extends EventEmitter {
     return count;
   }
 
-  /**
-   * Creates and adds a default command node to the parsed result if configured.
-   *
-   * This method is called during command execution (not parsing) when no other commands
-   * were executed. It creates a new CommandNode for the default command and adds it to
-   * the command tree.
-   *
-   * @param parsed - The parse result object
-   * @returns The created default CommandNode, or undefined if no default command should be created
-   *
-   * @remarks
-   * **Mutation Behavior**: This method INTENTIONALLY mutates the parsed result by:
-   * 1. Adding a new CommandNode to the command tree (line: command.addCommandNode(defaultCmd))
-   * 2. Adding errors to the command if default command is not found
-   * 3. Updating parsed.errorNodes if errors occur
-   *
-   * This mutation happens during execution (not parsing) and is part of the default command
-   * feature design. The default command is lazily added only when needed, rather than during
-   * initial parsing. This is an exception to the general immutability guideline for exec handlers.
-   *
-   * @private
-   */
-  _makeDefaultExecCommand(parsed: ParseResult): CommandNode {
-    const command = parsed.command;
-
-    if (
-      !this._skipExecDefault &&
-      this._config.defaultCommand &&
-      command.getExecCommands([], true).length === 0
-    ) {
-      const matched = command.cmdBase.matchSubCommand(this._config.defaultCommand);
-      if (matched.cmd) {
-        const defaultCmd = new CommandNode(matched.name, matched.alias, matched.cmd);
-        defaultCmd.applyDefaults();
-        command.addCommandNode(defaultCmd); // Intentional mutation for default command feature
-        return defaultCmd;
-      } else {
-        command.addError(new Error(`default command ${this._config.defaultCommand} not found`));
-        parsed.errorNodes = command.getErrorNodes(); // Intentional mutation for error tracking
-      }
-    }
-
-    return undefined;
-  }
 }

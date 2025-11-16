@@ -15,6 +15,7 @@ import { OptionMatch } from "./options.ts";
 import { isBoolean, toBoolean } from "./xtil.ts";
 import { CommandMatched } from "./command-base.ts";
 import { unknownCommandBase, unknownCommandBaseNoOptions } from "./command-base.ts";
+import { _PARENT } from "./symbols.ts";
 
 /**
  * Represents the source of an option in the application.
@@ -183,6 +184,45 @@ export class ClapNodeGenerator {
         return this.parent.consumeNonOptAsCommand(arg, parsingCmd);
       }
 
+      // Check for unknown command fallback at root level
+      // Only trigger if:
+      // 1. We're at root level
+      // 2. No known command has been matched yet (check if root has no sub-commands)
+      // 3. No non-option arguments have been processed at root yet (first non-option arg must be unknown)
+      // 4. unknownCommandFallback is configured
+      // 5. allowUnknownCommand is not enabled
+      if (
+        isRootCommand(this.cmdNode.alias) &&
+        Object.keys(this.cmdNode.subCmdNodes).length === 0 && // Ensure no command has been matched yet
+        this.cmdNode.argsList.length === 0 && // Ensure no non-option args have been processed yet
+        ncConfig?.unknownCommandFallback &&
+        !ncConfig.allowUnknownCommand
+      ) {
+        // Verify the fallback command exists
+        const fallbackMatched = cmd.matchSubCommand(ncConfig.unknownCommandFallback);
+        if (fallbackMatched.cmd) {
+          // Create the fallback command node
+          const fallbackNode = new CommandNode(
+            fallbackMatched.name,
+            fallbackMatched.alias,
+            fallbackMatched.cmd
+          );
+          cmdNode.addCommandNode(fallbackNode);
+
+          // Create builder for fallback command
+          const fallbackBuilder = new ClapNodeGenerator(fallbackNode);
+          fallbackBuilder.parent = this;
+
+          // Add the unknown command name as the first argument to the fallback command
+          fallbackNode.addVerbatimArg(arg);
+          fallbackBuilder.node.addArg(arg);
+
+          // Return the builder so parsing continues with the fallback command
+          return [fallbackBuilder];
+        }
+        // If fallback command doesn't exist, fall through to error
+      }
+
       // unknown command or invalid argument
       throw new UnknownCliArgError(
         `Encountered unknown CLI argument '${arg}' while parsing for command '${parsingCmd}'.`,
@@ -292,6 +332,7 @@ export class ClapNodeGenerator {
     if (!matched) {
       const allowUnknownOption = this.cmdNode?.cmdBase.allowUnknownOption;
       if (!allowUnknownOption) {
+        // Check parent command if option doesn't match current command
         if (allowUnknownOption === undefined && this.parent) {
           return this.parent.setOptValue(data, complete);
         }
@@ -434,6 +475,13 @@ export class ClapNodeGenerator {
    */
   makeOptNode(data: OptionMatch): ClapNodeGenerator[] {
     const optNode = this.setOptValue(data);
+    
+    // Check if the option node's parent command is different from current builder's command
+    // This happens when default command was inserted via option matching
+    const optParentCmd = optNode.getParent<CommandNode>();
+    const currentCmd = this.cmdNode;
+    
+    
     const builder = new ClapNodeGenerator(optNode, this);
     const minArg = data.value ? 1 : 0;
     if (!(optNode.option.args.length > minArg)) {

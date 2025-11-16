@@ -162,7 +162,7 @@ export class Parser {
   ): { command: CommandNode; index: number } {
     this._argv = argv;
 
-    const rootNode =
+    let rootNode =
       command ||
       new CommandNode(
         this._nc._rootCommand.name,
@@ -174,7 +174,53 @@ export class Parser {
 
     let _index = start;
 
-    this._builderStack = [new ClapNodeGenerator(rootNode)];
+    // Preprocess: check if there are any non-option arguments
+    // If all arguments are options (start with '-'), we may need to insert default command
+    // If there are non-option arguments, we don't need to insert default command
+    let hasNonOptionArgs = false;
+    for (let i = start; i < argv.length; i++) {
+      const arg = argv[i];
+      if (arg === "--") {
+        // Everything after -- is treated as non-option
+        hasNonOptionArgs = true;
+        break;
+      }
+      if (arg[0] !== "-") {
+        hasNonOptionArgs = true;
+        break;
+      }
+    }
+
+    // Check if default command is configured
+    const hasDefaultCommand = this._nc._rootCommand?.ncConfig?.defaultCommand !== undefined;
+    // Check if default command execution is skipped
+    // If skipped, don't insert upfront (it will be inserted during execution if needed)
+    const skipExecDefault = (this._nc as any)._skipExecDefault === true;
+    
+    // If no non-option args exist and default command is configured, insert it upfront
+    // This way all parsing happens under the default command from the start
+    // Skip if skipExecDefault is true (to prevent execution)
+    if (!hasNonOptionArgs && hasDefaultCommand && !skipExecDefault) {
+      const defaultCmdName = this._nc._rootCommand.ncConfig.defaultCommand;
+      const matched = rootNode.cmdBase.matchSubCommand(defaultCmdName);
+      if (matched.cmd) {
+        const defaultCmdNode = new CommandNode(matched.name, matched.alias, matched.cmd);
+        defaultCmdNode.applyDefaults();
+        rootNode.addCommandNode(defaultCmdNode);
+        this._addNodeToList(defaultCmdNode);
+        // Start parsing under the default command, with root as parent
+        // This allows root options to be checked when they don't match default command
+        const rootBuilder = new ClapNodeGenerator(rootNode);
+        const defaultCmdBuilder = new ClapNodeGenerator(defaultCmdNode, rootBuilder);
+        this._builderStack = [defaultCmdBuilder];
+      } else {
+        // Default command not found, set error
+        rootNode.addError(new Error(`default command ${defaultCmdName} not found`));
+        this._builderStack = [new ClapNodeGenerator(rootNode)];
+      }
+    } else {
+      this._builderStack = [new ClapNodeGenerator(rootNode)];
+    }
 
     while (_index < argv.length) {
       const arg = this._argv[_index];

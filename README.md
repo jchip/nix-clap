@@ -436,6 +436,8 @@ $ file-processor --help
 - The root command only executes when:
   - Arguments are provided on the command line, AND
   - No sub-commands match those arguments
+- When multiple non-option arguments are provided, they are checked sequentially. If any argument matches a sub-command name, that sub-command executes (and subsequent arguments are ignored for root command execution)
+- If none of the non-option arguments match sub-command names, **all** arguments are passed to the root command
 - All options defined in `init2()` are available to both the root command and sub-commands
 
 ### Root Command Execution Decision Tree
@@ -443,15 +445,20 @@ $ file-processor --help
 When you configure a root command with `exec` and `args`, NixClap determines whether to execute it based on this logic:
 
 ```
+Preprocess CLI arguments
+   ↓
+Are there only option args (no non-option args)?
+   ├─ YES → Insert default command upfront (if configured)
+   └─ NO → Continue parsing normally
+       ↓
 Parse CLI arguments
    ↓
 Does a sub-command match?
    ├─ YES → Execute matched sub-command (root command skipped)
    └─ NO → Continue to next check
        ↓
-   Are arguments provided?
-       ├─ NO → Check for default command
-       │        ├─ Default command configured? → Execute default command
+   Are non-option arguments provided?
+       ├─ NO → Execute default command (if inserted during parsing)
        │        └─ No default? → Emit 'no-action' event
        └─ YES → Execute root command
 ```
@@ -460,8 +467,8 @@ Does a sub-command match?
 
 1. **Sub-commands always win**: If any argument matches a sub-command name, that sub-command executes
 2. **Root needs arguments**: Root command only executes when non-option arguments are provided
-3. **Default command fallback**: Executes when no args provided and no sub-command matches
-4. **Execution order**: Sub-commands → Root command → Default command
+3. **Default command insertion**: When only option args exist, default command is inserted during preprocessing (before parsing)
+4. **Execution order**: Sub-commands → Root command (when args provided) → Default command (inserted during parsing, executed automatically)
 
 **Example Scenarios:**
 
@@ -472,6 +479,24 @@ $ mycli file.txt          # ✅ Executes root command (no sub-command match, arg
 $ mycli build             # ✅ Executes 'build' sub-command (sub-command match)
 $ mycli                   # ❌ No execution (no args, no default command)
 $ mycli --help            # ⚠️  Shows help (--help is handled before execution logic)
+```
+
+**Multiple Arguments with Sub-Commands:**
+
+When multiple non-option arguments are provided and none match sub-command names, all arguments are passed to the root command:
+
+```bash
+# CLI defined with: init2({ 
+#   args: "[arg1 string] [arg2 string] [arg3 string]", 
+#   exec: rootHandler, 
+#   subCommands: { build: {...}, test: {...} } 
+# })
+
+$ mycli arg1 arg2 arg3    # ✅ Executes root command with all 3 args
+                          #    (none match 'build' or 'test', so all go to root)
+$ mycli build             # ✅ Executes 'build' sub-command (first arg matches)
+$ mycli arg1 build        # ✅ Executes 'build' sub-command (second arg matches)
+                          #    (arg1 is ignored, only 'build' executes)
 ```
 
 > **Try the examples above:** [simple-cli.ts](./examples/simple-cli.ts), [cli-with-options.ts](./examples/cli-with-options.ts), [cli-command-args.ts](./examples/cli-command-args.ts), [simple-root-command.ts](./examples/simple-root-command.ts)
@@ -1298,8 +1323,8 @@ These are methods `NixClap` class supports.
   - [`showHelp(err, cmdName)`](#showhelperr-cmdname)
   - [`removeDefaultHandlers()`](#removedefaulthandlers)
   - [`applyConfig(config, parsed, src)`](#applyconfigconfig-parsed-src)
-  - [`runExec(parsed, skipDefault)`](#runexecparsed-skipdefault)
-  - [`runExecAsync(parsed, skipDefault)`](#runexecasyncparsed-skipdefault)
+  - [`runExec(parsed)`](#runexecparsed)
+  - [`runExecAsync(parsed)`](#runexecasyncparsed)
 - [TypeScript Support](#typescript-support)
 - [Best Practices](#best-practices)
 - [Alternatives](#alternatives)
@@ -1316,10 +1341,11 @@ These are methods `NixClap` class supports.
 | `usage`               | `string`           | Usage message. Can also set with [`usage()`](#usagemsg-cmdusagemsg) method.                         |
 | `cmdUsage`            | `string`           | Generic usage message for commands. Can also set with [`cmdUsage()`](#usagemsg-cmdusagemsg) method. |
 | `defaultCommand`      | `string`           | Name of the default command to invoke when no command is given.                                     |
+| `unknownCommandFallback` | `string`        | When unknown command encountered at root, treat it as arguments to this command (e.g., `"run"`).   |
 | `allowUnknownCommand` | `boolean`          | Allow unknown commands to be parsed without error.                                                  |
 | `allowUnknownOption`  | `boolean`          | Allow unknown options to be parsed without error.                                                   |
 | `skipExec`            | `boolean`          | If true, will not call command `exec` handlers after parse.                                         |
-| `skipExecDefault`     | `boolean`          | If true, will not call default command `exec` handler after parse.                                  |
+| `skipExecDefault`     | `boolean`          | If true, default command will not be inserted during parsing (prevents execution).                 |
 | `output`              | `function`         | Callback for printing to console. Defaults to `process.stdout.write`.                               |
 | `exit`                | `function`         | Custom exit function. Defaults to emitting the `exit` event.                                        |
 | `handlers`            | `object`           | Custom event handlers (see below).                                                                  |
@@ -1498,7 +1524,13 @@ See the [Understanding init() vs init2()](#understanding-init-vs-init2) section 
 
 ### `defaultCommand(name)`
 
-Set the default command which is invoked when no command was given in command line.
+Set the default command which is invoked when no non-option arguments are provided in the command line.
+
+**How it works:**
+
+- When preprocessing detects only option arguments (no non-option args), the default command is inserted upfront during parsing
+- All subsequent parsing happens under the default command, allowing options to be routed correctly
+- The default command is executed automatically if it has an `exec` handler
 
 **Requirements:**
 
@@ -1546,18 +1578,92 @@ const nc = new NixClap({ defaultCommand: "serve" }).init2({
 **Execution priority:**
 
 1. **Sub-command match** → Executes matched sub-command
-2. **Arguments provided** → Executes root command
-3. **No arguments** → Executes default command
+2. **Non-option arguments provided** → Executes root command
+3. **Only options (no non-option args)** → Default command inserted during parsing, then executed
 
 ```bash
 $ my-prog build           # 1. Executes 'build' sub-command
 $ my-prog file.txt        # 2. Executes root command with args
-$ my-prog                 # 3. Executes 'serve' (default command)
+$ my-prog                 # 3. Executes 'serve' (default command, inserted during parsing)
+$ my-prog --verbose       # 3. Executes 'serve' with --verbose option (default command inserted during parsing)
 ```
+
+**Note:** The default command is inserted during preprocessing when only option arguments are detected. This ensures options are correctly routed to the default command, while root-level options (if any) remain at the root level.
+
+**Note:** When `unknownCommandFallback` is also configured, unknown commands take precedence over default command. See [`unknownCommandFallback`](#unknowncommandfallback) for details.
 
 > **Tip:** Use default command when you have a primary action for your CLI (e.g., `serve` for a server, `build` for a build tool)
 
 > See [examples/default-command.ts](./examples/default-command.ts)
+
+### `unknownCommandFallback`
+
+When an unknown command is encountered at the root level, treat it as arguments to a specified fallback command. For example, with `unknownCommandFallback: "run"`, `prog unknown` becomes `prog run unknown`.
+
+**Requirements:**
+
+- Only applies at root level
+- Does not apply if `allowUnknownCommand` is enabled
+- Fallback command must exist
+- Fallback command should accept arguments (variadic or fixed)
+
+**Example:**
+
+```js
+const nc = new NixClap({
+  defaultCommand: "install",
+  unknownCommandFallback: "run"
+}).init2({
+  subCommands: {
+    install: {
+      desc: "Install packages",
+      exec: cmd => console.log("Installing...")
+    },
+    run: {
+      desc: "Run a script",
+      args: "[script string..]",
+      exec: cmd => {
+        const script = cmd.jsonMeta.argList[0];
+        console.log(`Running script: ${script}`);
+      }
+    }
+  }
+});
+```
+
+**Behavior:**
+
+```bash
+$ my-prog                    # Runs 'install' (defaultCommand)
+$ my-prog --verbose          # Runs 'install' with --verbose option (defaultCommand)
+$ my-prog install           # Runs 'install' explicitly
+$ my-prog run build         # Runs 'run' with 'build' as argument
+$ my-prog build             # Unknown command → becomes 'run build'
+$ my-prog test x y z        # Unknown command → becomes 'run test x y z'
+```
+
+**Interaction with `defaultCommand`:**
+
+The `unknownCommandFallback` and `defaultCommand` work together seamlessly:
+
+1. **No arguments or only options** → `defaultCommand` is inserted during parsing and executed
+   - `prog` → runs default command (inserted during parsing)
+   - `prog --verbose` → runs default command with options (inserted during parsing)
+
+2. **First non-option argument is unknown** → `unknownCommandFallback` is triggered
+   - `prog unknown` → becomes `prog <fallback> unknown`
+   - The unknown command name becomes the first argument to the fallback command
+
+3. **First non-option argument is a known command** → That command runs normally
+   - `prog install` → runs `install` command
+   - `prog run script` → runs `run` command with `script` as argument
+
+**Key points:**
+
+- Known commands work normally (`install`, `run`, etc.)
+- Unknown commands are treated as arguments to the fallback command
+- The unknown command name becomes the first argument to the fallback command
+- Options alone (no non-option args) don't trigger fallback - they use `defaultCommand` instead
 
 ### `parse(argv, start, parsed)`
 
@@ -1573,7 +1679,7 @@ Return: The parse result object.
 
 async version of [parse](#parseargv-start-parsed).
 
-- It will use [runExecAsync](#runexecasyncparsed-skipdefault) to invoke command `exec` handlers serially.
+- It will use [runExecAsync](#runexecasyncparsed) to invoke command `exec` handlers serially.
 - The command handler can return a Promise, which will be awaited.
 
 Return: A promise the resolve with the parse result object.
@@ -1631,7 +1737,7 @@ console.log(parsed.command.jsonMeta.opts);
 console.log(parsed.command.jsonMeta.source); // Shows where each option came from
 ```
 
-### `runExec(parsed, skipDefault)`
+### `runExec(parsed)`
 
 Go through the commands in parsed and call their `exec` handler.
 
@@ -1640,13 +1746,16 @@ Go through the commands in parsed and call their `exec` handler.
 Return: The number of commands with `exec` was invoked.
 
 - `parsed` - The parse result object.
-- `skipDefault` - `boolean`, if `true` then do not invoke default command's `exec` handler when no command with `exec` handler was given.
 
-### `runExecAsync(parsed, skipDefault)`
+**Note:** Default command execution is controlled by the `skipExecDefault` config option. If `skipExecDefault` is `true`, the default command will not be inserted during parsing, and therefore won't be executed.
 
-async version of [runExec](#runexecparsed-skipdefault)
+### `runExecAsync(parsed)`
 
-Return: A promise that resolve with the number of commands with `exec` invoked.
+Async version of [runExec](#runexecparsed)
+
+Return: A promise that resolves with the number of commands with `exec` invoked.
+
+- `parsed` - The parse result object.
 
 ## TypeScript Support
 

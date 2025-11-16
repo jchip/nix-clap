@@ -356,4 +356,69 @@ describe("Root Command", () => {
     const result2 = (nc as any)._shouldExecuteRootCommand(undefined, 0);
     expect(result2).toBe(false);
   });
+
+  it("should execute root command with multiple args when other commands exist and no unknown fallback", () => {
+    let rootExecuted = false;
+    let subExecuted = false;
+    let receivedArgs: any = null;
+
+    const nc = new NixClap({ name: "test", skipExec: true }).init2({
+      args: "[arg1 string] [arg2 string] [arg3 string]",
+      exec: (cmd) => {
+        rootExecuted = true;
+        receivedArgs = cmd.jsonMeta.args;
+      },
+      subCommands: {
+        build: {
+          desc: "Build command",
+          exec: (cmd) => {
+            subExecuted = true;
+          }
+        },
+        test: {
+          desc: "Test command",
+          exec: (cmd) => {
+            subExecuted = true;
+          }
+        }
+      }
+    });
+
+    // When user runs: prog arg1 arg2 arg3
+    // These should be passed to root command exec, not treated as sub-commands
+    const parsed = nc.parse(["arg1", "arg2", "arg3"]);
+    const count = nc.runExec(parsed);
+
+    expect(rootExecuted).toBe(true);
+    expect(subExecuted).toBe(false);
+    expect(count).toBe(1);
+    expect(receivedArgs.arg1).toBe("arg1");
+    expect(receivedArgs.arg2).toBe("arg2");
+    expect(receivedArgs.arg3).toBe("arg3");
+  });
+
+  it("should execute root command with multiple args when no other commands exist", () => {
+    let rootExecuted = false;
+    let receivedArgs: any = null;
+
+    const nc = new NixClap({ name: "test", skipExec: true }).init2({
+      args: "[arg1 string] [arg2 string] [arg3 string]",
+      exec: (cmd) => {
+        rootExecuted = true;
+        receivedArgs = cmd.jsonMeta.args;
+      }
+      // No subCommands defined
+    });
+
+    // When user runs: prog arg1 arg2 arg3
+    // These should be passed to root command exec
+    const parsed = nc.parse(["arg1", "arg2", "arg3"]);
+    const count = nc.runExec(parsed);
+
+    expect(rootExecuted).toBe(true);
+    expect(count).toBe(1);
+    expect(receivedArgs.arg1).toBe("arg1");
+    expect(receivedArgs.arg2).toBe("arg2");
+    expect(receivedArgs.arg3).toBe("arg3");
+  });
 });
