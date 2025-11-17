@@ -764,11 +764,19 @@ export class NixClap extends EventEmitter {
       return false;
     }
 
+    // Execute if:
+    // 1. No command already ran (count === 0)
+    // 2. No subcommand matched
+    // 3. Root exec handler is defined
+    // 4. Either arguments were provided OR root command has no args spec (options-only CLI)
+    const hasArgsProvided = command.argsList.length > 0;
+    const hasNoArgsSpec = this._rootCommand.args.length === 0;
+
     return (
       count === 0 &&
       this._rootCommand.exec != null &&
-      command.argsList.length > 0 &&
-      Object.keys(command.subCmdNodes).length === 0
+      Object.keys(command.subCmdNodes).length === 0 &&
+      (hasArgsProvided || hasNoArgsSpec)
     );
   }
 

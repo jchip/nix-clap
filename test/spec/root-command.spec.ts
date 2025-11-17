@@ -421,4 +421,153 @@ describe("Root Command", () => {
     expect(receivedArgs.arg2).toBe("arg2");
     expect(receivedArgs.arg3).toBe("arg3");
   });
+
+  it("should execute root command with no args spec (options-only CLI)", () => {
+    let executed = false;
+    let receivedOpts: any = null;
+
+    const nc = new NixClap({ name: "test", skipExec: true }).init2({
+      // No args specified - options-only CLI
+      exec: (cmd) => {
+        executed = true;
+        receivedOpts = cmd.jsonMeta.opts;
+      },
+      options: {
+        port: { alias: "p", desc: "Port", args: "<port number>" },
+        verbose: { alias: "v", desc: "Verbose" }
+      }
+    });
+
+    const parsed = nc.parse(["--port", "3000", "--verbose"]);
+    const count = nc.runExec(parsed);
+
+    expect(executed).toBe(true);
+    expect(count).toBe(1);
+    expect(receivedOpts.port).toBe(3000);
+    expect(receivedOpts.verbose).toBe(true);
+  });
+
+  it("should execute root command with empty args spec (options-only CLI)", () => {
+    let executed = false;
+
+    const nc = new NixClap({ name: "test", skipExec: true }).init2({
+      args: "",  // Empty args - options-only CLI
+      exec: (cmd) => {
+        executed = true;
+      },
+      options: {
+        verbose: { desc: "Verbose" }
+      }
+    });
+
+    const parsed = nc.parse(["--verbose"]);
+    const count = nc.runExec(parsed);
+
+    expect(executed).toBe(true);
+    expect(count).toBe(1);
+  });
+
+  it("should execute options-only root command even with no arguments", () => {
+    let executed = false;
+
+    const nc = new NixClap({ name: "test", skipExec: true }).init2({
+      // No args - options-only CLI
+      exec: (cmd) => {
+        executed = true;
+      },
+      options: {
+        port: { desc: "Port", args: "<port number>", argDefault: "8080" }
+      }
+    });
+
+    // Called with no arguments at all - should still execute
+    const parsed = nc.parse([]);
+    const count = nc.runExec(parsed);
+
+    expect(executed).toBe(true);
+    expect(count).toBe(1);
+  });
+
+  it("should not execute options-only root when subcommand is matched", () => {
+    let rootExecuted = false;
+    let subExecuted = false;
+
+    const nc = new NixClap({ name: "test", skipExec: true }).init2({
+      // No args - options-only root
+      exec: (cmd) => {
+        rootExecuted = true;
+      },
+      subCommands: {
+        build: {
+          desc: "Build",
+          exec: (cmd) => {
+            subExecuted = true;
+          }
+        }
+      }
+    });
+
+    const parsed = nc.parse(["build"]);
+    const count = nc.runExec(parsed);
+
+    expect(rootExecuted).toBe(false);
+    expect(subExecuted).toBe(true);
+    expect(count).toBe(1);
+  });
+
+  it("should not execute root when another command already ran (count > 0)", () => {
+    let rootExecuted = false;
+    let subExecuted = false;
+
+    const nc = new NixClap({ name: "test", skipExec: true }).init2({
+      // No args - would normally execute
+      exec: (cmd) => {
+        rootExecuted = true;
+      },
+      subCommands: {
+        test: {
+          desc: "Test",
+          exec: (cmd) => {
+            subExecuted = true;
+          }
+        }
+      }
+    });
+
+    const parsed = nc.parse(["test"]);
+    const count = nc.runExec(parsed);
+
+    // Sub-command executed, so root should not
+    expect(rootExecuted).toBe(false);
+    expect(subExecuted).toBe(true);
+    expect(count).toBe(1);
+  });
+
+  it("should not execute root when another command already ran async (count > 0)", async () => {
+    let rootExecuted = false;
+    let subExecuted = false;
+
+    const nc = new NixClap({ name: "test", skipExec: true }).init2({
+      // No args - would normally execute
+      exec: async (cmd) => {
+        rootExecuted = true;
+      },
+      subCommands: {
+        test: {
+          desc: "Test",
+          exec: async (cmd) => {
+            subExecuted = true;
+          }
+        }
+      }
+    });
+
+    const parsed = nc.parse(["test"]);
+    const count = await nc.runExecAsync(parsed);
+
+    // Sub-command executed, so root should not
+    expect(rootExecuted).toBe(false);
+    expect(subExecuted).toBe(true);
+    expect(count).toBe(1);
+  });
 });
