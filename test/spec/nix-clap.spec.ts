@@ -778,7 +778,8 @@ describe("nix-clap", () => {
     });
     expect(m.argList).to.be.empty;
     expect(m.subCommands).deep.eq({});
-    expect(x.command.error.message).contain(`Encountered unknown CLI argument 'd'`);
+    // Command requires a subcommand but got unknown 'd' - error expected
+    expect(x.command.error.message).contain(`requires a subcommand`);
   };
 
   it("should terminate option array with -. and parse the remaining args", () => {
@@ -1089,7 +1090,8 @@ describe("nix-clap", () => {
 
       const parsed = nc.parse(getArgv("unknown"));
       expect(parsed.command.getErrorNodes().length).to.be.greaterThan(0);
-      expect(parsed.command.getErrorNodes()[0].error.message).to.contain("unknown CLI argument");
+      // Command requires a subcommand but fallback doesn't exist and 'unknown' is not a valid subcommand
+      expect(parsed.command.getErrorNodes()[0].error.message).to.contain("requires a subcommand");
     });
 
     it("should not trigger fallback if allowUnknownCommand is enabled", () => {

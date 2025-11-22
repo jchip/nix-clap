@@ -188,6 +188,57 @@ describe("CommandMeta", () => {
       expect(result.command.subCmdNodes.unknown.optNodes.foo).toBeDefined();
     });
 
+    it("should treat unknown arg as subcommand when parent requires subcommand", () => {
+      // When a command has subcommands but no exec and no args, it "requires" a subcommand.
+      // If allowUnknownCommand is enabled, unknown args should become subcommands of that command.
+      const nc = new NixClap({
+        ...noOutputExit,
+        allowUnknownCommand: true,
+        allowUnknownOption: true
+      }).init2({
+        subCommands: {
+          global: {
+            desc: "Global package management",
+            // No exec, no args - requires a subcommand
+            subCommands: {
+              add: { desc: "Add a package" },
+              remove: { desc: "Remove a package" }
+            }
+          }
+        }
+      });
+
+      // 'unknown' should become a subcommand of 'global', not a sibling at root level
+      const result = nc.parse(["node", "test.js", "global", "unknown"], 2);
+      expect(result.command.subCmdNodes.global).toBeDefined();
+      expect(result.command.subCmdNodes.global.subCmdNodes.unknown).toBeDefined();
+      expect(result.command.subCmdNodes.global.subCmdNodes.unknown.name).toBe("unknown");
+    });
+
+    it("should treat unknown arg as subcommand without unknown options when parent requires subcommand", () => {
+      // Same as above but with allowUnknownOption: false (default)
+      const nc = new NixClap({
+        ...noOutputExit,
+        allowUnknownCommand: true
+        // allowUnknownOption defaults to false
+      }).init2({
+        subCommands: {
+          global: {
+            desc: "Global package management",
+            subCommands: {
+              add: { desc: "Add a package" }
+            }
+          }
+        }
+      });
+
+      // 'unknown' should become a subcommand of 'global'
+      const result = nc.parse(["node", "test.js", "global", "unknown"], 2);
+      expect(result.command.subCmdNodes.global).toBeDefined();
+      expect(result.command.subCmdNodes.global.subCmdNodes.unknown).toBeDefined();
+      expect(result.command.subCmdNodes.global.subCmdNodes.unknown.name).toBe("unknown");
+    });
+
     it("should get root command using getRootCmd method", () => {
       const nc = new NixClap({ ...noOutputExit }).init2({
         subCommands: {

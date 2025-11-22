@@ -31,12 +31,14 @@ This directory contains examples demonstrating various features and use cases of
 - **value-coercion.ts** - Custom value coercion using functions, RegExp, and constants for both options and command arguments.
 - **typescript-usage.ts** - Type-safe usage with TypeScript using init2() and typed CommandSpec.
 - **remaining-args-after-dash.ts** - Accessing remaining arguments after `--` separator (e.g., `prog cmd a b c -- d e f --blah`).
+- **use-as-inplace-module.ts** - Using NixClap as a library/module instead of a terminal app, with custom output/exit handlers for daemon processes, testing, or embedded CLIs.
 
 ## Unknown Handling
 
 - **unknowns.ts** - Parsing with both allowUnknownCommand and allowUnknownOption enabled.
 - **unknowns-cmd-only.ts** - Parsing unknown commands with allowUnknownCommand but not allowUnknownOption enabled.
 - **unknown-multi-cmds.ts** - Parsing with allowUnknownCommand enabled, demonstrating access to unknown subcommand nodes.
+- **subcommand-collision.ts** - Demonstrates behavior when a command requires a subcommand (has subcommands but no exec/args). Shows how unknown args are handled vs bubbling up as sibling commands.
 
 ## Running Examples
 

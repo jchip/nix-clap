@@ -177,12 +177,14 @@ export class ClapNodeGenerator {
         cmd: ncConfig.allowUnknownOption ? unknownCommandBase : unknownCommandBaseNoOptions
       });
     } else {
-      parsingCmd = parsingCmd || cmd.name;
-      this.endArgGathering();
-      // this may be a sub command for the parent, if it's a command also
-      if (this.parent && this.parent.cmdNode) {
-        return this.parent.consumeNonOptAsCommand(arg, parsingCmd);
-      }
+      // Check if current command requires a subcommand:
+      // - has subcommands defined
+      // - has no exec handler
+      // - expects no arguments
+      // - AND no subcommand has been matched yet
+      const hasMatchedSubCommand = Object.keys(cmdNode.subCmdNodes).length > 0;
+      const requiresSubCommand =
+        cmd.subCmdCount > 0 && !cmd.spec.exec && cmd.expectArgs === 0 && !hasMatchedSubCommand;
 
       // Check for unknown command fallback at root level
       // Only trigger if:
@@ -221,6 +223,30 @@ export class ClapNodeGenerator {
           return [fallbackBuilder];
         }
         // If fallback command doesn't exist, fall through to error
+      }
+
+      if (requiresSubCommand) {
+        // Command requires a subcommand but got unknown arg
+        if (ncConfig?.allowUnknownCommand) {
+          // Treat as unknown subcommand of current command
+          return createNewCommand({
+            name: arg,
+            alias: arg,
+            cmd: ncConfig.allowUnknownOption ? unknownCommandBase : unknownCommandBaseNoOptions
+          });
+        }
+        // Error: command requires a subcommand
+        throw new UnknownCliArgError(
+          `Command '${cmd.name}' requires a subcommand. Unknown: '${arg}'.`,
+          arg
+        );
+      }
+
+      parsingCmd = parsingCmd || cmd.name;
+      this.endArgGathering();
+      // this may be a sub command for the parent, if it's a command also
+      if (this.parent && this.parent.cmdNode) {
+        return this.parent.consumeNonOptAsCommand(arg, parsingCmd);
       }
 
       // unknown command or invalid argument
