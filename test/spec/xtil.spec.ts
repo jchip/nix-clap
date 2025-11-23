@@ -3,6 +3,7 @@ import {
   validParseInt,
   toBoolean,
   isBoolean,
+  isNumber,
   fitLine,
   fitLines,
   camelCase,
@@ -38,6 +39,34 @@ describe("xtil", () => {
 
   it("isBoolean should return false for falsy arg", () => {
     expect(isBoolean("")).toBe(false);
+  });
+
+  it("isBoolean should return false for numbers", () => {
+    expect(isBoolean("0")).toBe(false);
+    expect(isBoolean("1")).toBe(false);
+  });
+
+  it("isBoolean should return true for boolean strings", () => {
+    expect(isBoolean("true")).toBe(true);
+    expect(isBoolean("false")).toBe(true);
+    expect(isBoolean("yes")).toBe(true);
+    expect(isBoolean("no")).toBe(true);
+    expect(isBoolean("on")).toBe(true);
+    expect(isBoolean("off")).toBe(true);
+  });
+
+  it("isNumber should return true for valid numbers", () => {
+    expect(isNumber("0")).toBe(true);
+    expect(isNumber("1")).toBe(true);
+    expect(isNumber("123")).toBe(true);
+    expect(isNumber("-5")).toBe(true);
+    expect(isNumber("3.14")).toBe(true);
+  });
+
+  it("isNumber should return false for non-numbers", () => {
+    expect(isNumber("")).toBe(false);
+    expect(isNumber("abc")).toBe(false);
+    expect(isNumber("true")).toBe(false);
   });
 
   it("fitLine should format lines correctly", () => {

@@ -12,7 +12,7 @@ import { CommandNode } from "./command-node.ts";
 import { OptionBase } from "./option-base.ts";
 import { OptionNode } from "./option-node.ts";
 import { OptionMatch } from "./options.ts";
-import { isBoolean, toBoolean } from "./xtil.ts";
+import { isBoolean, toBoolean, isNumber } from "./xtil.ts";
 import { CommandMatched } from "./command-base.ts";
 import { unknownCommandBase, unknownCommandBaseNoOptions } from "./command-base.ts";
 import { _PARENT } from "./symbols.ts";
@@ -87,6 +87,9 @@ export class ClapNodeGenerator {
     }
 
     if (type === "number") {
+      // Use parseFloat to preserve decimals, parseInt for explicit integer type
+      return parseFloat(value);
+    } else if (type === "int" || type === "integer") {
       return parseInt(value, 10);
     } else if (type === "float") {
       return parseFloat(value);
@@ -549,7 +552,7 @@ export class ClapNodeGenerator {
       node.argsMap[0] =
         node.argsList.length > 0
           ? this.convertValue(
-              isBoolean(node.argsList[0]) ? "boolean" : "string",
+              isBoolean(node.argsList[0]) ? "boolean" : isNumber(node.argsList[0]) ? "number" : "string",
               node.argsList[0],
               opt
             )

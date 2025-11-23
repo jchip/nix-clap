@@ -73,4 +73,25 @@ describe("fitLines", () => {
       "                                                                          [test]"
     );
   });
+
+  it("should skip padding when description fits without padding but not with", () => {
+    // Simulates --layout case: short option (8 chars) with large leftWidth (28)
+    // margin (2) + leftWidth (28) + space (1) + desc (52) = 83 > lineWidth (80)
+    // margin (2) + option (8) + space (1) + desc (52) = 63 <= lineWidth (80)
+    const x = fitLines(
+      [
+        "--layout",
+        " set node_modules packages layout - normal or detail",
+        "[string] [default: \"normal\"]"
+      ],
+      "  ",
+      "    ",
+      28,
+      80
+    );
+    // Description should be on same line as --layout (not wrapped)
+    expect(x.length).toBe(2);
+    expect(x[0]).toBe("  --layout  set node_modules packages layout - normal or detail");
+    expect(x[1]).toContain("[string] [default: \"normal\"]");
+  });
 });

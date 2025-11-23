@@ -2,7 +2,7 @@ import assert from "assert";
 import { validParseInt } from "./xtil.ts";
 import { OptionMatch } from "./options.ts";
 
-const SUPPORT_TYPES = ["number", "string", "float", "boolean"];
+const SUPPORT_TYPES = ["number", "string", "float", "boolean", "int", "integer"];
 
 export const rootCommandName = "~root-command~";
 

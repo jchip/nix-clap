@@ -216,14 +216,27 @@ export function fitLines(
   if (strs.length === 0) return [];
   if (strs.length === 1) return [`${margin}${strs[0]}`];
 
-  if (noAnsiLen(strs[0]) > leftWidth) {
+  const firstLen = noAnsiLen(strs[0]);
+
+  if (firstLen > leftWidth) {
     const output = [`${margin}${strs[0]}`];
     // Pad to align description at leftWidth column position
     const padding = " ".repeat(leftWidth);
     return output.concat(fitLine([padding].concat(strs.slice(1)), margin, indent, lineWidth));
-  } else {
-    return fitLine([padStr(strs[0], leftWidth)].concat(strs.slice(1)), margin, indent, lineWidth);
   }
+
+  // Check if padding to leftWidth would cause description to wrap when it could fit
+  // margin + paddedOption + " " + description
+  const descLen = noAnsiLen(strs[1] || "");
+  const paddedLineLen = margin.length + leftWidth + 1 + descLen;
+  const unPaddedLineLen = margin.length + firstLen + 1 + descLen;
+
+  if (paddedLineLen > lineWidth && unPaddedLineLen <= lineWidth) {
+    // Don't pad - description fits without padding but not with padding
+    return fitLine(strs, margin, indent, lineWidth);
+  }
+
+  return fitLine([padStr(strs[0], leftWidth)].concat(strs.slice(1)), margin, indent, lineWidth);
 }
 
 /**
@@ -235,7 +248,11 @@ export function fitLines(
 export function toBoolean(arg: string) {
   if (arg) {
     const x = arg.toUpperCase();
-    return x !== "0" && x !== "FALSE" && x !== "NO";
+    // Handle numeric values: 0 is false, any other number is true
+    if (!isNaN(Number(arg))) {
+      return Number(arg) !== 0;
+    }
+    return x !== "FALSE" && x !== "NO" && x !== "OFF";
   }
   return false;
 }
@@ -248,7 +265,22 @@ export function toBoolean(arg: string) {
 export function isBoolean(arg: string) {
   if (arg) {
     const x = arg && arg.toUpperCase && arg.toUpperCase();
-    return x === "0" || x === "1" || x === "FALSE" || x === "TRUE" || x === "YES" || x === "NO";
+    // Exclude "0" and "1" - they should be treated as numbers, not booleans
+    return x === "FALSE" || x === "TRUE" || x === "YES" || x === "NO" || x === "ON" || x === "OFF";
+  }
+  return false;
+}
+
+/**
+ * Checks if a string represents a valid number.
+ *
+ * @param arg - The string to check.
+ * @returns `true` if the string is a valid number, otherwise `false`.
+ */
+export function isNumber(arg: string) {
+  if (arg) {
+    const n = Number(arg);
+    return !isNaN(n) && isFinite(n);
   }
   return false;
 }

@@ -33,7 +33,7 @@ describe("parser", () => {
     ]);
     const m = node.jsonMeta;
     expect(m.opts).toEqual({
-      cat: true,
+      cat: 1,
       dog: true,
       fox: true
     });
@@ -172,6 +172,26 @@ describe("parser", () => {
       "2": "cli",
       t: "cli"
     });
+  });
+
+  it("should handle int type for integers", () => {
+    const nc = new NixClap().init({
+      myInt: {
+        args: "< int>"
+      }
+    });
+    const result = nc.parse(["node", "test", "--myInt", "42"]);
+    expect(result.command.optNodes["myInt"].argsMap[0]).toBe(42);
+  });
+
+  it("should handle float type for decimals", () => {
+    const nc = new NixClap().init({
+      myNum: {
+        args: "< number>"
+      }
+    });
+    const result = nc.parse(["node", "test", "--myNum", "3.14"]);
+    expect(result.command.optNodes["myNum"].argsMap[0]).toBe(3.14);
   });
 
   it("should handle special character # in option", () => {

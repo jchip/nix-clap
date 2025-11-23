@@ -13,6 +13,7 @@ describe("CommandMeta", () => {
       options: {
         strOpt: { args: "< string>" },
         numOpt: { args: "< number>" },
+        intOpt: { args: "< int>" },
         boolOpt: { args: "< boolean>" },
         arrayOpt: { args: "< string..1,Inf>" }
       },
@@ -34,6 +35,8 @@ describe("CommandMeta", () => {
       "--str-opt",
       "value",
       "--num-opt",
+      "42.5",
+      "--int-opt",
       "42",
       "--bool-opt",
       "true",
@@ -53,6 +56,8 @@ describe("CommandMeta", () => {
       strOpt: true,
       "num-opt": true,
       numOpt: true,
+      "int-opt": true,
+      intOpt: true,
       "bool-opt": true,
       boolOpt: true,
       "cmd-opt": true,
@@ -60,6 +65,7 @@ describe("CommandMeta", () => {
       "array-opt": true,
       arrayOpt: true
     });
+
     expect(meta.subCommands.cmd1).toBeDefined();
 
     const cmdMeta = meta.subCommands.cmd1;
