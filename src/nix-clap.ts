@@ -269,16 +269,16 @@ export class NixClap extends EventEmitter {
             let helpCmdPath: string[] | undefined;
 
             // Check for --help cmd1 cmd2... syntax
-            const helpArgs = parsed.command.optNodes?.help?.argsMap?.cmds;
+            const helpArgs = parsed.command.optNodes?.help?.argsMap?.cmds as string[] | undefined;
             if (helpArgs && helpArgs.length > 0) {
               helpCmdPath = helpArgs;
             } else if (parsed.helpNode && !isRootCommand(parsed.helpNode.alias)) {
               // Build command path from helpNode up to (but not including) root
               helpCmdPath = [];
-              let node = parsed.helpNode;
+              let node: CommandNode | undefined = parsed.helpNode;
               while (node && !isRootCommand(node.alias)) {
                 helpCmdPath.unshift(node.name);
-                node = node[_PARENT];
+                node = node[_PARENT] as CommandNode | undefined;
               }
             }
 
@@ -287,7 +287,7 @@ export class NixClap extends EventEmitter {
           },
           "post-help": noop,
           version: () => this.showVersion(),
-          "parse-fail": parsed => this.showHelp(parsed.command.getErrorNodes()[0].error),
+          "parse-fail": parsed => this.showError(parsed.command.getErrorNodes()[0].error),
           "no-action": () => this.showHelp(new Error("No command given"))
           // "new-command": noop,
         };
@@ -682,6 +682,19 @@ export class NixClap extends EventEmitter {
     this.output("\n");
     this.emit("post-help", { self: this });
     return this.exit(code);
+  }
+
+  /**
+   * Shows an error message without displaying full help text.
+   * Outputs a hint to use --help for more information.
+   *
+   * @param err - The error to display
+   * @returns
+   */
+  showError(err: Error) {
+    this.output(`Error: ${err.message}\n`);
+    this.output(`${this._name || "program"} --help for more info\n`);
+    return this.exit(1);
   }
 
   /**

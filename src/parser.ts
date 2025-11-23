@@ -178,6 +178,7 @@ export class Parser {
     // If all arguments are options (start with '-'), we may need to insert default command
     // If there are non-option arguments, we don't need to insert default command
     let hasNonOptionArgs = false;
+    let hasHelpOrVersion = false;
     for (let i = start; i < argv.length; i++) {
       const arg = argv[i];
       if (arg === "--") {
@@ -189,6 +190,18 @@ export class Parser {
         hasNonOptionArgs = true;
         break;
       }
+      // Check for --help, -h, -?, --version, -v, -V
+      // These should show root command help/version, not default command's
+      if (
+        arg === "--help" ||
+        arg === "-h" ||
+        arg === "-?" ||
+        arg === "--version" ||
+        arg === "-v" ||
+        arg === "-V"
+      ) {
+        hasHelpOrVersion = true;
+      }
     }
 
     // Check if default command is configured
@@ -196,11 +209,12 @@ export class Parser {
     // Check if default command execution is skipped
     // If skipped, don't insert upfront (it will be inserted during execution if needed)
     const skipExecDefault = (this._nc as any)._skipExecDefault === true;
-    
+
     // If no non-option args exist and default command is configured, insert it upfront
     // This way all parsing happens under the default command from the start
     // Skip if skipExecDefault is true (to prevent execution)
-    if (!hasNonOptionArgs && hasDefaultCommand && !skipExecDefault) {
+    // Skip if --help or --version is present (should show root help/version)
+    if (!hasNonOptionArgs && hasDefaultCommand && !skipExecDefault && !hasHelpOrVersion) {
       const defaultCmdName = this._nc._rootCommand.ncConfig.defaultCommand;
       const matched = rootNode.cmdBase.matchSubCommand(defaultCmdName);
       if (matched.cmd) {

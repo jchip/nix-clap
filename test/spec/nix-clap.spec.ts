@@ -1271,6 +1271,66 @@ describe("nix-clap", () => {
       expect(parsed.command.jsonMeta.subCommands.install).to.be.ok;
       expect(parsed.command.jsonMeta.subCommands.run).to.be.undefined;
     });
+
+    it("should not insert defaultCommand when --help is specified", () => {
+      let helpShown = false;
+      const helpOutput: string[] = [];
+      const nc = new NixClap({
+        defaultCommand: "install",
+        unknownCommandFallback: "run",
+        exit: () => {},
+        output: s => helpOutput.push(s)
+      }).init(
+        {
+          verbose: {}
+        },
+        {
+          install: {
+            desc: "Install command",
+            exec: () => {}
+          },
+          run: {
+            desc: "Run command",
+            args: "[script string..]",
+            exec: () => {}
+          }
+        }
+      );
+
+      nc.parse(getArgv("--help"));
+      // Help should show root command help, not install command help
+      const output = helpOutput.join("");
+      expect(output).to.contain("install");
+      expect(output).to.contain("run");
+      expect(output).to.contain("Commands:");
+    });
+
+    it("should not insert defaultCommand when --version is specified", () => {
+      let versionOutput = "";
+      const nc = new NixClap({
+        defaultCommand: "install",
+        unknownCommandFallback: "run",
+        version: "1.0.0",
+        exit: () => {},
+        output: s => (versionOutput += s)
+      }).init(
+        {},
+        {
+          install: {
+            desc: "Install command",
+            exec: () => {}
+          },
+          run: {
+            desc: "Run command",
+            args: "[script string..]",
+            exec: () => {}
+          }
+        }
+      );
+
+      nc.parse(getArgv("--version"));
+      expect(versionOutput.trim()).to.eq("1.0.0");
+    });
   });
 
   it("should terminate command array and parsing with --", () => {
@@ -2174,7 +2234,7 @@ describe("nix-clap", () => {
     expect(help).toEqual([""]);
   });
 
-  it("should show help and exit on parse error", () => {
+  it("should show error and exit on parse error", () => {
     let exited;
     const outputed: any[] = [];
     const nc = new NixClap({
@@ -2193,7 +2253,8 @@ describe("nix-clap", () => {
 
     expect(exited).toBe(1);
     expect(outputed).toBeDefined();
-    expect(outputed[1].trim()).toBe("Error: Not enough arguments for option 'foo'");
+    expect(outputed[0].trim()).toBe("Error: Not enough arguments for option 'foo'");
+    expect(outputed[1].trim()).toBe("test --help for more info");
   });
 
   it("should show help for --help", () => {
