@@ -1,7 +1,7 @@
 import assert from "assert";
 import { CommandBase } from "./command-base.ts";
 import { OptionBase, OptionSpec } from "./option-base.ts";
-import { cbOrVal, dup, fitLines, getTerminalWidth, objEach } from "./xtil.ts";
+import { cbOrVal, dup, fitLines, getTerminalWidth } from "./xtil.ts";
 
 /**
  * `Record<string, OptionSpec>`
@@ -80,7 +80,7 @@ export class Options {
    */
   processSpecData() {
     this.count = 0;
-    objEach(this.specData, (_spec: OptionSpec, name: string) => {
+    for (const [name, _spec] of Object.entries(this.specData)) {
       this.count++;
       this._options[name] = new OptionBase(name, _spec);
 
@@ -96,7 +96,7 @@ export class Options {
           this._optAlias[a] = name;
         });
       }
-    });
+    }
   }
 
   /**
@@ -129,9 +129,9 @@ export class Options {
    */
   findLongestOptionHelpText(): number {
     let max = 0;
-    objEach(this._options, (opt: OptionBase) => {
+    for (const opt of Object.values(this._options)) {
       max = Math.max(opt.help.length, max);
-    });
+    }
     return max;
   }
 
@@ -146,9 +146,9 @@ export class Options {
    */
   makeHelp(): string[] {
     const width = this.findLongestOptionHelpText();
-    let help = [];
-    objEach(this._options, (opt: OptionBase) => {
-      const tail = [];
+    let help: string[] = [];
+    for (const opt of Object.values(this._options)) {
+      const tail: string[] = [];
       if (opt.type) {
         tail.push(`[${opt.type}]`);
       }
@@ -159,7 +159,7 @@ export class Options {
       const desc = (cbOrVal(opt.spec.desc) || "").trim();
       const strs = [opt.help, desc ? ` ${desc}` : "", tail.filter(x => x).join(" ")];
       help = help.concat(fitLines(strs, "  ", "    ", width, getTerminalWidth()));
-    });
+    }
 
     return help;
   }

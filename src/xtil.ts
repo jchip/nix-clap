@@ -12,24 +12,6 @@ export function camelCase(str: string) {
 }
 
 /**
- * Iterates over each key-value pair in an object and applies the provided iterator function.
- *
- * @template T - The type of the values in the object.
- * @param {Record<string, T>} obj - The object to iterate over.
- * @param {(v: T, k: string) => unknown} iterator - The function to apply to each key-value pair.
- * The function receives the value and the key as arguments.
- * @returns {void}
- */
-export function objEach<T = any>(
-  obj: Record<string, T>,
-  iterator: (v: T, k: string) => unknown
-): void {
-  for (const key in obj) {
-    iterator(obj[key], key);
-  }
-}
-
-/**
  * Parses a string into an integer, with optional handling for special cases and defaults.
  *
  * @param s - The string to parse. If the string is "inf" or "infinity" (case-insensitive), it returns `Infinity`.
@@ -77,9 +59,9 @@ export function cbOrVal<T = string>(x: unknown): T {
 export function dup<T = any>(obj: T): T {
   const copy = {};
   if (obj) {
-    objEach(obj, (val: any, key: string) => {
-      copy[key] = val && val.constructor.name === "Object" ? Object.assign({}, val) : val;
-    });
+    for (const [key, val] of Object.entries(obj)) {
+      copy[key] = val && (val as any).constructor.name === "Object" ? Object.assign({}, val) : val;
+    }
   }
   return copy as T;
 }
@@ -104,7 +86,7 @@ export function noAnsiLen(str: string) {
  */
 export function padStr(str: string, width: number) {
   const len = Math.max(0, width - noAnsiLen(str));
-  return `${str}${Array(len + 1).join(" ")}`;
+  return `${str}${" ".repeat(len)}`;
 }
 
 /**

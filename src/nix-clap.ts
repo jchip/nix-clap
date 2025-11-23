@@ -1,5 +1,5 @@
 import Path from "path";
-import { objEach, noop } from "./xtil.ts";
+import { noop } from "./xtil.ts";
 import EventEmitter from "events";
 import { Parser } from "./parser.ts";
 import { CommandBase, CommandSpec, unknownCommandBaseNoOptions } from "./command-base.ts";
@@ -297,12 +297,12 @@ export class NixClap extends EventEmitter {
       this.on("exit", defaultExit);
     }
     const handlers = config.handlers || {};
-    objEach(this._evtHandlers, (handler, name) => {
-      handler = handlers.hasOwnProperty(name) ? handlers[name] : handler;
-      if (typeof handler === "function") {
-        this.on(name, handler);
+    for (const [name, handler] of Object.entries(this._evtHandlers)) {
+      const h = handlers.hasOwnProperty(name) ? handlers[name] : handler;
+      if (typeof h === "function") {
+        this.on(name, h);
       }
-    });
+    }
     this._skipExec = config.skipExec;
     this._skipExecDefault = config.skipExecDefault;
   }

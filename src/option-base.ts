@@ -50,14 +50,30 @@ export class OptionBase extends CliBase<OptionSpec> {
     const specCopy = dup(optSpec);
     super(name, specCopy);
     this.processArgs();
+    this.type = this._buildTypeString();
+    this.help = this._buildHelpString(name, optSpec);
+  }
+
+  /**
+   * Builds the type string for display in help text.
+   * Returns empty string for no args, single type for one arg, or "type .." for variadic.
+   */
+  private _buildTypeString(): string {
     if (this.expectArgs === 0) {
-      this.type = "";
+      return "";
     } else if (this.expectArgs === 1) {
-      this.type = this.args[0].type;
+      return this.args[0].type;
     } else {
-      this.type = `${this.args[0].type} ..`;
+      return `${this.args[0].type} ..`;
     }
-    this.help = [`--${name}`]
+  }
+
+  /**
+   * Builds the help string showing option name and aliases.
+   * Format: "--name, -a, --alias"
+   */
+  private _buildHelpString(name: string, optSpec: OptionSpec): string {
+    return [`--${name}`]
       .concat(
         []
           .concat(optSpec.alias)

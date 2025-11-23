@@ -2,7 +2,7 @@ import { BaseSpec, CliBase, isRootCommand } from "./base.ts";
 import { CommandNode } from "./command-node.ts";
 import { NixClapConfig, ParseResult } from "./nix-clap.ts";
 import { GroupOptionSpec, Options } from "./options.ts";
-import { cbOrVal, dup, fitLines, getTerminalWidth, objEach } from "./xtil.ts";
+import { cbOrVal, dup, fitLines, getTerminalWidth } from "./xtil.ts";
 
 /**
  * The execution function you provide for a command.
@@ -303,16 +303,16 @@ export class CommandBase extends CliBase<CommandSpec> {
       progName = "";
     }
 
-    const data = [];
+    const data: string[][] = [];
 
-    objEach(this.subCmdsBase, (cmdBase: CommandBase, name: string) => {
+    for (const [name, cmdBase] of Object.entries(this.subCmdsBase)) {
       let args = cmdBase.verbatimArgs;
       args = args ? ` ${args}` : "";
       const strs = [`${progName}${name}${args}`, cmdBase.desc ? ` ${cmdBase.desc.trim()}` : ""];
       const alias = cmdBase.alias.join(" ");
       strs.push(alias.length > 0 ? `[aliases: ${alias}]` : "");
       data.push(strs);
-    });
+    }
 
     const cmdWidth = data.reduce((max, n) => (n[0].length > max ? n[0].length : max), 0);
 

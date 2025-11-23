@@ -3,6 +3,7 @@ node_modules
 coverage
 *.log
 .tmp
+.temp
 .vscode
 *-lock*
 dist
