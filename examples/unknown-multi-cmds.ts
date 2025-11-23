@@ -1,4 +1,11 @@
-"use strict";
+/**
+ * Unknown Multi Commands Example
+ *
+ * Demonstrates handling multiple unknown commands (like task runners).
+ *
+ * Usage:
+ *   npx tsx examples/unknown-multi-cmds.ts task1 task2 task3
+ */
 
 import { NixClap } from "../src/index.ts";
 
@@ -7,10 +14,10 @@ const nc = new NixClap({
   allowUnknownOption: true
 });
 
-const args = ["node", "xrun", "task1", "task2"];
+const r = nc.init2({}).parse(["task1", "task2", "task3"], 0);
 
-const r = nc.init2({}).parse();
+console.log("Unknown commands:", Object.keys(r.command.subCmdNodes));
 
-console.log(Object.keys(r.command.subCmdNodes));
-
-console.log(r.command.subCmdNodes.a.verbatimList);
+for (const [name, node] of Object.entries(r.command.subCmdNodes)) {
+  console.log(`  ${name}:`, node.verbatimList);
+}

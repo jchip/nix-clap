@@ -23,12 +23,13 @@ export const defaultOutput = (s: string) => {
 };
 
 /**
- * Exits the Node.js process with the specified exit code.
+ * Sets the process exit code without forcing immediate termination.
+ * This allows stdout to flush properly before the process ends naturally.
  *
- * @param code - The exit code to terminate the process with.
+ * @param code - The exit code for the process.
  */
 export const defaultExit = (code: number) => {
-  process.exit(code);
+  process.exitCode = code;
 };
 
 /**
@@ -171,6 +172,10 @@ export type ParseResult = {
   errorNodes?: ClapNode[];
   command: CommandNode;
   execCmd?: CommandNode;
+  /**
+   * The command node where --help was specified (set by _checkFailures when help is requested)
+   */
+  helpNode?: CommandNode;
   _: string[];
   argv: string[];
   index: number;
@@ -226,12 +231,7 @@ export class NixClap extends EventEmitter {
    * @param _config - Optional configuration object for NixClap.
    *
    */
-  constructor(
-    _config: NixClapConfig = {
-      allowUnknownOption: true,
-      noDefaultHandlers: true
-    }
-  ) {
+  constructor(_config: NixClapConfig = {}) {
     super();
     const config = { ..._config };
     this._config = config;
@@ -245,10 +245,10 @@ export class NixClap extends EventEmitter {
       : ({
           [HELP]: true,
           alias: config.helpAlias || ["?", "h"],
-          args: "[cmd string]",
+          args: "[cmds string..]",
           desc: () => {
             const cmdText =
-              this._rootCommand.subCmdCount > 0 ? " Add a command to show its help" : "";
+              this._rootCommand.subCmdCount > 0 ? " Add command path to show its help" : "";
             return `Show help.${cmdText}`;
           }
         } as OptionSpec);
@@ -263,9 +263,27 @@ export class NixClap extends EventEmitter {
           "pre-help": noop,
           help: parsed => {
             const errorNode = parsed.errorNodes?.[0];
-            const helpCmd = parsed.command.optNodes?.help?.argsMap?.cmd;
+            // Determine which command to show help for:
+            // 1. Check if --help <cmd...> was used (takes priority) - supports command path
+            // 2. If helpNode is a subcommand (not root), build path from helpNode to root
+            let helpCmdPath: string[] | undefined;
+
+            // Check for --help cmd1 cmd2... syntax
+            const helpArgs = parsed.command.optNodes?.help?.argsMap?.cmds;
+            if (helpArgs && helpArgs.length > 0) {
+              helpCmdPath = helpArgs;
+            } else if (parsed.helpNode && !isRootCommand(parsed.helpNode.alias)) {
+              // Build command path from helpNode up to (but not including) root
+              helpCmdPath = [];
+              let node = parsed.helpNode;
+              while (node && !isRootCommand(node.alias)) {
+                helpCmdPath.unshift(node.name);
+                node = node[_PARENT];
+              }
+            }
+
             /* c8 ignore next */
-            this.showHelp(errorNode?.error, helpCmd);
+            this.showHelp(errorNode?.error, helpCmdPath);
           },
           "post-help": noop,
           version: () => this.showVersion(),
@@ -361,6 +379,49 @@ export class NixClap extends EventEmitter {
   }
 
   /**
+   * Recursively adds help option to all subcommands.
+   * Filters out help aliases that conflict with existing options in the subcommand.
+   */
+  private _addHelpToSubCommands(commands: Record<string, CommandSpec>) {
+    /* c8 ignore next */ if (!this._helpOpt) return;
+
+    for (const name in commands) {
+      const cmd = commands[name];
+      const existingOptions = cmd.options || {};
+
+      // Collect all aliases used by existing options in this command
+      const usedAliases = new Set<string>();
+      for (const optName in existingOptions) {
+        const opt = existingOptions[optName];
+        if (opt.alias) {
+          const aliases = Array.isArray(opt.alias) ? opt.alias : [opt.alias];
+          aliases.forEach(a => usedAliases.add(a));
+        }
+      }
+
+      // Create a copy of help option, filtering out conflicting aliases
+      /* c8 ignore next 3 */
+      const helpAliases = this._helpOpt.alias
+        ? (Array.isArray(this._helpOpt.alias) ? this._helpOpt.alias : [this._helpOpt.alias])
+        : [];
+      const filteredAliases = helpAliases.filter(a => !usedAliases.has(a));
+
+      // Only add help if 'help' option name isn't already used
+      if (!existingOptions.hasOwnProperty("help")) {
+        cmd.options = {
+          ...existingOptions,
+          help: { ...this._helpOpt, alias: filteredAliases }
+        };
+      }
+
+      // Recursively add to nested subcommands
+      if (cmd.subCommands) {
+        this._addHelpToSubCommands(cmd.subCommands);
+      }
+    }
+  }
+
+  /**
    * Initialize NixClap with a single root command spec.
    *
    * The root command is a CommandSpec, with its options and subCommands defined inline.
@@ -370,7 +431,7 @@ export class NixClap extends EventEmitter {
    */
   init2(rootCommandSpec: CommandSpec = {}) {
     let options = rootCommandSpec.options || {};
-    const commands = rootCommandSpec.subCommands || {};
+    const commands = { ...rootCommandSpec.subCommands };
 
     // Add version option if version is set
     if (this._version) {
@@ -388,6 +449,8 @@ export class NixClap extends EventEmitter {
       options = { ...options };
       // eslint-disable-next-line dot-notation
       options["help"] = this._helpOpt;
+      // Also add help option to all subcommands recursively
+      this._addHelpToSubCommands(commands);
     }
 
 
@@ -501,10 +564,10 @@ export class NixClap extends EventEmitter {
   /**
    * Generates help text for the specified command or the root command if no command name is provided.
    *
-   * @param cmdName - The name of the command to generate help for. If not provided, help for the root command is generated.
+   * @param cmdPath - The command name or path (array) to generate help for. If not provided, help for the root command is generated.
    * @returns An array of strings representing the help text.
    */
-  makeHelp(cmdName?: string) {
+  makeHelp(cmdPath?: string | string[]) {
     let cmd = this._rootCommand;
 
     // Guard against uninitialized CLI
@@ -512,13 +575,24 @@ export class NixClap extends EventEmitter {
       return ["Error: CLI not initialized. Call init() or init2() first."];
     }
 
-    if (cmdName) {
-      const matched = this._rootCommand.matchSubCommand(cmdName);
+    // Normalize cmdPath to array
+    const cmdNames = cmdPath
+      ? Array.isArray(cmdPath)
+        ? cmdPath
+        : [cmdPath]
+      : [];
+
+    // Walk the command path to find the target command
+    for (const cmdName of cmdNames) {
+      const matched = cmd.matchSubCommand(cmdName);
       if (!matched.cmd) {
         return [`Unknown command: ${cmdName}`];
       }
       cmd = matched.cmd;
     }
+
+    // For display purposes, use the last command name in path
+    const cmdName = cmdNames.length > 0 ? cmdNames[cmdNames.length - 1] : undefined;
 
     const usage = [""];
     let usageMsg: string;
@@ -579,6 +653,7 @@ export class NixClap extends EventEmitter {
       if (options && options.length) {
         return ["", "Options:"].concat(options);
       }
+      /* c8 ignore next 3 */ // Subcommands now have help option added automatically
       if (cmd.name && !isRootCommand(cmd.alias[0])) {
         return [`Command ${cmd.name} has no options`];
       }
@@ -593,12 +668,12 @@ export class NixClap extends EventEmitter {
    * Shows help information for the specified command or the root command.
    *
    * @param err - Optional error to display along with help
-   * @param cmdName - Optional command name to show help for
+   * @param cmdPath - Optional command name or path (array) to show help for
    * @returns
    */
-  showHelp(err, cmdName?) {
+  showHelp(err?, cmdPath?: string | string[]) {
     this.emit("pre-help", { self: this });
-    this.output(`${this.makeHelp(cmdName).join("\n")}\n`);
+    this.output(`${this.makeHelp(cmdPath).join("\n")}\n`);
     let code = 0;
     if (err) {
       this.output(`\nError: ${err.message}\n`);
@@ -665,6 +740,24 @@ export class NixClap extends EventEmitter {
   }
 
   /**
+   * Recursively find a command node that has --help specified via CLI.
+   * Returns the command node where help was requested, or undefined if not found.
+   *
+   * @param cmdNode - The command node to search from
+   * @returns The command node with help requested, or undefined
+   */
+  private _findHelpNode(cmdNode: CommandNode): CommandNode | undefined {
+    if (cmdNode.optNodes.help?.source === "cli") {
+      return cmdNode;
+    }
+    for (const key in cmdNode.subCmdNodes) {
+      const found = this._findHelpNode(cmdNode.subCmdNodes[key]);
+      if (found) return found;
+    }
+    return undefined;
+  }
+
+  /**
    *
    * @param parsed
    * @returns
@@ -675,10 +768,15 @@ export class NixClap extends EventEmitter {
       return true;
     }
 
-    // check if user specified --help, to show help and exit
-    if (this._helpOpt && this._helpOpt[HELP] && parsed.command.optNodes.help?.source === "cli") {
-      this.emit("help", parsed);
-      return true;
+    // check if user specified --help anywhere in the command tree
+    if (this._helpOpt && this._helpOpt[HELP]) {
+      const helpNode = this._findHelpNode(parsed.command);
+      if (helpNode) {
+        // Store which command requested help for the handler to use
+        parsed.helpNode = helpNode;
+        this.emit("help", parsed);
+        return true;
+      }
     }
 
     // check if user specified --version, to show version and exit

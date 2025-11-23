@@ -15,7 +15,7 @@
 
 import { NixClap } from "../src/index.ts";
 
-const parsed = new NixClap().init2().parse();
+const parsed = new NixClap({ allowUnknownOption: true }).init2().parse();
 
 console.log("Parsed options:", parsed.command.opts);
 console.log("Remaining arguments:", parsed._);

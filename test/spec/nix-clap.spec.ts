@@ -34,11 +34,10 @@ describe("nix-clap", () => {
 
   it("should provide default output and exit setup", () => {
     defaultOutput("\ntesting defaultOutput to stdout - you should see this\n");
-    let called: number = 0;
-    const save = process.exit;
-    process.exit = (n => (called = n)) as any;
+    const saveExitCode = process.exitCode;
     defaultExit(100);
-    expect(called).toBe(100);
+    expect(process.exitCode).toBe(100);
+    process.exitCode = saveExitCode;
     let o = "";
     const nc = new NixClap({
       version: "100",
@@ -48,7 +47,6 @@ describe("nix-clap", () => {
     }).init();
     nc.showVersion();
     expect(o).toBe("100\n");
-    process.exit = save;
   });
 
   const initParser = (
@@ -2110,7 +2108,8 @@ describe("nix-clap", () => {
       "  --count-opt, -c",
       '  --apply-default                                    [boolean] [default: "test"]',
       "  --version, -V, -v         Show version number",
-      "  --help, -?, -h            Show help. Add a command to show its help   [string]"
+      "  --help, -?, -h            Show help. Add command path to show its help",
+      "                                                                     [string ..]"
     ]);
   });
 
@@ -2234,7 +2233,8 @@ Usage: test cmd1
   test cmd1
 
 Options:
-  --blah  test blah
+  --blah          test blah
+  --help, -?, -h  Show help. Add command path to show its help       [string ..]
 
 `);
   });
@@ -2321,7 +2321,9 @@ Options:
       "",
       "  Output sum of numbers",
       "Command 's' is alias for 'sum'",
-      "Command sum has no options"
+      "",
+      "Options:",
+      "  --help, -?, -h  Show help. Add command path to show its help       [string ..]"
     ]);
     help = nc.makeHelp("sum");
     expect(help).to.deep.equal([
@@ -2329,7 +2331,9 @@ Options:
       "Usage:  sum",
       "",
       "  Output sum of numbers",
-      "Command sum has no options"
+      "",
+      "Options:",
+      "  --help, -?, -h  Show help. Add command path to show its help       [string ..]"
     ]);
     help = nc.makeHelp("sr");
     expect(help).to.deep.equal([
@@ -2340,7 +2344,8 @@ Options:
       "Command 'sr' is alias for 'sort'",
       "",
       `Options:`,
-      "  --reverse, -r  Sort in descending order"
+      "  --reverse, -r   Sort in descending order",
+      "  --help, -?, -h  Show help. Add command path to show its help       [string ..]"
     ]);
     help = nc.makeHelp("sort");
     expect(help).to.deep.equal([
@@ -2350,7 +2355,8 @@ Options:
       "  Output sorted numbers",
       "",
       "Options:",
-      "  --reverse, -r  Sort in descending order"
+      "  --reverse, -r   Sort in descending order",
+      "  --help, -?, -h  Show help. Add command path to show its help       [string ..]"
     ]);
     help = nc.makeHelp("blah");
     expect(help).to.deep.equal(["Unknown command: blah"]);
@@ -2372,9 +2378,23 @@ Options:
         }
       );
     let help = nc.makeHelp("foo");
-    expect(help).to.deep.equal(["", "Usage: test foo bar", "", "Command foo has no options"]);
+    expect(help).to.deep.equal([
+      "",
+      "Usage: test foo bar",
+      "",
+      "",
+      "Options:",
+      "  --help, -?, -h  Show help. Add command path to show its help       [string ..]"
+    ]);
     help = nc.makeHelp("blah");
-    expect(help).to.deep.equal(["", "Usage: blah blah", "", "Command blah has no options"]);
+    expect(help).to.deep.equal([
+      "",
+      "Usage: blah blah",
+      "",
+      "",
+      "Options:",
+      "  --help, -?, -h  Show help. Add command path to show its help       [string ..]"
+    ]);
   });
 
   it("should make help for version without used alias V and v", () => {
@@ -2412,7 +2432,7 @@ Options:
       "  --xv, -v",
       "  --xv2, -V",
       "  --version       Show version number",
-      "  --help, -?, -h  Show help. Add a command to show its help             [string]"
+      "  --help, -?, -h  Show help. Add command path to show its help       [string ..]"
     ]);
   });
 

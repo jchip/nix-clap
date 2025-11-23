@@ -169,6 +169,9 @@ export class CommandBase extends CliBase<CommandSpec> {
    * @throws {Error} If the option already exists in the current command or any parent command.
    */
   verifyOptionNotExist(optName: string, _from: CommandBase) {
+    // Skip check for 'help' option - it's intentionally inherited by all subcommands
+    if (optName === "help") return;
+
     if (_from !== this && this.options._options.hasOwnProperty(optName)) {
       throw new Error(
         `Command ${_from.name} option ${optName} already used by parent command '${this.name}'`
