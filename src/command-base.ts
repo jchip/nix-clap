@@ -2,7 +2,7 @@ import { BaseSpec, CliBase, isRootCommand } from "./base.ts";
 import { CommandNode } from "./command-node.ts";
 import { NixClapConfig, ParseResult } from "./nix-clap.ts";
 import { GroupOptionSpec, Options } from "./options.ts";
-import { cbOrVal, dup, fitLines, objEach } from "./xtil.ts";
+import { cbOrVal, dup, fitLines, getTerminalWidth, objEach } from "./xtil.ts";
 
 /**
  * The execution function you provide for a command.
@@ -316,7 +316,7 @@ export class CommandBase extends CliBase<CommandSpec> {
 
     const cmdWidth = data.reduce((max, n) => (n[0].length > max ? n[0].length : max), 0);
 
-    return data.reduce((help, strs) => help.concat(fitLines(strs, "  ", "    ", cmdWidth, 80)), []);
+    return data.reduce((help, strs) => help.concat(fitLines(strs, "  ", "    ", cmdWidth, getTerminalWidth())), []);
   }
 }
 

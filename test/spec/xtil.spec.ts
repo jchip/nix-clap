@@ -124,7 +124,8 @@ describe("xtil", () => {
     const leftWidth = 2;
     const lineWidth = 10;
     const result = fitLines(strs, margin, indent, leftWidth, lineWidth);
-    expect(result).toEqual([">This", ">  is a", ">     test"]);
+    // When first word exceeds leftWidth, description aligns at leftWidth column
+    expect(result).toEqual([">This", ">   is a", ">     test"]);
   });
 
   it("camelCase should convert kebab-case to camelCase", () => {

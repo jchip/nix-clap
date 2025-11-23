@@ -1,7 +1,7 @@
 import assert from "assert";
 import { CommandBase } from "./command-base.ts";
 import { OptionBase, OptionSpec } from "./option-base.ts";
-import { cbOrVal, dup, fitLines, objEach } from "./xtil.ts";
+import { cbOrVal, dup, fitLines, getTerminalWidth, objEach } from "./xtil.ts";
 
 /**
  * `Record<string, OptionSpec>`
@@ -157,8 +157,8 @@ export class Options {
         tail.push(`[default: ${JSON.stringify(opt.spec.argDefault)}]`);
       }
       const desc = (cbOrVal(opt.spec.desc) || "").trim();
-      const strs = [opt.help, ` ${desc}`, tail.filter(x => x).join(" ")];
-      help = help.concat(fitLines(strs, "  ", "    ", width, 80));
+      const strs = [opt.help, desc ? ` ${desc}` : "", tail.filter(x => x).join(" ")];
+      help = help.concat(fitLines(strs, "  ", "    ", width, getTerminalWidth()));
     });
 
     return help;

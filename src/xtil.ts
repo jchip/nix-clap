@@ -108,15 +108,16 @@ export function padStr(str: string, width: number) {
 }
 
 /**
- * Pads the given string on the right side with spaces until it reaches the specified width.
+ * Pads the given string on the left side with spaces until it reaches the specified width.
+ * This right-aligns the text within the given width.
  *
  * @param str - The string to be padded.
  * @param width - The desired width of the resulting string after padding.
- * @returns The padded string with spaces added to the right.
+ * @returns The padded string with spaces added to the left.
  */
-export function padStrRight(str: string, width: number) {
+export function padLeft(str: string, width: number) {
   const len = width - noAnsiLen(str);
-  return `${Array(len + 1).join(" ")}${str}`;
+  return `${" ".repeat(Math.max(0, len))}${str}`;
 }
 
 /**
@@ -145,7 +146,7 @@ export function fitLine(strs: string[], margin: string, indent: string, lineWidt
       line += " ";
     }
     if (last) {
-      line += padStrRight(str, lineWidth - noAnsiLen(line));
+      line += padLeft(str, lineWidth - noAnsiLen(line));
     } else {
       line += str;
     }
@@ -182,7 +183,9 @@ export function fitLines(
 
   if (noAnsiLen(strs[0]) > leftWidth) {
     const output = [`${margin}${strs[0]}`];
-    return output.concat(fitLine([indent].concat(strs.slice(1)), margin, indent, lineWidth));
+    // Pad to align description at leftWidth column position
+    const padding = " ".repeat(leftWidth);
+    return output.concat(fitLine([padding].concat(strs.slice(1)), margin, indent, lineWidth));
   } else {
     return fitLine([padStr(strs[0], leftWidth)].concat(strs.slice(1)), margin, indent, lineWidth);
   }
@@ -219,4 +222,14 @@ export const noop = () => {};
 
 export function prefixOption(name: string) {
   return name.length > 1 ? `--${name}` : `-${name}`;
+}
+
+/**
+ * Gets the terminal width for help text formatting.
+ * Falls back to 80 columns if terminal width cannot be determined.
+ *
+ * @returns The terminal width in columns.
+ */
+export function getTerminalWidth(): number {
+  return process.stdout.columns || 80;
 }
