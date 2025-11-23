@@ -1,3 +1,23 @@
+# v2.4.3 (2024-11-22)
+
+- fix handling of unknown sub commands
+
+# v2.4.2 (2024-11-20)
+
+- support options-only CLI with automatic exec
+
+# v2.4.1 (2024-11-18)
+
+- implement `defaultCommand` and `unknownCommandFallback` execution
+- pass parsed result to command exec handler
+
+# v2.4.0 (2024-11-15)
+
+- add `cmd.rootCmd` property to access root command from sub-commands
+- inline strip-ansi utility
+- fix `--version` handling
+- fix config application order
+
 # v2.3.0 (2024-11-02)
 
 - add `allowUnknownOption` configuration for commands and root level

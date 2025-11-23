@@ -1,5 +1,5 @@
 import Path from "path";
-import { noop } from "./xtil.ts";
+import { noop, setHelpZebra } from "./xtil.ts";
 import EventEmitter from "events";
 import { Parser } from "./parser.ts";
 import { CommandBase, CommandSpec, unknownCommandBaseNoOptions } from "./command-base.ts";
@@ -156,6 +156,11 @@ export type NixClapConfig = {
    * allow user to process and handle errors and show help.
    */
   noDefaultHandlers?: boolean;
+  /**
+   * Set to `true` to enable zebra striping (alternating dim rows) in help text
+   * for better readability when terminal is wide.
+   */
+  helpZebra?: boolean;
 };
 
 /**
@@ -237,6 +242,9 @@ export class NixClap extends EventEmitter {
     this._config = config;
     this._name = config.name;
     this._version = config.version || false;
+
+    // Set zebra striping for help text
+    setHelpZebra(config.helpZebra !== false);
 
     this._versionAlias = config.versionAlias;
 

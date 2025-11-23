@@ -1,7 +1,10 @@
-import { fitLines } from "../../src/xtil";
-import { describe, it, expect } from "vitest";
+import { fitLines, setHelpZebra } from "../../src/xtil";
+import { describe, it, expect, beforeEach } from "vitest";
 
 describe("fitLines", () => {
+  beforeEach(() => {
+    setHelpZebra(false);
+  });
   it("should return [] for no strs", () => {
     expect(fitLines([])).toEqual([]);
   });

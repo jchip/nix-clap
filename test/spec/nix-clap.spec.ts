@@ -12,6 +12,7 @@ import { defaultOutput, defaultExit, ParseResult } from "../../src/nix-clap";
 import { describe, it, expect, beforeEach } from "vitest";
 import { OptionSpec } from "../../src/option-base";
 import { CommandNode } from "../../src/command-node";
+import { setHelpZebra } from "../../src/xtil";
 
 describe("nix-clap", () => {
   const noop = () => undefined;
@@ -20,6 +21,8 @@ describe("nix-clap", () => {
 
   beforeEach(() => {
     invoked = undefined;
+    // Disable zebra striping for consistent test output
+    setHelpZebra(false);
   });
 
   it("should init", () => {
@@ -2126,7 +2129,7 @@ describe("nix-clap", () => {
   it("should make help text", () => {
     const nc = initParser(
       undefined,
-      new NixClap({ name: "test", ...noOutputExit }).version("1.0.0")
+      new NixClap({ name: "test", ...noOutputExit, helpZebra: false }).version("1.0.0")
     );
     expect(nc.makeHelp()).toEqual([
       "",
@@ -2278,7 +2281,8 @@ describe("nix-clap", () => {
     const nc = new NixClap({
       name: "test",
       exit: n => (exited = n),
-      output: o => outputed.push(o)
+      output: o => outputed.push(o),
+      helpZebra: false
     });
     nc.init(
       { foo: { args: "< string>" } },
@@ -2371,7 +2375,7 @@ Options:
   };
 
   it("should make help for command", () => {
-    const nc = new NixClap({ ...noOutputExit })
+    const nc = new NixClap({ ...noOutputExit, helpZebra: false })
       .cmdUsage("$0 $1")
       .version("1.0.0")
       .init({}, numCommands);
@@ -2424,7 +2428,7 @@ Options:
   });
 
   it("should make help for command with custom usage", () => {
-    const nc = new NixClap({ name: "test", ...noOutputExit })
+    const nc = new NixClap({ name: "test", ...noOutputExit, helpZebra: false })
       .cmdUsage("$0 $1")
       .version("1.0.0")
       .init(
@@ -2459,7 +2463,7 @@ Options:
   });
 
   it("should make help for version without used alias V and v", () => {
-    const nc = new NixClap({ name: "test", ...noOutputExit })
+    const nc = new NixClap({ name: "test", ...noOutputExit, helpZebra: false })
       .cmdUsage("$0 $1")
       .version("1.0.0")
       .init(

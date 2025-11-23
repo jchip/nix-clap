@@ -1,7 +1,7 @@
 import assert from "assert";
 import { CommandBase } from "./command-base.ts";
 import { OptionBase, OptionSpec } from "./option-base.ts";
-import { cbOrVal, dup, fitLines, getTerminalWidth } from "./xtil.ts";
+import { cbOrVal, dup, fitLines, getTerminalWidth, resetZebraIndex, nextZebraIndex } from "./xtil.ts";
 
 /**
  * `Record<string, OptionSpec>`
@@ -140,13 +140,16 @@ export class Options {
    *
    * This method constructs a formatted help text by iterating over the available options,
    * appending their descriptions, types, and default values if applicable. The help text
-   * is formatted to fit within a specified width.
+   * is formatted to fit within a specified width. Alternating options are dimmed for
+   * better readability.
    *
    * @returns {string[]} An array of strings representing the formatted help text.
    */
   makeHelp(): string[] {
     const width = this.findLongestOptionHelpText();
     let help: string[] = [];
+    resetZebraIndex();
+
     for (const opt of Object.values(this._options)) {
       const tail: string[] = [];
       if (opt.type) {
@@ -158,7 +161,10 @@ export class Options {
       }
       const desc = (cbOrVal(opt.spec.desc) || "").trim();
       const strs = [opt.help, desc ? ` ${desc}` : "", tail.filter(x => x).join(" ")];
-      help = help.concat(fitLines(strs, "  ", "    ", width, getTerminalWidth()));
+      const lines = fitLines(strs, "  ", "    ", width, getTerminalWidth());
+
+      help = help.concat(lines);
+      nextZebraIndex();
     }
 
     return help;

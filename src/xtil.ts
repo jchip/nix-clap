@@ -1,5 +1,58 @@
 import { stripAnsi } from "./strip-ansi.ts";
 
+// Module-level config for zebra striping in help text
+let _helpZebra = true;
+
+/**
+ * Enable or disable zebra striping in help text.
+ * @param enabled - Whether to enable zebra striping
+ */
+export function setHelpZebra(enabled: boolean) {
+  _helpZebra = enabled;
+}
+
+/**
+ * Check if zebra striping is enabled.
+ * @returns Whether zebra striping is enabled
+ */
+export function isHelpZebraEnabled(): boolean {
+  return _helpZebra;
+}
+
+// Track alternating fill character for zebra pattern
+let _zebraIndex = 0;
+
+/**
+ * Reset the zebra index for a new help section.
+ */
+export function resetZebraIndex() {
+  _zebraIndex = 0;
+}
+
+/**
+ * Increment the zebra index for alternating patterns.
+ */
+export function nextZebraIndex() {
+  _zebraIndex++;
+}
+
+/**
+ * Pads the given string on the left side with a fill character until it reaches the specified width.
+ * This right-aligns the text within the given width.
+ * When helpZebra is enabled, alternates between dots and spaces for visual tracking.
+ *
+ * @param str - The string to be padded.
+ * @param width - The desired width of the resulting string after padding.
+ * @returns The padded string with fill character added to the left.
+ */
+export function padLeftFill(str: string, width: number) {
+  const len = width - noAnsiLen(str);
+  if (len <= 0) return str;
+  // Alternate between dots and spaces for zebra effect
+  const fill = _helpZebra && _zebraIndex % 2 === 1 ? "·" : " ";
+  return `${fill.repeat(len)}${str}`;
+}
+
 /**
  * Converts a kebab-case string to camelCase.
  *
@@ -128,7 +181,7 @@ export function fitLine(strs: string[], margin: string, indent: string, lineWidt
       line += " ";
     }
     if (last) {
-      line += padLeft(str, lineWidth - noAnsiLen(line));
+      line += padLeftFill(str, lineWidth - noAnsiLen(line));
     } else {
       line += str;
     }
