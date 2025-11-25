@@ -1,6 +1,6 @@
 {
   "name": "nix-clap",
-  "version": "2.4.4",
+  "version": "2.4.5",
   "description": "Simple, lightweight, flexible, and comprehensive Command Line Argument Parsing for node.js",
   "engines": {
     "node": ">=20"
