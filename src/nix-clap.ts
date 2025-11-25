@@ -270,7 +270,6 @@ export class NixClap extends EventEmitter {
       : {
           "pre-help": noop,
           help: parsed => {
-            const errorNode = parsed.errorNodes?.[0];
             // Determine which command to show help for:
             // 1. Check if --help <cmd...> was used (takes priority) - supports command path
             // 2. If helpNode is a subcommand (not root), build path from helpNode to root
@@ -291,7 +290,8 @@ export class NixClap extends EventEmitter {
             }
 
             /* c8 ignore next */
-            this.showHelp(errorNode?.error, helpCmdPath);
+            // Don't pass errors when user explicitly requested --help
+            this.showHelp(undefined, helpCmdPath);
           },
           "post-help": noop,
           version: () => this.showVersion(),
@@ -784,12 +784,8 @@ export class NixClap extends EventEmitter {
    * @returns
    */
   _checkFailures(parsed: ParseResult): boolean {
-    if (parsed.errorNodes.length > 0) {
-      this.emit("parse-fail", parsed);
-      return true;
-    }
-
     // check if user specified --help anywhere in the command tree
+    // (check before errors so help works even with missing required args)
     if (this._helpOpt && this._helpOpt[HELP]) {
       const helpNode = this._findHelpNode(parsed.command);
       if (helpNode) {
@@ -803,6 +799,11 @@ export class NixClap extends EventEmitter {
     // check if user specified --version, to show version and exit
     if (this._version && parsed.command.optNodes.version?.source === "cli") {
       this.emit("version");
+      return true;
+    }
+
+    if (parsed.errorNodes.length > 0) {
+      this.emit("parse-fail", parsed);
       return true;
     }
 

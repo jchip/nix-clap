@@ -2323,6 +2323,26 @@ Options:
     expect(outputed).toBeDefined();
   });
 
+  it("should show help for command with required args when --help follows command", () => {
+    let exited;
+    const outputed: any[] = [];
+    const nc = new NixClap({
+      name: "test",
+      exit: n => (exited = n),
+      output: o => outputed.push(o),
+      helpZebra: false
+    });
+    nc.init(
+      {},
+      { deploy: { desc: "deploy to env", args: "<env>" } }
+    );
+    const p = nc.parse(getArgv("deploy --help"));
+
+    expect(exited).toBe(0);
+    expect(outputed).toBeDefined();
+    expect(outputed.join("")).toContain("deploy to env");
+  });
+
   it("should handle sub commands with exec", () => {
     const nc = new NixClap({ ...noOutputExit }).init(
       {},
