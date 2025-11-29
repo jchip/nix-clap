@@ -161,6 +161,14 @@ export type NixClapConfig = {
    * for better readability when terminal is wide.
    */
   helpZebra?: boolean;
+  /**
+   * Set to `true` to allow sub-commands to define options with the same name as parent commands.
+   * When enabled, sub-command options shadow (override) parent options at that command level.
+   * Options are resolved at the current command level first, then bubble up to parent if not found.
+   *
+   * Default is `false` (throws error if duplicate option names are found).
+   */
+  allowDuplicateOption?: boolean;
 };
 
 /**

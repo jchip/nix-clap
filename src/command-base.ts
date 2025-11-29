@@ -162,7 +162,7 @@ export class CommandBase extends CliBase<CommandSpec> {
 
   /**
    * Verifies that an option with the given name does not already exist in the current command or any of its
-   * parent commands. If the option exists, an error is thrown.
+   * parent commands. If the option exists, an error is thrown (unless allowDuplicateOption is enabled).
    *
    * @param optName - The name of the option to verify.
    * @param _from - The command from which the verification is initiated.
@@ -171,6 +171,9 @@ export class CommandBase extends CliBase<CommandSpec> {
   verifyOptionNotExist(optName: string, _from: CommandBase) {
     // Skip check for 'help' option - it's intentionally inherited by all subcommands
     if (optName === "help") return;
+
+    // Skip check if allowDuplicateOption is enabled
+    if (this.ncConfig?.allowDuplicateOption) return;
 
     if (_from !== this && this.options._options.hasOwnProperty(optName)) {
       throw new Error(
@@ -185,7 +188,7 @@ export class CommandBase extends CliBase<CommandSpec> {
   /**
    * Verifies that there are no duplicate options in the command.
    * Iterates through the options and checks each one to ensure it does not already exist.
-   * Throws an error if a duplicate option is found.
+   * Throws an error if a duplicate option is found (unless allowDuplicateOption is enabled).
    */
   verifyNoDupOptions() {
     for (const _key in this.options._options) {

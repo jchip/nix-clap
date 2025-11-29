@@ -530,6 +530,7 @@ See [examples](./examples) folder for more working samples:
 - [async-await.ts](./examples/async-await.ts) - Async command handlers
 - [default-command.ts](./examples/default-command.ts) - Using default commands
 - [accessing-parsed-results.ts](./examples/accessing-parsed-results.ts) - Working with parsed data
+- [allow-duplicate-option.ts](./examples/allow-duplicate-option.ts) - Sub-command option shadowing
 - [unknowns.ts](./examples/unknowns.ts) - Handling unknown options
 - [unknowns-cmd-only.ts](./examples/unknowns-cmd-only.ts) - Unknown commands only
 - [unknown-multi-cmds.ts](./examples/unknown-multi-cmds.ts) - Multiple unknown commands
@@ -698,6 +699,62 @@ Example: `prog calc add 1 2 3 4 -. mult 4 5 6 7`
 > Sub Command: `mult` that can take variadic number of numbers
 
 - Since there are multiple sub commands, the `-.` in the middle terminates the `add` sub command.
+
+### Sub-Command Option Shadowing
+
+By default, sub-commands cannot define options with the same name as their parent command. To enable this feature, set `allowDuplicateOption: true` in the NixClap configuration. When enabled, the sub-command's option will shadow (override) the parent's option when parsing at that command level.
+
+**Example:**
+
+```js
+const nc = new NixClap({
+  allowDuplicateOption: true  // Enable duplicate option names
+}).init(
+  {
+    // Root-level --verbose is a boolean flag
+    verbose: { alias: "v", desc: "Enable verbose output" }
+  },
+  {
+    build: {
+      desc: "Build the project",
+      options: {
+        // Sub-command --verbose takes a level argument
+        verbose: { alias: "v", desc: "Verbosity level", args: "<level>" }
+      },
+      exec: ({ opts, rootCmd }) => {
+        console.log("Root verbose:", rootCmd.opts.verbose);   // boolean or undefined
+        console.log("Build verbose:", opts.verbose);          // level string or undefined
+      }
+    }
+  }
+);
+```
+
+**Usage:**
+
+```bash
+$ prog --verbose build --verbose=debug
+# Root verbose: true
+# Build verbose: debug
+
+$ prog build --verbose=2
+# Root verbose: undefined
+# Build verbose: 2
+
+$ prog -v build -v
+# Root verbose: true
+# Build verbose: true (boolean, since no argument provided)
+```
+
+**Key points:**
+
+- Requires `allowDuplicateOption: true` in config (default is `false`)
+- Options are resolved at the current command level first
+- If an option doesn't match the current command, it bubbles up to the parent
+- This allows the same option name to have different behaviors at different levels
+- Access parent options via `cmd.rootCmd.opts` or by traversing the command chain
+
+> See [examples/allow-duplicate-option.ts](./examples/allow-duplicate-option.ts)
 
 ## Greedy Mode
 
@@ -1344,6 +1401,7 @@ These are methods `NixClap` class supports.
 | `unknownCommandFallback` | `string`        | When unknown command encountered at root, treat it as arguments to this command (e.g., `"run"`).   |
 | `allowUnknownCommand` | `boolean`          | Allow unknown commands to be parsed without error.                                                  |
 | `allowUnknownOption`  | `boolean`          | Allow unknown options to be parsed without error.                                                   |
+| `allowDuplicateOption`| `boolean`          | Allow sub-commands to define options with the same name as parent commands.                         |
 | `skipExec`            | `boolean`          | If true, will not call command `exec` handlers after parse.                                         |
 | `skipExecDefault`     | `boolean`          | If true, default command will not be inserted during parsing (prevents execution).                 |
 | `output`              | `function`         | Callback for printing to console. Defaults to `process.stdout.write`.                               |

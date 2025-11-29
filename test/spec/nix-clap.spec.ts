@@ -519,6 +519,53 @@ describe("nix-clap", () => {
     expect(cmd.jsonMeta.opts["missing-type"]).eq(true);
   });
 
+  it("should apply boolean option default value of true when not provided", () => {
+    // force-cache is defined with argDefault: "true" in the test config
+    // When not provided on CLI, it should default to true
+    const x = initParser().parse(getArgv("cmd1 a b"), 0);
+    const m = x.command.jsonMeta;
+    expect(m.opts["force-cache"]).eq(true);
+    expect(m.source["force-cache"]).eq("default");
+  });
+
+  it("should override boolean default true with false when explicitly set", () => {
+    // force-cache defaults to true, but can be set to false
+    const x1 = initParser().parse(getArgv("--force-cache=false cmd1 a b"), 0);
+    expect(x1.command.jsonMeta.opts["force-cache"]).eq(false);
+    expect(x1.command.jsonMeta.source["force-cache"]).eq("cli");
+
+    const x2 = initParser().parse(getArgv("--no-force-cache cmd1 a b"), 0);
+    expect(x2.command.jsonMeta.opts["force-cache"]).eq(false);
+    expect(x2.command.jsonMeta.source["force-cache"]).eq("cli");
+  });
+
+  it("should apply optional boolean default value of true when not provided", () => {
+    // Optional boolean syntax [flag boolean] should also work with argDefault: "true"
+    const nc = new NixClap().init2({
+      options: {
+        feature: {
+          args: "[flag boolean]",
+          argDefault: "true"
+        }
+      }
+    });
+
+    // When not provided, should default to true
+    const x1 = nc.parse([], 0);
+    expect(x1.command.jsonMeta.opts.feature).eq(true);
+    expect(x1.command.jsonMeta.source.feature).eq("default");
+
+    // When --no-feature is provided, should be false
+    const x2 = nc.parse(["--no-feature"], 0);
+    expect(x2.command.jsonMeta.opts.feature).eq(false);
+    expect(x2.command.jsonMeta.source.feature).eq("cli");
+
+    // When --feature=false is provided, should be false
+    const x3 = nc.parse(["--feature=false"], 0);
+    expect(x3.command.jsonMeta.opts.feature).eq(false);
+    expect(x3.command.jsonMeta.source.feature).eq("cli");
+  });
+
   it("should parse command at the beginning", () => {
     const line =
       "cmd1 a --cmd1-bar woo -q v --count-opt -ccc --fooNum=900 --missing-type yes --no-foobool -bnx --bool-2=0 --fc true -a 100 200 -b";
@@ -1870,6 +1917,54 @@ describe("nix-clap", () => {
     ).to.throw("Command test2 option blah already used by parent command 'test'");
   });
 
+  it("should allow sub command to have same option as parent with allowDuplicateOption", () => {
+    // Sub-command option shadows parent option at sub-command level
+    const nc = new NixClap({ ...noOutputExit, allowDuplicateOption: true }).init(
+      {
+        blah: {}
+      },
+      {
+        test: {
+          options: {
+            blah: {}
+          }
+        }
+      }
+    );
+    const { command: p } = nc.parse2(getArgv("--blah test --blah"));
+    const m = p.jsonMeta;
+
+    expect(m.opts).deep.equal({ blah: true });
+    expect(m.subCommands.test.opts).deep.equal({ blah: true });
+
+    // Also works with nested sub-commands
+    const nc2 = new NixClap({ ...noOutputExit, allowDuplicateOption: true }).init(
+      {
+        blah: {}
+      },
+      {
+        test: {
+          options: {
+            blah: {}
+          },
+          subCommands: {
+            test2: {
+              options: {
+                blah: {}
+              }
+            }
+          }
+        }
+      }
+    );
+    const { command: p2 } = nc2.parse2(getArgv("--blah test --blah test2 --blah"));
+    const m2 = p2.jsonMeta;
+
+    expect(m2.opts).deep.equal({ blah: true });
+    expect(m2.subCommands.test.opts).deep.equal({ blah: true });
+    expect(m2.subCommands.test.subCommands.test2.opts).deep.equal({ blah: true });
+  });
+
   it("should handle sub command option alias duplicate parent option alias", () => {
     const nc = new NixClap({ ...noOutputExit }).init(
       {
@@ -1953,6 +2048,36 @@ describe("nix-clap", () => {
         }
       )
     ).to.throw("Command test option blah already used by parent command");
+  });
+
+  it("should allow sub command option with same name and alias as parent with allowDuplicateOption", () => {
+    // Both option name and alias can be the same - sub-command shadows parent
+    const nc = new NixClap({ ...noOutputExit, allowDuplicateOption: true }).init(
+      {
+        blah: { alias: "foo" }
+      },
+      {
+        test: {
+          options: {
+            blah: { alias: "foo" }
+          }
+        }
+      }
+    );
+
+    // Using --blah at root and --foo at sub-command
+    const { command: p } = nc.parse2(getArgv("--blah test --foo"));
+    const m = p.jsonMeta;
+
+    expect(m.opts).deep.equal({ blah: true }); // --blah used directly
+    expect(m.subCommands.test.opts).deep.equal({ blah: true, foo: true }); // --foo alias used
+
+    // Using --foo at both levels
+    const { command: p2 } = nc.parse2(getArgv("--foo test --blah"));
+    const m2 = p2.jsonMeta;
+
+    expect(m2.opts).deep.equal({ blah: true, foo: true }); // --foo alias used
+    expect(m2.subCommands.test.opts).deep.equal({ blah: true }); // --blah used directly
   });
 
   it("should fail if option alias conflict", () => {

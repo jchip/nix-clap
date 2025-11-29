@@ -1,3 +1,11 @@
+# v2.4.5 (2025-11-27)
+
+- fix cmd --help even if it requires args
+
+# v2.4.4 (2025-11-23)
+
+- unknown option preserve number values
+
 # v2.4.3 (2024-11-22)
 
 - fix handling of unknown sub commands
